@@ -3,14 +3,28 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>dev.bpm-crafters.process-engine-api</groupId>
-    <artifactId>process-engine-api-worker-root</artifactId>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-root</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-api-worker-examples</artifactId>
+  <artifactId>process-engine-worker-examples</artifactId>
   <packaging>pom</packaging>
   <description>Example: Parent for the examples.</description>
+
+  <modules>
+    <module>order-fulfillment</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+        <artifactId>process-engine-worker-spring-boot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>
