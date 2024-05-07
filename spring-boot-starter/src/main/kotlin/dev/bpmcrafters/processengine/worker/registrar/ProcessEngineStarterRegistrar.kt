@@ -2,18 +2,23 @@ package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.Variable
+import dev.bpmcrafters.processengine.worker.converter.VariableConverter
+import dev.bpmcrafters.processengine.worker.converter.VariableConverterConfiguration
 import dev.bpmcrafters.processengineapi.task.*
 import mu.KLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.context.annotation.Configuration
 
 /**
  * Registrar responsible for collecting process engine workers.
  */
 @Configuration
+@AutoConfigureAfter(VariableConverterConfiguration::class)
 class ProcessEngineStarterRegistrar(
   private val taskSubscriptionApi: TaskSubscriptionApi,
-  private val taskCompletionApi: ExternalTaskCompletionApi
+  private val taskCompletionApi: ExternalTaskCompletionApi,
+  private val variableConverter: VariableConverter
 ) : BeanPostProcessor {
 
   companion object : KLogging()
@@ -30,44 +35,44 @@ class ProcessEngineStarterRegistrar(
         // explicit variable parameters
         if (method.hasTaskInformationParameter(0)) {
           if (method.hasTaskCompletionApiParameter(1)) {
-            logger.warn { "${method.name} task info at 0, completion at 1, variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
+            logger.trace { "${method.name} task info at 0, completion at 1, variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
                 annotatedVariableParameters.extractVariableNames(),
                 method.hasPayloadReturnType()
-              ) { taskInformation, payload -> method.invoke(bean, annotatedVariableParameters.constructInvocation(payload, taskInformation, taskCompletionApi)) }
+              ) { taskInformation, payload -> method.invoke(bean, *annotatedVariableParameters.constructInvocation(variableConverter, payload, taskInformation, taskCompletionApi)) }
             )
           } else {
-            logger.warn { "${method.name} task info at 0, variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
+            logger.trace { "${method.name} task info at 0, variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
                 annotatedVariableParameters.extractVariableNames(),
                 method.hasPayloadReturnType()
-              ) { taskInformation, payload -> method.invoke(bean, annotatedVariableParameters.constructInvocation(payload, taskInformation, null)) }
+              ) { taskInformation, payload -> method.invoke(bean, *annotatedVariableParameters.constructInvocation(variableConverter, payload, taskInformation, null)) }
             )
           }
         } else {
           if (method.hasTaskCompletionApiParameter(0)) {
-            logger.warn { "${method.name} completion at 0,  variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
+            logger.trace { "${method.name} completion at 0,  variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
                 annotatedVariableParameters.extractVariableNames(),
                 method.hasPayloadReturnType()
               )
-              { _, payload -> method.invoke(bean, annotatedVariableParameters.constructInvocation(payload, null, taskCompletionApi)) }
+              { _, payload -> method.invoke(bean, *annotatedVariableParameters.constructInvocation(variableConverter, payload, null, taskCompletionApi)) }
             )
           } else {
-            logger.warn { "${method.name} variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
+            logger.trace { "${method.name} variables parameters ${annotatedVariableParameters.extractVariableNames()}" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
                 annotatedVariableParameters.extractVariableNames(),
                 method.hasPayloadReturnType()
               )
-              { _, payload -> method.invoke(bean, annotatedVariableParameters.constructInvocation(payload, null, null)) }
+              { _, payload -> method.invoke(bean, *annotatedVariableParameters.constructInvocation(variableConverter, payload, null, null)) }
             )
           }
         }
@@ -75,7 +80,7 @@ class ProcessEngineStarterRegistrar(
         if (method.hasTaskInformationParameter(0)) {
           if (method.hasTaskCompletionApiParameter(1)) {
             if (method.hasPayloadParameter(2)) {
-              logger.warn { "${method.name} task info at 0, task completion at 1, payload on 2" }
+              logger.trace { "${method.name} task info at 0, task completion at 1, payload on 2" }
               taskSubscriptionApi.subscribeForTask(
                 subscribe(
                   topic,
@@ -85,7 +90,7 @@ class ProcessEngineStarterRegistrar(
                 { taskInformation, payload -> method.invoke(bean, taskInformation, taskCompletionApi, payload) }
               )
             } else {
-              logger.warn { "${method.name} task info at 0, task completion at 1" }
+              logger.trace { "${method.name} task info at 0, task completion at 1" }
               taskSubscriptionApi.subscribeForTask(
                 subscribe(
                   topic,
@@ -97,7 +102,7 @@ class ProcessEngineStarterRegistrar(
             }
           } else { // no completion on 1
             if (method.hasPayloadParameter(1)) {
-              logger.warn { "${method.name} task info at 0, payload on 1" }
+              logger.trace { "${method.name} task info at 0, payload on 1" }
               taskSubscriptionApi.subscribeForTask(
                 subscribe(
                   topic,
@@ -107,7 +112,7 @@ class ProcessEngineStarterRegistrar(
                 { taskInformation, payload -> method.invoke(bean, taskInformation, payload) }
               )
             } else {
-              logger.warn { "${method.name} task info at 0" }
+              logger.trace { "${method.name} task info at 0" }
               taskSubscriptionApi.subscribeForTask(
                 subscribe(
                   topic,
@@ -119,7 +124,7 @@ class ProcessEngineStarterRegistrar(
           }
         } else if (method.hasTaskCompletionApiParameter(0)) {
           if (method.hasPayloadParameter(1)) {
-            logger.warn { "${method.name} completion at 0, payload on 1" }
+            logger.trace { "${method.name} completion at 0, payload on 1" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
@@ -128,7 +133,7 @@ class ProcessEngineStarterRegistrar(
               ) { _, payload -> method.invoke(bean, taskCompletionApi, payload) }
             )
           } else {
-            logger.warn { "${method.name} completion at 0" }
+            logger.trace { "${method.name} completion at 0" }
             taskSubscriptionApi.subscribeForTask(
               subscribe(
                 topic,
@@ -138,7 +143,7 @@ class ProcessEngineStarterRegistrar(
             )
           }
         } else if (method.hasPayloadParameter(0)) {
-          logger.warn { "${method.name} payload at 0" }
+          logger.trace { "${method.name} payload at 0" }
           taskSubscriptionApi.subscribeForTask(
             subscribe(
               topic,
@@ -147,7 +152,7 @@ class ProcessEngineStarterRegistrar(
             ) { _, payload -> method.invoke(bean, payload) }
           )
         } else if (method.parameters.isEmpty()) {
-          logger.warn { "${method.name} no params" }
+          logger.trace { "${method.name} no params" }
           taskSubscriptionApi.subscribeForTask(
             subscribe(
               topic,
@@ -193,30 +198,29 @@ class ProcessEngineStarterRegistrar(
           }
         }
       } catch (e: Exception) {
-        when (e) {
-          is BpmnErrorOccurred -> {
-            taskCompletionApi.completeTaskByError(
-              CompleteTaskByErrorCmd(
-                taskId = taskInformation.taskId,
-                errorCode = e.errorCode,
-                payloadSupplier = { e.payload }
-              )
+        // logger.error(e) { "Error executing process task ${taskInformation.taskId}" }
+        if (e.cause != null && e.cause is BpmnErrorOccurred) {
+          val cause = e.cause as BpmnErrorOccurred
+          taskCompletionApi.completeTaskByError(
+            CompleteTaskByErrorCmd(
+              taskId = taskInformation.taskId,
+              errorCode = cause.errorCode,
+              payloadSupplier = { cause.payload }
             )
-          }
-          else -> {
-            taskCompletionApi.failTask(
-              FailTaskCmd(
-                taskId = taskInformation.taskId,
-                reason = e.message ?: "Exception during execution of external task worker",
-                errorDetails = e.stackTraceToString()
-              )
+          )
+        } else {
+          taskCompletionApi.failTask(
+            FailTaskCmd(
+              taskId = taskInformation.taskId,
+              reason = e.message ?: "Exception during execution of external task worker",
+              errorDetails = e.stackTraceToString()
             )
-          }
+          )
         }
       }
     },
     termination = {
-      logger.info { "Terminating task from topic $topic." }
+      logger.debug { "Terminating task from topic $topic." }
     }
   )
 

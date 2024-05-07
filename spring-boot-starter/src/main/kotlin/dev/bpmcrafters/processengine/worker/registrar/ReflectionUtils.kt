@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Companion.DEFAULT_UNSET_TOPIC
 import dev.bpmcrafters.processengine.worker.Variable
+import dev.bpmcrafters.processengine.worker.converter.VariableConverter
 import dev.bpmcrafters.processengineapi.task.ExternalTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.aop.support.AopUtils
@@ -44,10 +45,17 @@ fun Method.getTopic(): String {
   }
 }
 
-fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.getAnnotation(Variable::class.java).name }.toSet()
+fun Parameter.extractVariableName() = this.getAnnotation(Variable::class.java).name
 
-fun List<Parameter>.constructInvocation(payload: Map<String, Any>, taskInformation: TaskInformation?, taskCompletionApi: ExternalTaskCompletionApi?): Array<Any> {
-  val listOfParams = this.map { param -> payload[param.name] ?: throw IllegalArgumentException("Could not bind variable ${param.name}") }
+fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.extractVariableName() }.toSet()
+
+fun List<Parameter>.constructInvocation(jsonMapper: VariableConverter, payload: Map<String, Any>, taskInformation: TaskInformation?, taskCompletionApi: ExternalTaskCompletionApi?): Array<Any> {
+
+  val variablesNames = this.extractVariableNames()
+  require(payload.keys.containsAll(variablesNames)) { "Expected payload to contain variables $variablesNames, but it contained ${payload.keys}" }
+
+  val listOfParams = this.map { param -> jsonMapper.mapToType(payload[param.extractVariableName()], param.type) }
+
   return if (taskInformation == null) {
     if (taskCompletionApi != null) {
       listOf(taskCompletionApi) + listOfParams

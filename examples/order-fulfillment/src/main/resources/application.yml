@@ -1,17 +1,29 @@
 spring:
   jpa:
     open-in-view: true
+
 dev:
   bpm-crafters:
     process-api:
       adapter:
-        c7:
-          embedded:
-            external-service-tasks:
-              delivery-strategy: embedded_job
-              worker-id: embedded-worker
-              lock-time-in-seconds: 10
-              execute-initial-pull-on-startup: true
-            user-tasks:
-              delivery-strategy: embedded_job
-              execute-initial-pull-on-startup: true
+        c8:
+          user-tasks:
+            delivery-strategy: subscription_refreshing
+            fixed-rate-schedule-rate: 5000 # every 5 seconds
+            tasklist-url: https://${zeebe.client.cloud.region}.tasklist.camunda.io/${zeebe.client.cloud.clusterId}
+            fixed-rate-refresh-rate: 5000 # every 5 seconds
+          service-tasks:
+            delivery-strategy: subscription
+            worker-id: worker
+
+zeebe:
+  client:
+    cloud:
+      region: ${ZEEBE_REGION}
+      clusterId: ${ZEEBE_CLUSTER_ID}
+      clientId: ${ZEEBE_CLIENT_ID}
+      clientSecret: ${ZEEBE_CLIENT_SECRET}
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
