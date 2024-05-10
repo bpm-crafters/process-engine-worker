@@ -13,6 +13,9 @@ import java.util.List;
 
 import static org.springframework.http.ResponseEntity.ok;
 
+/**
+ * Inbound REST adapter retrieving user tasks.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/user-tasks", produces = MediaType.APPLICATION_JSON_VALUE)

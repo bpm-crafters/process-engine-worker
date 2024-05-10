@@ -15,13 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.http.ResponseEntity.noContent;
 
+/**
+ * Inbound REST adapter for order ingestion.
+ */
 @RestController
 @RequestMapping(value = {"/ingress"})
 @RequiredArgsConstructor
 public class IngressResource {
 
   private final ReceiveOrderInPort orderReceivedInPort;
-
 
   @PostMapping(value = "/order-received", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> orderReceived(@RequestBody @Valid OrderDto orderDto) {

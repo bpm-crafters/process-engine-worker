@@ -37,6 +37,11 @@ Content-Type: application/json
       "name": "Magnifying glass",
       "amount": 1,
       "price": 42.00
+    },
+    {
+      "name": "out-of-stock",
+      "amount": 1,
+      "price": 17.00
     }
   ]
 }
@@ -73,9 +78,9 @@ Accept: application/json
   client.global.set("taskId", taskId);
 %}
 
-### Complete user task
+### Get user task
 // @no-log
-GET http://localhost:8080//failed-payment/{{ taskId }}
+GET http://localhost:8080//delayed-inventory/{{ taskId }}
 
 > {%
   client.test("Request executed successfully", function () {
@@ -87,13 +92,13 @@ GET http://localhost:8080//failed-payment/{{ taskId }}
       `Expected Content-Type is application/json, but actual is ${contentType}`)
   })
 
-  const problem = response.body;
-  console.log("Problem of the payment: ", problem);
+  const delay = response.body;
+  console.log("Delayed in inventory: ", delay);
 %}
 
 ### Complete user task
 // @no-log
-POST http://localhost:8080//failed-payment/{{ taskId }}
+POST http://localhost:8080//delayed-inventory/{{ taskId }}
 
 > {%
   client.test("Request executed successfully", function () {

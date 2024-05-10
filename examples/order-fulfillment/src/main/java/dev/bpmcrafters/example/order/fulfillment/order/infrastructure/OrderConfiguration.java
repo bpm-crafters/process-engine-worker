@@ -18,23 +18,4 @@ public class OrderConfiguration {
   public void reportActivation() {
     log.info("[STARTUP]: ORDER MODULE ACTIVATED");
   }
-
-
-  @Bean
-  @SneakyThrows
-  public CamundaTaskListClient camundaTaskListClientSaaS(
-    ZeebeClientConfigurationProperties zeebeClientCloudConfigurationProperties,
-    C8AdapterProperties c8AdapterProperties
-  )  {
-    return CamundaTaskListClient
-      .builder()
-      .taskListUrl(c8AdapterProperties.getUserTasks().getTasklistUrl())
-      .saaSAuthentication(
-        zeebeClientCloudConfigurationProperties.getCloud().getClientId(),
-        zeebeClientCloudConfigurationProperties.getCloud().getClientSecret()
-        )
-      .shouldReturnVariables()
-      .build();
-  }
-
 }

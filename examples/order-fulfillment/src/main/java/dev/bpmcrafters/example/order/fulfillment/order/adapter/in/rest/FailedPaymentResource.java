@@ -6,8 +6,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-
+/**
+ * Inbound REST adapter for informing customer about payment failure.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/failed-payment")
@@ -17,12 +18,12 @@ public class FailedPaymentResource {
 
   @GetMapping(value = "/{taskId}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<FailedPaymentDto> loadFailedPaymentInfo(@PathVariable("taskId") String taskId) {
-    var order = informCustomerAboutFailedPaymentInPort.loadFailedPaymentDetails(taskId);
+    var problem = informCustomerAboutFailedPaymentInPort.loadFailedPaymentDetails(taskId);
     return ResponseEntity.ok(
       new FailedPaymentDto(
-        order.orderId().toString(),
-        order.orderId().toString(),
-        BigDecimal.ONE
+        problem.paymentReference(),
+        problem.rejectionReason(),
+        problem.amount()
       )
     );
   }

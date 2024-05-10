@@ -1,6 +1,6 @@
 package dev.bpmcrafters.example.order.fulfillment.order.application.port.in;
 
-import dev.bpmcrafters.example.order.fulfillment.order.domain.Order;
+import dev.bpmcrafters.example.order.fulfillment.order.domain.PaymentProblem;
 
 /**
  * Use case port for informing customers about failed payment.
@@ -10,9 +10,9 @@ public interface InformCustomerAboutFailedPaymentInPort {
    * Load details about failed payment.
    *
    * @param taskId id of the user task.
-   * @return
+   * @return description of the payment problem.
    */
-  Order loadFailedPaymentDetails(String taskId);
+  PaymentProblem loadFailedPaymentDetails(String taskId);
 
   /**
    * Confirm failed payment.

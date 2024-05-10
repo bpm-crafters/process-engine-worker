@@ -22,7 +22,7 @@ public class FakePaymentAdapter implements PaymentOutPort {
     log.info("[PAYMENT] Collecting payment for {}", reference);
     if (amount.equals(MAGIC_NUMBER)) {
       log.info("[PAYMENT] Payment failed for {}.", reference);
-      throw new IllegalArgumentException("Could not collect payment for " + reference);
+      throw new IllegalArgumentException("Suspicious amount detected.");
     }
 
     log.info("[PAYMENT] Payment succeeded for {}.", reference);

@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 
+
 /**
  * Registrar responsible for collecting process engine workers.
  */
@@ -27,6 +28,7 @@ class ProcessEngineStarterRegistrar(
 
   companion object : KLogging()
 
+  // FIXME -> parameter resolver instead of positioned parameters
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()
     annotatedProcessEngineWorkers.map { method ->

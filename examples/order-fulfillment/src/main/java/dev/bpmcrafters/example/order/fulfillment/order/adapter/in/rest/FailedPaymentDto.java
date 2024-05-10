@@ -7,6 +7,6 @@ import java.math.BigDecimal;
  */
 public record FailedPaymentDto(
   String paymentReference,
-  String orderid,
+  String failureReason,
   BigDecimal amount
 ) { }

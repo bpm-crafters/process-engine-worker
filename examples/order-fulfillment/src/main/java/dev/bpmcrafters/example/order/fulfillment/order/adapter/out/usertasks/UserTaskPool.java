@@ -16,6 +16,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Simple user task pool.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -29,16 +32,19 @@ public class UserTaskPool implements UserTaskOutPort {
   public void subscribe() throws ExecutionException, InterruptedException {
     subscriptionApi.subscribeForTask(
       new SubscribeForTaskCmd(
-        CommonRestrictions.builder().build(),
+        CommonRestrictions
+          .builder()
+          .withProcessDefinitionKey("Process_OrderFulfillment_CCON2024")
+          .build(),
         TaskType.USER,
         null,
         null,
         (taskInformation, payload) -> {
-          log.info("Received user task for {}", taskInformation);
+          log.info("Received user task for {} ({}:{})", taskInformation.getTaskId(), taskInformation.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY), taskInformation.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY));
           tasks.put(taskInformation, payload);
         },
         taskId -> {
-          log.info("Removed {}", taskId);
+          log.info("Removed user task {}", taskId);
           tasks.entrySet().removeIf(entry -> entry.getKey().getTaskId().equals(taskId));
         }
       )

@@ -27,7 +27,7 @@ public class ReceivePaymentUseCase implements ReceivePaymentInPort {
     try {
       return paymentOutPort.collectPayment(order.orderId().toString(), total);
     } catch (Exception e) {
-      throw new PaymentFailedException(e.getMessage(), "Suspicious order total");
+      throw new PaymentFailedException("Payment ", e.getMessage(), total);
     }
   }
 
