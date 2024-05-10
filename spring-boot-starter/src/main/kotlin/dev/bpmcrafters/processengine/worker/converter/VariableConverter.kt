@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 /**
  * Helper converting variables from a JSON map to type using Jackson.
  */
-class VariableConverter(
+open class VariableConverter(
   private val objectMapper: ObjectMapper
 ) {
 
-  fun <T : Any> mapToType(value: Any?, type: Class<T>): T {
+  open fun <T : Any> mapToType(value: Any?, type: Class<T>): T {
     return if (value != null && !type.isInstance(value)) {
       objectMapper.readValue(objectMapper.writeValueAsString(value), type)
     } else {

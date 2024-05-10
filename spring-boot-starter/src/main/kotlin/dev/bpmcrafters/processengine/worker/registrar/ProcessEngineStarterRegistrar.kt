@@ -9,6 +9,7 @@ import mu.KLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 
 /**
  * Registrar responsible for collecting process engine workers.
@@ -16,8 +17,11 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @AutoConfigureAfter(VariableConverterConfiguration::class)
 class ProcessEngineStarterRegistrar(
+  @Lazy
   private val taskSubscriptionApi: TaskSubscriptionApi,
+  @Lazy
   private val taskCompletionApi: ExternalTaskCompletionApi,
+  @Lazy
   private val variableConverter: VariableConverter
 ) : BeanPostProcessor {
 

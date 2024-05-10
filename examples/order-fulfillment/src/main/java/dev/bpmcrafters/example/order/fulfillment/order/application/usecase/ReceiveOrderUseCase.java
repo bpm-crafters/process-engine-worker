@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * Triggers order fulfillment process.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor

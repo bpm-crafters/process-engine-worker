@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -52,6 +53,11 @@ public class UserTaskPool implements UserTaskOutPort {
   @Override
   public Map<String, ?> getVariables(String taskId) {
     return get(taskId).getValue();
+  }
+
+  @Override
+  public List<TaskInformation> getAllTasks() {
+    return tasks.keySet().stream().toList();
   }
 
   private Map.Entry<TaskInformation, Map<String, ?>> get(String taskId) {

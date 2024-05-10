@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Fake use case implementation for good shipment.
+ */
 @Component
 @Slf4j
 public class ShipGoodsUseCase implements ShipGoodsInPort {

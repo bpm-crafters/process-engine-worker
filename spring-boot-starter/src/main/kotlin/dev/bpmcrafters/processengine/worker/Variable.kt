@@ -1,6 +1,12 @@
 package dev.bpmcrafters.processengine.worker
 
-@Target(AnnotationTarget.VALUE_PARAMETER)
+/**
+ * Indicates a typed process variable to be injected into the worker.
+ */
+@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.ANNOTATION_CLASS)
 annotation class Variable(
-  val name: String,
+  /**
+   * Name of the variable.
+   */
+  val name: String
 )

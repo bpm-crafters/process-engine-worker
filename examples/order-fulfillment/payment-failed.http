@@ -1,0 +1,48 @@
+### Prepare
+< {%
+  client.global.clearAll()
+
+%}
+// @no-log
+GET https://www.uuidtools.com/api/generate/v4
+Accept: application/json
+
+> {%
+  const orderId = jsonPath(response.body, "$[0]");
+  console.log("Order id", orderId);
+  client.global.set("orderId", orderId);
+%}
+
+### Receive order
+// @no-log
+POST http://localhost:8080/ingress/order-received
+Content-Type: application/json
+
+{
+  "id": "{{orderId}}",
+  "shipmentAddress": {
+    "streetLine": "221b Baker Street",
+    "zipCode": "NW1 6XE",
+    "city": "London",
+    "country": "United Kingdom"
+  },
+  "invoiceAddress": {
+    "streetLine": "221b Baker Street",
+    "zipCode": "NW1 6XE",
+    "city": "London",
+    "country": "United Kingdom"
+  },
+  "orderPositions": [
+    {
+      "name": "Magnifying glass",
+      "amount": 1,
+      "price": 42.00
+    }
+  ]
+}
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 204, `Response status is not 204, but ${response.status}`);
+  });
+%}

@@ -15,6 +15,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * In-bound adapter called by process engine.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -24,7 +27,11 @@ public class FetchGoodsWorker {
 
   @ProcessEngineWorker(topic = "fetchGoods")
   @SneakyThrows
-  public void fetchGoods(TaskInformation taskInformation, ExternalTaskCompletionApi externalTaskCompletionApi, @Variable(name = "order") Order order) {
+  public void fetchGoods(
+    TaskInformation taskInformation,
+    ExternalTaskCompletionApi externalTaskCompletionApi,
+    @Variable(name = "order") Order order
+  ) {
 
     boolean inStock = fetchGoodsInPort.fetchGoods(order);
 

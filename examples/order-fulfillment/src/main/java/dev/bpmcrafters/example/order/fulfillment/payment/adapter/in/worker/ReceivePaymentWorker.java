@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * In-bound adapter called by the process engine.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -32,12 +35,8 @@ public class ReceivePaymentWorker {
         "paymentId", paymentId
       );
     } catch (PaymentFailedException e) {
-      throw new BpmnErrorOccurred("paymentFailed", "paymentFailed", Map.of(
-        "paymentReceived", false,
-        "paymentFailedReason", "Suspicious order total"
-      ));
+      throw new BpmnErrorOccurred(e.getMessage(), e.getErrorCode(), e.getDetails());
     }
   }
-
 
 }
