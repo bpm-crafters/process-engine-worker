@@ -9,8 +9,9 @@ dev:
         c8:
           user-tasks:
             delivery-strategy: subscription_refreshing
+            completion-strategy: job
             fixed-rate-schedule-rate: 5000 # every 5 seconds
-            tasklist-url: https://${zeebe.client.cloud.region}.tasklist.camunda.io/${zeebe.client.cloud.clusterId}
+            tasklist-url: UNUSED
             fixed-rate-refresh-rate: 5000 # every 5 seconds
           service-tasks:
             delivery-strategy: subscription
