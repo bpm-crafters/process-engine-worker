@@ -2,6 +2,9 @@ spring:
   jpa:
     open-in-view: true
 
+server:
+  port: 8080
+
 dev:
   bpm-crafters:
     process-api:
@@ -17,14 +20,10 @@ dev:
             delivery-strategy: subscription
             worker-id: worker
 
-zeebe:
-  client:
-    cloud:
-      region: ${ZEEBE_REGION}
-      clusterId: ${ZEEBE_CLUSTER_ID}
-      clientId: ${ZEEBE_CLIENT_ID}
-      clientSecret: ${ZEEBE_CLIENT_SECRET}
-
 springdoc:
   swagger-ui:
     try-it-out-enabled: true
+
+logging:
+  level:
+    org.springframework.context.support.[PostProcessorRegistrationDelegate$BeanPostProcessorChecker]: ERROR
