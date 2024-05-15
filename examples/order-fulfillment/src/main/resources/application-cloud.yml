@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: Order Fulfillment SaaS
+
+zeebe:
+  client:
+    cloud:
+      region: ${ZEEBE_REGION}
+      clusterId: ${ZEEBE_CLUSTER_ID}
+      clientId: ${ZEEBE_CLIENT_ID}
+      clientSecret: ${ZEEBE_CLIENT_SECRET}
+    connection-mode: CLOUD

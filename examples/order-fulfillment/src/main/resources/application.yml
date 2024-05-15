@@ -1,0 +1,29 @@
+spring:
+  jpa:
+    open-in-view: true
+
+server:
+  port: 8080
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          user-tasks:
+            delivery-strategy: subscription_refreshing
+            completion-strategy: job
+            fixed-rate-schedule-rate: 5000 # every 5 seconds
+            tasklist-url: UNUSED
+            fixed-rate-refresh-rate: 5000 # every 5 seconds
+          service-tasks:
+            delivery-strategy: subscription
+            worker-id: worker
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
+
+logging:
+  level:
+    org.springframework.context.support.[PostProcessorRegistrationDelegate$BeanPostProcessorChecker]: ERROR

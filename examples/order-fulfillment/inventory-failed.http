@@ -1,0 +1,108 @@
+### Prepare
+< {%
+  client.global.clearAll()
+
+%}
+// @no-log
+GET https://www.uuidtools.com/api/generate/v4
+Accept: application/json
+
+> {%
+  const orderId = jsonPath(response.body, "$[0]");
+  console.log("Order id", orderId);
+  client.global.set("orderId", orderId);
+%}
+
+### Receive order
+// @no-log
+POST http://localhost:8080/ingress/order-received
+Content-Type: application/json
+
+{
+  "id": "{{orderId}}",
+  "shipmentAddress": {
+    "streetLine": "221b Baker Street",
+    "zipCode": "NW1 6XE",
+    "city": "London",
+    "country": "United Kingdom"
+  },
+  "invoiceAddress": {
+    "streetLine": "221b Baker Street",
+    "zipCode": "NW1 6XE",
+    "city": "London",
+    "country": "United Kingdom"
+  },
+  "orderPositions": [
+    {
+      "name": "Magnifying glass",
+      "amount": 1,
+      "price": 42.00
+    },
+    {
+      "name": "out-of-stock",
+      "amount": 1,
+      "price": 17.00
+    }
+  ]
+}
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 204, `Response status is not 204, but ${response.status}`);
+  });
+%}
+
+### Get user tasks
+< {%
+  import {wait} from "wait";
+  console.log("waiting 5 secs");
+  wait(5);
+%}
+// @no-log
+GET http://localhost:8080/user-tasks
+Accept: application/json
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 200, `Response status is not 200, but ${response.status}`);
+  });
+  client.test("Content-Type is application/json", () => {
+    const contentType = response.headers.valueOf("content-type");
+    client.assert(contentType == "application/json",
+      `Expected Content-Type is application/json, but actual is ${contentType}`)
+  })
+
+  const tasks = response.body;
+  const taskId = jsonPath(tasks, "$[0].taskId");
+  console.log("Created user task: ", taskId);
+  client.global.set("taskId", taskId);
+%}
+
+### Get user task
+// @no-log
+GET http://localhost:8080//delayed-inventory/{{ taskId }}
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 200, `Response status is not 200, but ${response.status}`);
+  });
+  client.test("Content-Type is application/json", () => {
+    const contentType = response.headers.valueOf("content-type");
+    client.assert(contentType == "application/json",
+      `Expected Content-Type is application/json, but actual is ${contentType}`)
+  })
+
+  const delay = response.body;
+  console.log("Delayed in inventory: ", delay);
+%}
+
+### Complete user task
+// @no-log
+POST http://localhost:8080//delayed-inventory/{{ taskId }}
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 204, `Response status is not 204, but ${response.status}`);
+  });
+%}
+
