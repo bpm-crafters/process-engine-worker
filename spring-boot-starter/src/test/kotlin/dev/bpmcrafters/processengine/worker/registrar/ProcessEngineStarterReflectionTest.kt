@@ -7,13 +7,15 @@ import org.junit.jupiter.api.Test
 class ProcessEngineStarterReflectionTest {
 
   @Test
-  fun `finds worker with payload`() {
+  fun `finds worker with payload return type`() {
 
     class Bean {
       @ProcessEngineWorker
-      fun method(@Suppress("UNUSED_PARAMETER") payload: Map<String, Any>) {}
+      fun method(@Suppress("UNUSED_PARAMETER") payload: Map<String, Any>): Map<String, Any> {
+        return mapOf()
+      }
     }
     val bean = Bean()
-    assertThat(bean.getAnnotatedWorkers()[0].hasPayloadParameter(0)).isTrue()
+    assertThat(bean.getAnnotatedWorkers()[0].hasPayloadReturnType()).isTrue()
   }
 }
