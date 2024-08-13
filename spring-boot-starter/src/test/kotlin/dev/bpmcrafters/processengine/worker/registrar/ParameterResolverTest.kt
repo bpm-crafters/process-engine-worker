@@ -13,6 +13,7 @@ import org.mockito.Mockito.mock
 import java.util.*
 
 
+@Suppress("UNUSED_PARAMETER")
 class ParameterResolverTest {
 
   private val resolver = ParameterResolver.builder().build()
