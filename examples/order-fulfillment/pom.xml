@@ -58,7 +58,7 @@
     <dependency>
       <groupId>io.camunda.spring</groupId>
       <artifactId>java-common</artifactId>
-      <version>8.4.1</version>
+      <version>8.5.9</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
