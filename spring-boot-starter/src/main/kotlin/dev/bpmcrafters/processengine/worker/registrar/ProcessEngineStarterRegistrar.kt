@@ -1,6 +1,7 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.converter.VariableConverter
 import dev.bpmcrafters.processengine.worker.converter.VariableConverterConfiguration
 import dev.bpmcrafters.processengineapi.task.*
@@ -12,7 +13,7 @@ import org.springframework.context.annotation.Lazy
 
 
 /**
- * Registrar responsible for collecting process engine workers.
+ * Registrar responsible for collecting process engine workers and creating corresponding external tas subscriptions.
  */
 @Configuration
 @AutoConfigureAfter(VariableConverterConfiguration::class)
@@ -46,7 +47,14 @@ class ProcessEngineStarterRegistrar(
           },
           method.hasPayloadReturnType()
         ) { taskInformation, payload ->
-          method.invoke(bean, parameterResolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi))
+          val args: Array<Any> = parameterResolver.createInvocationArguments(
+            method = method,
+            taskInformation = taskInformation,
+            payload = payload,
+            variableConverter = variableConverter,
+            taskCompletionApi = taskCompletionApi
+          )
+          method.invoke(bean, *args) // spread the array
         }
       )
       subscription.get()
@@ -54,6 +62,13 @@ class ProcessEngineStarterRegistrar(
     return bean
   }
 
+  /**
+   * Executes the subscription.
+   * @param topic subscription topic
+   * @param payloadDescription description of the variables to be passed.
+   * @param returnsMap flag indicating if the method will return the result which needs to be passed to the completion API.
+   * @param actionWithResult worker always returning the result.
+   */
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
@@ -83,7 +98,6 @@ class ProcessEngineStarterRegistrar(
           }
         }
       } catch (e: Exception) {
-        // logger.error(e) { "Error executing process task ${taskInformation.taskId}" }
         if (e.cause != null && e.cause is BpmnErrorOccurred) {
           val cause = e.cause as BpmnErrorOccurred
           taskCompletionApi.completeTaskByError(
@@ -111,5 +125,3 @@ class ProcessEngineStarterRegistrar(
 
   fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any>) -> Any?
 }
-
-

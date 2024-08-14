@@ -13,6 +13,10 @@ import org.mockito.Mockito.mock
 import java.util.*
 
 
+/**
+ * Test making sure parameter resolver works as expected and the resulting arguments array can be used
+ * for reflective invocation of the worker method.
+ */
 @Suppress("UNUSED_PARAMETER")
 class ParameterResolverTest {
 
@@ -33,7 +37,8 @@ class ParameterResolverTest {
     val worker = Worker()
     val method = worker.getAnnotatedWorkers().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
-    assertThat(args).isNull()
+    assertThat(args).isEmpty()
+    method.invoke(worker, *args)
   }
 
   @Test
@@ -48,10 +53,9 @@ class ParameterResolverTest {
     val worker = Worker()
     val method = worker.getAnnotatedWorkers().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
-    assertThat(args).isNotNull
     assertThat(args).hasSize(1)
-    assertThat(args?.get(0)).isEqualTo(taskInformation)
-
+    assertThat(args[0]).isEqualTo(taskInformation)
+    method.invoke(worker, *args)
   }
 
   @Test
@@ -77,26 +81,28 @@ class ParameterResolverTest {
     val args = resolver.createInvocationArguments(work, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(3)
-    assertThat(args?.get(0)).isEqualTo(payload)
-    assertThat(args?.get(1)).isEqualTo(taskInformation)
-    assertThat(args?.get(2)).isEqualTo(taskCompletionApi)
+    assertThat(args[0]).isEqualTo(payload)
+    assertThat(args[1]).isEqualTo(taskInformation)
+    assertThat(args[2]).isEqualTo(taskCompletionApi)
+    work.invoke(worker, *args)
 
     val work2 = worker.getAnnotatedWorkers()[1]
     val args2 = resolver.createInvocationArguments(work2, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args2).isNotNull
     assertThat(args2).hasSize(3)
-    assertThat(args2?.get(0)).isEqualTo(taskInformation)
-    assertThat(args2?.get(1)).isEqualTo(payload)
-    assertThat(args2?.get(2)).isEqualTo(taskCompletionApi)
+    assertThat(args2[0]).isEqualTo(taskInformation)
+    assertThat(args2[1]).isEqualTo(payload)
+    assertThat(args2[2]).isEqualTo(taskCompletionApi)
+    work2.invoke(worker, *args2)
 
     val work3 = worker.getAnnotatedWorkers()[2]
     val args3 = resolver.createInvocationArguments(work3, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args3).isNotNull
     assertThat(args3).hasSize(3)
-    assertThat(args3?.get(0)).isEqualTo(taskCompletionApi)
-    assertThat(args3?.get(1)).isEqualTo(taskInformation)
-    assertThat(args3?.get(2)).isEqualTo(payload)
-
+    assertThat(args3[0]).isEqualTo(taskCompletionApi)
+    assertThat(args3[1]).isEqualTo(taskInformation)
+    assertThat(args3[2]).isEqualTo(payload)
+    work3.invoke(worker, *args3)
   }
 
   @Test
@@ -116,8 +122,9 @@ class ParameterResolverTest {
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(2)
-    assertThat(args?.get(0)).isEqualTo("foo")
-    assertThat(args?.get(1)).isEqualTo(17L)
+    assertThat(args[0]).isEqualTo("foo")
+    assertThat(args[1]).isEqualTo(17L)
+    method.invoke(worker, *args)
   }
 
   @Test
@@ -154,5 +161,4 @@ class ParameterResolverTest {
     assertThat(exception).hasMessage("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument 1 of Worker#work of type String.")
 
   }
-
 }

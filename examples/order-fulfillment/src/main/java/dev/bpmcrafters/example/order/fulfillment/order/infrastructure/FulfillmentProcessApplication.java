@@ -5,6 +5,7 @@ import dev.bpmcrafters.example.order.fulfillment.payment.infrastructure.PaymentC
 import dev.bpmcrafters.example.order.fulfillment.shipment.infrastructure.ShipmentConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
@@ -18,4 +19,5 @@ public class FulfillmentProcessApplication {
   public static void main(String[] args) {
     SpringApplication.run(FulfillmentProcessApplication.class, args);
   }
+
 }

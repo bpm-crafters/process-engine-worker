@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="2c06808" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0" camunda:diagramRelationId="be7f76bc-7b81-45c2-a0b8-799e5fbd4700">
-  <bpmn:collaboration id="OrderFulfillmen">
+  <bpmn:collaboration id="OrderFulfillment">
     <bpmn:participant id="OrderFulfillment_" name="Order Fulfillment Process" processRef="Process_OrderFulfillment_CCON2024" />
     <bpmn:participant id="Participant_00wwydn" name="Payment" />
     <bpmn:participant id="Participant_0puxp3g" name="Shipment" />
@@ -91,7 +91,7 @@
   <bpmn:error id="Error_16xy11b" name="paymentFailed" errorCode="paymentFailed" />
   <bpmn:message id="Message_0a3rvn6" name="Msg_OrderReceived" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderFulfillmen">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderFulfillment">
       <bpmndi:BPMNShape id="Participant_15ao2op_di" bpmnElement="OrderFulfillment_" isHorizontal="true">
         <dc:Bounds x="580" y="244" width="940" height="440" />
         <bpmndi:BPMNLabel />

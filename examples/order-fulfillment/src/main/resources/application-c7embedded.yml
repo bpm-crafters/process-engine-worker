@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: Order Fulfillment Camunda 7 Embedded
+
+
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          enabled: false
+        c7embedded:
+          enabled: true
+          external-service-tasks:
+            delivery-strategy: embedded_job
+            worker-id: worker
+          user-tasks:
+            delivery-strategy: embedded_job
+
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      email: admin@local
+      first-name: Admin
+      last-name: Administratius
+    auto-deployment-enabled: false
+    default-serialization-format: application/json
+
+
+zeebe:
+  client:
+    broker:
+      gateway-address: localhost:26500
+    connection-mode: ADDRESS
+    security:
+      plaintext: true

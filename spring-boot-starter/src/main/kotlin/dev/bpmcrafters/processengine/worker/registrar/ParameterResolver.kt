@@ -104,10 +104,7 @@ open class ParameterResolver private constructor(
                                 payload: Map<String, Any>,
                                 variableConverter: VariableConverter,
                                 taskCompletionApi: ExternalTaskCompletionApi
-  ): Array<Any>? {
-    if (method.parameters.isEmpty()) {
-      return null
-    }
+  ): Array<Any> {
     val arguments = method.parameters.mapIndexedNotNull { i: Int, parameter: Parameter ->
       (this.strategies.firstOrNull { it.parameterMatcher.test(parameter) }
         ?: throw IllegalArgumentException("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument $i of ${method.declaringClass.simpleName}#${method.name} of type ${parameter.type.simpleName}.")
