@@ -1,4 +1,4 @@
-package dev.bpmcrafters.processengine.worker.converter
+package dev.bpmcrafters.processengine.worker.registrar
 
 import com.fasterxml.jackson.databind.ObjectMapper
 

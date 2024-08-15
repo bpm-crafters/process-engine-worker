@@ -3,8 +3,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.Variable
-import dev.bpmcrafters.processengine.worker.converter.VariableConverter
-import dev.bpmcrafters.processengineapi.task.ExternalTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -24,7 +23,7 @@ class ParameterResolverTest {
   private val taskInformation = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
   private val payload: MutableMap<String, Any> = mutableMapOf()
   private val variableConverter = VariableConverter(ObjectMapper())
-  private val taskCompletionApi = mock<ExternalTaskCompletionApi>()
+  private val taskCompletionApi = mock<ServiceTaskCompletionApi>()
 
   @Test
   fun `works with methods without arguments`() {
@@ -63,15 +62,15 @@ class ParameterResolverTest {
 
     class Worker {
       @ProcessEngineWorker
-      fun work(payload: Map<String, Any>, ti: TaskInformation, api: ExternalTaskCompletionApi) {
+      fun work(payload: Map<String, Any>, ti: TaskInformation, api: ServiceTaskCompletionApi) {
       }
 
       @ProcessEngineWorker
-      fun work2(ti: TaskInformation, payload: Map<String, Any>, api: ExternalTaskCompletionApi) {
+      fun work2(ti: TaskInformation, payload: Map<String, Any>, api: ServiceTaskCompletionApi) {
       }
 
       @ProcessEngineWorker
-      fun work3(api: ExternalTaskCompletionApi, ti: TaskInformation, payload: Map<String, Any>) {
+      fun work3(api: ServiceTaskCompletionApi, ti: TaskInformation, payload: Map<String, Any>) {
       }
     }
 

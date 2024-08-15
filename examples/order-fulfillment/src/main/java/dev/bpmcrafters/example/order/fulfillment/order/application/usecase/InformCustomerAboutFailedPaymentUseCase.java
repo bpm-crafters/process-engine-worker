@@ -4,7 +4,7 @@ import dev.bpmcrafters.example.order.fulfillment.order.application.port.in.Infor
 import dev.bpmcrafters.example.order.fulfillment.order.application.port.out.UserTaskOutPort;
 import dev.bpmcrafters.example.order.fulfillment.order.domain.Order;
 import dev.bpmcrafters.example.order.fulfillment.order.domain.PaymentProblem;
-import dev.bpmcrafters.processengine.worker.converter.VariableConverter;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
 import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd;
 import dev.bpmcrafters.processengineapi.task.UserTaskCompletionApi;
 import lombok.RequiredArgsConstructor;

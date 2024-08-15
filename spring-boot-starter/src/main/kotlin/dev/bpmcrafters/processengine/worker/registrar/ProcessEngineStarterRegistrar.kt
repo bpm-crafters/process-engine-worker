@@ -1,32 +1,37 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
-import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
-import dev.bpmcrafters.processengine.worker.converter.VariableConverter
-import dev.bpmcrafters.processengine.worker.converter.VariableConverterConfiguration
+import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengineapi.task.*
 import mu.KLogging
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
+import java.util.concurrent.ExecutorService
 
 
 /**
  * Registrar responsible for collecting process engine workers and creating corresponding external tas subscriptions.
  */
 @Configuration
-@AutoConfigureAfter(VariableConverterConfiguration::class)
+@AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   @Lazy
   private val taskSubscriptionApi: TaskSubscriptionApi,
   @Lazy
-  private val taskCompletionApi: ExternalTaskCompletionApi,
+  private val taskCompletionApi: ServiceTaskCompletionApi,
   @Lazy
   private val variableConverter: VariableConverter,
   @Lazy
-  private val parameterResolver: ParameterResolver
+  private val parameterResolver: ParameterResolver,
+  @Lazy
+  @Qualifier("processEngineWorkerTaskExecutor")
+  private val executorService: ExecutorService
 ) : BeanPostProcessor {
+
+  private val exceptionResolver = ExceptionResolver()
 
   companion object : KLogging()
 
@@ -35,18 +40,24 @@ class ProcessEngineStarterRegistrar(
     annotatedProcessEngineWorkers.map { method ->
 
       val topic = method.getTopic()
+      val payloadReturnType = method.hasPayloadReturnType()
+      val autoCompleteTask = method.getAutoComplete()
+
+      if (autoCompleteTask && !payloadReturnType && method.hasNonVoidReturnType()) {
+        logger.warn { "Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
+      }
+
       val annotatedVariableParameters = method.parameters.filter { it.isVariable() }
 
+      val variableNames = if (annotatedVariableParameters.isNotEmpty()) {
+        annotatedVariableParameters.extractVariableNames() // explicit variable names
+      } else {
+        null // null means no limitation
+      }
+
       val subscription = taskSubscriptionApi.subscribeForTask(
-        subscribe(
-          topic,
-          if (annotatedVariableParameters.isNotEmpty()) {
-            annotatedVariableParameters.extractVariableNames()
-          } else {
-            null
-          },
-          method.hasPayloadReturnType()
-        ) { taskInformation, payload ->
+        subscribe(topic, variableNames, autoCompleteTask, payloadReturnType)
+        { taskInformation, payload ->
           val args: Array<Any> = parameterResolver.createInvocationArguments(
             method = method,
             taskInformation = taskInformation,
@@ -54,7 +65,10 @@ class ProcessEngineStarterRegistrar(
             variableConverter = variableConverter,
             taskCompletionApi = taskCompletionApi
           )
-          method.invoke(bean, *args) // spread the array
+          // execute on a different thread
+          executorService.submit {
+            method.invoke(bean, *args) // spread the array
+          }.get()
         }
       )
       subscription.get()
@@ -66,13 +80,14 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic
    * @param payloadDescription description of the variables to be passed.
-   * @param returnsMap flag indicating if the method will return the result which needs to be passed to the completion API.
+   * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param actionWithResult worker always returning the result.
    */
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
-    returnsMap: Boolean,
+    autoCompleteTask: Boolean,
+    payloadReturnType: Boolean,
     actionWithResult: TaskHandlerWithResult
   ): SubscribeForTaskCmd = SubscribeForTaskCmd(
     restrictions = mapOf(),
@@ -82,39 +97,39 @@ class ProcessEngineStarterRegistrar(
     action = { taskInformation, payload ->
       try {
         actionWithResult.invoke(taskInformation, payload).also { result ->
-          if (returnsMap) {
+          if (autoCompleteTask) {
             taskCompletionApi.completeTask(
               CompleteTaskCmd(
                 taskId = taskInformation.taskId
               ) {
-                if (result != null) {
+                if (payloadReturnType && result != null) {
                   @Suppress("UNCHECKED_CAST")
                   result as Map<String, Any>
                 } else {
                   mapOf()
                 }
               }
-            )
+            ).get()
           }
         }
       } catch (e: Exception) {
-        if (e.cause != null && e.cause is BpmnErrorOccurred) {
-          val cause = e.cause as BpmnErrorOccurred
+        val cause = exceptionResolver.getCause(e)
+        if (cause is BpmnErrorOccurred) {
           taskCompletionApi.completeTaskByError(
             CompleteTaskByErrorCmd(
               taskId = taskInformation.taskId,
               errorCode = cause.errorCode,
               payloadSupplier = { cause.payload }
             )
-          )
+          ).get()
         } else {
           taskCompletionApi.failTask(
             FailTaskCmd(
               taskId = taskInformation.taskId,
-              reason = e.message ?: "Exception during execution of external task worker",
-              errorDetails = e.stackTraceToString()
+              reason = cause?.message ?: "Exception during execution of external task worker",
+              errorDetails = cause?.stackTraceToString()
             )
-          )
+          ).get()
         }
       }
     },

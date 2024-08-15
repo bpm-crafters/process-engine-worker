@@ -5,7 +5,7 @@ import dev.bpmcrafters.example.order.fulfillment.order.application.port.out.User
 import dev.bpmcrafters.example.order.fulfillment.order.domain.InventoryDelay;
 import dev.bpmcrafters.example.order.fulfillment.order.domain.Order;
 import dev.bpmcrafters.example.order.fulfillment.order.domain.OrderPosition;
-import dev.bpmcrafters.processengine.worker.converter.VariableConverter;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
 import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd;
 import dev.bpmcrafters.processengineapi.task.UserTaskCompletionApi;
 import lombok.RequiredArgsConstructor;

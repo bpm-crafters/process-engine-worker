@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
-import dev.bpmcrafters.processengine.worker.converter.VariableConverter
-import dev.bpmcrafters.processengineapi.task.ExternalTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
@@ -33,7 +32,7 @@ open class ParameterResolver private constructor(
               parameterMatcher = { param -> param.isTaskInformation() },
               parameterExtractor = { _, taskInformation, _, _, _ -> taskInformation },
             ),
-            // ExternalTaskCompletionApi
+            // ServiceTaskCompletionApi
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isTaskCompletionApiParameter() },
               parameterExtractor = { _, _, _, _, taskCompletionApi -> taskCompletionApi },
@@ -86,7 +85,7 @@ open class ParameterResolver private constructor(
    */
   data class ParameterResolutionStrategy(
     val parameterMatcher: Predicate<Parameter>,
-    val parameterExtractor: (Parameter, TaskInformation, Map<String, Any>, VariableConverter, ExternalTaskCompletionApi) -> Any?
+    val parameterExtractor: (Parameter, TaskInformation, Map<String, Any>, VariableConverter, ServiceTaskCompletionApi) -> Any?
   )
 
   /**
@@ -100,10 +99,10 @@ open class ParameterResolver private constructor(
    * @return arguments list.
    */
   open fun createInvocationArguments(method: Method,
-                                taskInformation: TaskInformation,
-                                payload: Map<String, Any>,
-                                variableConverter: VariableConverter,
-                                taskCompletionApi: ExternalTaskCompletionApi
+                                     taskInformation: TaskInformation,
+                                     payload: Map<String, Any>,
+                                     variableConverter: VariableConverter,
+                                     taskCompletionApi: ServiceTaskCompletionApi
   ): Array<Any> {
     val arguments = method.parameters.mapIndexedNotNull { i: Int, parameter: Parameter ->
       (this.strategies.firstOrNull { it.parameterMatcher.test(parameter) }
