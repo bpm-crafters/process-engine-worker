@@ -40,6 +40,7 @@ camunda:
       last-name: Administratius
     auto-deployment-enabled: false
     default-serialization-format: application/json
+    id-generator: simple
 
 
 management:

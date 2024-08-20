@@ -49,9 +49,9 @@ fun Method.hasPayloadReturnType() = this.returnType.isAssignableFrom(Map::class.
   && (this.genericReturnType as ParameterizedType).isMapOfStringObject()
 
 /**
- * Checks if the return type is non-void.
+ * Checks if the return type is void.
  */
-fun Method.hasNonVoidReturnType() = !this.returnType.isAssignableFrom(Void::class.java)
+fun Method.hasVoidReturnType() = this.returnType == Void.TYPE
 
 
 private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.let {

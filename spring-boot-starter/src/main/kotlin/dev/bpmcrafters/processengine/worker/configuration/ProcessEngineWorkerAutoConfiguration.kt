@@ -17,14 +17,6 @@ import java.util.concurrent.Executors
 class ProcessEngineWorkerAutoConfiguration {
 
   /**
-   * Creates a default fixed thread pool for 10 threads used for process engine worker executions.
-   */
-  @Bean
-  @ConditionalOnMissingBean
-  @Qualifier("processEngineWorkerTaskExecutor")
-  fun processEngineWorkerTaskExecutor(): ExecutorService = Executors.newFixedThreadPool(10)
-
-  /**
    * Initializes the converter.
    */
   @Bean

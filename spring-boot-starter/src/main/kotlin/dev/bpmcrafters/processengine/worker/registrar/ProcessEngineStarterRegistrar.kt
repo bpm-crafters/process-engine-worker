@@ -4,12 +4,10 @@ import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengineapi.task.*
 import mu.KLogging
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
-import java.util.concurrent.ExecutorService
 
 
 /**
@@ -26,9 +24,6 @@ class ProcessEngineStarterRegistrar(
   private val variableConverter: VariableConverter,
   @Lazy
   private val parameterResolver: ParameterResolver,
-  @Lazy
-  @Qualifier("processEngineWorkerTaskExecutor")
-  private val executorService: ExecutorService
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -43,7 +38,7 @@ class ProcessEngineStarterRegistrar(
       val payloadReturnType = method.hasPayloadReturnType()
       val autoCompleteTask = method.getAutoComplete()
 
-      if (autoCompleteTask && !payloadReturnType && method.hasNonVoidReturnType()) {
+      if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
         logger.warn { "Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
       }
 
@@ -65,10 +60,7 @@ class ProcessEngineStarterRegistrar(
             variableConverter = variableConverter,
             taskCompletionApi = taskCompletionApi
           )
-          // execute on a different thread
-          executorService.submit {
-            method.invoke(bean, *args) // spread the array
-          }.get()
+          method.invoke(bean, *args) // spread the array
         }
       )
       subscription.get()
