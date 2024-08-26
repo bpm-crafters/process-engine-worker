@@ -26,15 +26,16 @@ public class ReceivePaymentWorker {
   @ProcessEngineWorker(topic = "retrievePayment")
   public Map<String, Object> receivePayment(TaskInformation taskInformation, @Variable(name = "order") Order order) {
 
-    log.info("Received task {}", taskInformation.getTaskId());
-
+    log.info("PAYMENT: Received task {}", taskInformation.getTaskId());
     try {
       var paymentId = receivePaymentInPort.receivePayment(order);
+      log.info("PAYMENT: executed payment.");
       return Map.of(
         "paymentReceived", true,
         "paymentId", paymentId
       );
     } catch (PaymentFailedException e) {
+      log.info("PAYMENT: error executing payment.");
       throw new BpmnErrorOccurred(e.getMessage(), e.getErrorCode(), e.getDetails());
     }
   }

@@ -31,17 +31,20 @@ public class FetchGoodsWorker {
     ServiceTaskCompletionApi externalTaskCompletionApi,
     @Variable(name = "order") Order order
   ) {
-    log.info("Received task {}", taskInformation.getTaskId());
+    log.info("INVENTORY: Received task {}", taskInformation.getTaskId());
 
     boolean inStock = fetchGoodsInPort.fetchGoods(order);
 
     if (inStock) {
+      log.info("INVENTORY: Goods are in stock.");
       externalTaskCompletionApi.completeTask(
         new CompleteTaskCmd(
           taskInformation.getTaskId(),
           () -> Map.of("shipped", true)
         )
       ).get();
+    } else {
+      log.info("INVENTORY: Goods are NOT in stock.");
     }
   }
 }

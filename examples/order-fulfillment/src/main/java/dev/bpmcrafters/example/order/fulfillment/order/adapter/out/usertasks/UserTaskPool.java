@@ -40,11 +40,13 @@ public class UserTaskPool implements UserTaskOutPort {
         null,
         null,
         (taskInformation, payload) -> {
-          log.info("Received user task for {} ({}:{})",
-            taskInformation.getTaskId(),
-            taskInformation.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
-            taskInformation.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY));
-          tasks.put(taskInformation, payload);
+          if (!tasks.containsKey(taskInformation)) {
+            log.info("Received user task for {} ({}:{})",
+              taskInformation.getTaskId(),
+              taskInformation.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
+              taskInformation.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY));
+            tasks.put(taskInformation, payload);
+          }
         },
         taskId -> {
           log.info("Removed user task {}", taskId);

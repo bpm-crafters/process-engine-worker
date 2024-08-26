@@ -20,6 +20,9 @@ open class ParameterResolver private constructor(
     @JvmStatic
     fun builder() = ParameterResolverBuilder()
 
+    /**
+     * Builder for convenient instantiation of parameter resolver.
+     */
     class ParameterResolverBuilder(
       private val strategies: MutableList<ParameterResolutionStrategy> = mutableListOf()
     ) {

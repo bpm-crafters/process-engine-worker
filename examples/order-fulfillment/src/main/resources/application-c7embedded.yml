@@ -1,6 +1,10 @@
 spring:
   application:
     name: Order Fulfillment Camunda 7 Embedded
+  task:
+    scheduling:
+      pool:
+        size: 5
 
 dev:
   bpm-crafters:
@@ -17,7 +21,6 @@ dev:
           user-tasks:
             delivery-strategy: embedded_scheduled
             schedule-delivery-fixed-rate-in-seconds: 5000
-
 
 camunda:
   client: # needed to disable zeebe
@@ -37,7 +40,8 @@ camunda:
       email: admin@local
       first-name: Admin
       last-name: Administratius
-    auto-deployment-enabled: false
+    auto-deployment-enabled: true
+    deployment-resource-pattern: C7/*.bpmn
     default-serialization-format: application/json
     id-generator: simple
 

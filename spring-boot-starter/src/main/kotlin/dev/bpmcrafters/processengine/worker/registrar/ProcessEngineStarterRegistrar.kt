@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Lazy
 
 
 /**
- * Registrar responsible for collecting process engine workers and creating corresponding external tas subscriptions.
+ * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
  */
 @Configuration
 @AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
