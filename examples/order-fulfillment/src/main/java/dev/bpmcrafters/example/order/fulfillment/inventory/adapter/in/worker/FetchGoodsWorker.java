@@ -24,7 +24,7 @@ public class FetchGoodsWorker {
 
   private final FetchGoodsInPort fetchGoodsInPort;
 
-  @ProcessEngineWorker(topic = "fetchGoods")
+  @ProcessEngineWorker(topic = "fetchGoods", autoComplete = false)
   @SneakyThrows
   public void fetchGoods(
     TaskInformation taskInformation,

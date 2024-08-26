@@ -111,6 +111,7 @@ class ProcessEngineStarterRegistrar(
             CompleteTaskByErrorCmd(
               taskId = taskInformation.taskId,
               errorCode = cause.errorCode,
+              errorMessage = cause.message,
               payloadSupplier = { cause.payload }
             )
           ).get()

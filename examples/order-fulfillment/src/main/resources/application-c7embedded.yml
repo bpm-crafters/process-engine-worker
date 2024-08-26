@@ -2,8 +2,6 @@ spring:
   application:
     name: Order Fulfillment Camunda 7 Embedded
 
-
-
 dev:
   bpm-crafters:
     process-api:
@@ -13,11 +11,12 @@ dev:
         c7embedded:
           enabled: true
           service-tasks:
-            delivery-strategy: embedded_job # embedded_scheduled
+            delivery-strategy: embedded_scheduled
             worker-id: worker
             schedule-delivery-fixed-rate-in-seconds: 5000
           user-tasks:
-            delivery-strategy: embedded_job
+            delivery-strategy: embedded_scheduled
+            schedule-delivery-fixed-rate-in-seconds: 5000
 
 
 camunda:
