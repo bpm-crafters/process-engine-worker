@@ -55,8 +55,8 @@ Content-Type: application/json
 ### Get user tasks
 < {%
   import {wait} from "wait";
-  console.log("waiting 5 secs");
-  wait(5);
+  console.log("waiting 25 secs");
+  wait(25);
 %}
 // @no-log
 GET http://localhost:8080/user-tasks

@@ -12,6 +12,6 @@ public class ShipmentConfiguration {
 
   @PostConstruct
   public void reportActivation() {
-    log.info("[STARTUP] SHIPMENT MODULE ACTIVATED");
+    log.info("EXAMPLE: Shipment context activated.");
   }
 }

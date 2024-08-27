@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: Order Fulfillment Camunda 7 Embedded
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          enabled: false
+        c7embedded:
+          enabled: true
+          service-tasks:
+            delivery-strategy: embedded_scheduled
+            worker-id: worker
+            schedule-delivery-fixed-rate-in-seconds: 5
+          user-tasks:
+            delivery-strategy: embedded_scheduled
+            schedule-delivery-fixed-rate-in-seconds: 5
+
+camunda:
+  client: # needed to disable zeebe
+    mode: simple
+    zeebe:
+      enabled: false
+    tasklist:
+      enabled: false
+    optimize:
+      enabled: false
+    identity:
+      enabled: false
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      email: admin@local
+      first-name: Admin
+      last-name: Administratius
+    login:
+      enabled: true
+      user-id: admin
+    auto-deployment-enabled: true
+    deployment-resource-pattern: C7/*.bpmn
+    default-serialization-format: application/json
+    id-generator: simple
+
+
+management:
+  health:
+    zeebe:
+      enabled: false # needed to disable zeebe

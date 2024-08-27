@@ -5,13 +5,13 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2024.1.1</version>
+    <version>2024.8.1</version>
     <relativePath/>
   </parent>
 
   <groupId>dev.bpm-crafters.process-engine-worker</groupId>
   <artifactId>process-engine-worker-root</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
   <name>${project.artifactId}</name>
   <description>Process Engine Worker</description>
   <url>https://github.com/bpm-crafters/process-engine-worker/</url>
@@ -19,8 +19,8 @@
 
   <properties>
     <!-- TEST -->
-    <mockito.version>5.1.0</mockito.version>
-    <assertj.version>3.24.2</assertj.version>
+    <mockito.version>5.4.0</mockito.version>
+    <assertj.version>3.26.3</assertj.version>
   </properties>
 
   <modules>

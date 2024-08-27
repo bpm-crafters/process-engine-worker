@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: Order Fulfillment Local Self-Managed
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          service-tasks:
+            delivery-strategy: subscription
+            worker-id: worker
+          user-tasks:
+            delivery-strategy: subscription_refreshing
+            completion-strategy: job
+            schedule-delivery-fixed-rate-in-seconds: 5000 # every 5 seconds
+            tasklist-url: UNUSED
+            subscribing-delivery-initial-delay-in-seconds: 5000 # every 5 seconds
+
+zeebe:
+  client:
+    broker:
+      gateway-address: localhost:26500
+    connection-mode: ADDRESS
+    security:
+      plaintext: true
+
+logging:
+  level:
+    io.camunda.common.auth.DefaultNoopAuthentication: OFF

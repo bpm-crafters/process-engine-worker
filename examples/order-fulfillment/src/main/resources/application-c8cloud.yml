@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: Order Fulfillment SaaS
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          service-tasks:
+            delivery-strategy: subscription
+            worker-id: worker
+          user-tasks:
+            delivery-strategy: subscription_refreshing
+            completion-strategy: job
+            schedule-delivery-fixed-rate-in-seconds: 5000 # every 5 seconds
+            tasklist-url: UNUSED
+            subscribing-delivery-initial-delay-in-seconds: 5000 # delay for 5 seconds
+
+zeebe:
+  client:
+    cloud:
+      region: ${ZEEBE_REGION}
+      clusterId: ${ZEEBE_CLUSTER_ID}
+      clientId: ${ZEEBE_CLIENT_ID}
+      clientSecret: ${ZEEBE_CLIENT_SECRET}
+    connection-mode: CLOUD
