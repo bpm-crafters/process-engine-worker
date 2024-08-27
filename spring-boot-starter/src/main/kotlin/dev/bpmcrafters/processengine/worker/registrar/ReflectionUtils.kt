@@ -3,7 +3,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Companion.DEFAULT_UNSET_TOPIC
 import dev.bpmcrafters.processengine.worker.Variable
-import dev.bpmcrafters.processengineapi.task.ExternalTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.aop.support.AopUtils
 import java.lang.reflect.Method
@@ -23,9 +23,14 @@ fun Parameter.isPayload() = this.type.isAssignableFrom(Map::class.java)
 fun Parameter.isTaskInformation() = this.type.isAssignableFrom(TaskInformation::class.java)
 
 /**
+ * Checks if the parameter is variable converter.
+ */
+fun Parameter.isVariableConverter() = this.type.isAssignableFrom(VariableConverter::class.java)
+
+/**
  * Checks if parameter is ExternalTaskCompletionApi
  */
-fun Parameter.isTaskCompletionApiParameter() = this.type.isAssignableFrom(ExternalTaskCompletionApi::class.java)
+fun Parameter.isTaskCompletionApiParameter() = this.type.isAssignableFrom(ServiceTaskCompletionApi::class.java)
 
 /**
  * Checks if the parameter is annotated with a Variable annotation.
@@ -47,6 +52,12 @@ fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.extractV
  */
 fun Method.hasPayloadReturnType() = this.returnType.isAssignableFrom(Map::class.java)
   && (this.genericReturnType as ParameterizedType).isMapOfStringObject()
+
+/**
+ * Checks if the return type is void.
+ */
+fun Method.hasVoidReturnType() = this.returnType == Void.TYPE
+
 
 private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.let {
   it.size == 2
@@ -70,11 +81,18 @@ fun Any.getAnnotatedWorkers(): List<Method> = AopUtils
  * Detects worker topic either using the annotation or defaulting to method name.
  */
 fun Method.getTopic(): String {
-  val topicAnnotation = this.getAnnotation(ProcessEngineWorker::class.java)
-  return if (topicAnnotation.topic != DEFAULT_UNSET_TOPIC) {
-    topicAnnotation.topic
+  val workerAnnotation = this.getAnnotation(ProcessEngineWorker::class.java)
+  return if (workerAnnotation.topic != DEFAULT_UNSET_TOPIC) {
+    workerAnnotation.topic
   } else {
     this.name
   }
+}
+
+/**
+ * Returns the auto-completion flag from annotation.
+ */
+fun Method.getAutoComplete(): Boolean {
+  return this.getAnnotation(ProcessEngineWorker::class.java).autoComplete
 }
 

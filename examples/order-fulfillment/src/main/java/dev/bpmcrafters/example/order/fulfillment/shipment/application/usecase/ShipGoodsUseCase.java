@@ -16,6 +16,7 @@ public class ShipGoodsUseCase implements ShipGoodsInPort {
 
   @Override
   public void shipGoods(UUID orderId, Address shippingAddress) {
-    log.info("[SHIPMENT]: Shipping goods for order {} to {}", orderId, shippingAddress);
+
+    log.info("EXAMPLE: <SHIPPING> Shipping goods for order {} to {}", orderId, shippingAddress);
   }
 }

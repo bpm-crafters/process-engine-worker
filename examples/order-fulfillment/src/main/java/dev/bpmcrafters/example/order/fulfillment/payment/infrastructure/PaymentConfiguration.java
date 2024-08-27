@@ -12,6 +12,6 @@ public class PaymentConfiguration {
 
   @PostConstruct
   public void reportActivation() {
-    log.info("[STARTUP] PAYMENT MODULE ACTIVATED");
+    log.info("EXAMPLE: Payment context activated.");
   }
 }

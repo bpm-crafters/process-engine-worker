@@ -12,6 +12,6 @@ public class InventoryConfiguration {
 
   @PostConstruct
   public void reportActivation() {
-    log.info("[STARTUP] INVENTORY MODULE ACTIVATED");
+    log.info("EXAMPLE: Inventory context activated");
   }
 }

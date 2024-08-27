@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0hhh36h" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.21.0">
+  <bpmn:error id="Error_0yam9ln" name="paymentFailed" errorCode="paymentFailed" />
+  <bpmn:message id="Message_1se73fu" name="Msg_OrderReceived" />
+  <bpmn:collaboration id="Collaboration_0nyalzh">
+    <bpmn:participant id="Order_Fulfillement" name="Order Fulfillement C7" processRef="OrderFulfillment" />
+  </bpmn:collaboration>
+  <bpmn:process id="OrderFulfillment" name="Order Fulfillement" isExecutable="true" camunda:historyTimeToLive="P1D">
+    <bpmn:serviceTask id="service_receive_payment" name="Retrieve payment" camunda:type="external" camunda:topic="retrievePayment">
+      <bpmn:extensionElements />
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:startEvent id="started" name="Order Received">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_04amkix" messageRef="Message_1se73fu" />
+    </bpmn:startEvent>
+    <bpmn:endEvent id="finished_delivered" name="Order delivered">
+      <bpmn:incoming>flow4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="service_ship_goods" name="Ship goods" camunda:type="external" camunda:topic="shipGoods">
+      <bpmn:incoming>Flow_1vx9jo3</bpmn:incoming>
+      <bpmn:outgoing>flow4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="finished_informed_payment" name="Order cancelled">
+      <bpmn:incoming>flow8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="user_inform_customer_about_failed_payment" name="Inform&#10;customer about failed payment" camunda:asyncAfter="true" camunda:formKey="inform-customer-about-failed-payment">
+      <bpmn:incoming>flow5</bpmn:incoming>
+      <bpmn:outgoing>flow8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:parallelGateway id="Gateway_1qf8v3c">
+      <bpmn:incoming>flow2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xrlub7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_09g8ojk</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="service_fetch_goods" name="Fetch goods" camunda:type="external" camunda:topic="fetchGoods" camunda:taskPriority="50">
+      <bpmn:incoming>Flow_0xrlub7</bpmn:incoming>
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="user_inform_customer_about_delay" name="Inform&#10;customer about delay" camunda:asyncAfter="true" camunda:formKey="inform-customer-about-delay">
+      <bpmn:incoming>flow6</bpmn:incoming>
+      <bpmn:outgoing>flow7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="finished_informed_delay" name="Customer informed">
+      <bpmn:incoming>flow7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:parallelGateway id="Gateway_1gl7pou">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:incoming>Flow_0dbtggp</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vx9jo3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="service_create_invoice" name="Create invoice" camunda:type="external" camunda:topic="createInvoice" camunda:taskPriority="10">
+      <bpmn:incoming>Flow_09g8ojk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dbtggp</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="error_occured" name="Payment failed" attachedToRef="service_receive_payment">
+      <bpmn:outgoing>flow5</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_12s736v" errorRef="Error_0yam9ln" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="timer_passed" name="5 secs passed" cancelActivity="false" attachedToRef="service_fetch_goods">
+      <bpmn:outgoing>flow6</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_177ql5s">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="flow1" sourceRef="started" targetRef="service_receive_payment" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="service_receive_payment" targetRef="Gateway_1qf8v3c" />
+    <bpmn:sequenceFlow id="flow4" sourceRef="service_ship_goods" targetRef="finished_delivered" />
+    <bpmn:sequenceFlow id="Flow_1vx9jo3" sourceRef="Gateway_1gl7pou" targetRef="service_ship_goods" />
+    <bpmn:sequenceFlow id="flow8" sourceRef="user_inform_customer_about_failed_payment" targetRef="finished_informed_payment" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="error_occured" targetRef="user_inform_customer_about_failed_payment" />
+    <bpmn:sequenceFlow id="Flow_0xrlub7" sourceRef="Gateway_1qf8v3c" targetRef="service_fetch_goods" />
+    <bpmn:sequenceFlow id="Flow_09g8ojk" sourceRef="Gateway_1qf8v3c" targetRef="service_create_invoice" />
+    <bpmn:sequenceFlow id="flow3" sourceRef="service_fetch_goods" targetRef="Gateway_1gl7pou" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="timer_passed" targetRef="user_inform_customer_about_delay" />
+    <bpmn:sequenceFlow id="flow7" sourceRef="user_inform_customer_about_delay" targetRef="finished_informed_delay" />
+    <bpmn:sequenceFlow id="Flow_0dbtggp" sourceRef="service_create_invoice" targetRef="Gateway_1gl7pou" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0nyalzh">
+      <bpmndi:BPMNShape id="Participant_09r63vu_di" bpmnElement="Order_Fulfillement" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="970" height="560" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00c7rh7_di" bpmnElement="service_receive_payment">
+        <dc:Bounds x="340" y="257" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0qan24c_di" bpmnElement="started">
+        <dc:Bounds x="249" y="279" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="228" y="322" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0x94zyv_di" bpmnElement="finished_delivered">
+        <dc:Bounds x="1012" y="279" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="992" y="322" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_11ngz1r_di" bpmnElement="service_ship_goods">
+        <dc:Bounds x="850" y="257" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dgmeqw_di" bpmnElement="finished_informed_payment">
+        <dc:Bounds x="1012" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="991" y="585" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m6u4i5_di" bpmnElement="user_inform_customer_about_failed_payment">
+        <dc:Bounds x="850" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1pgcdrw_di" bpmnElement="Gateway_1qf8v3c">
+        <dc:Bounds x="515" y="272" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14roxdo_di" bpmnElement="service_fetch_goods">
+        <dc:Bounds x="610" y="257" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00ojhhf_di" bpmnElement="user_inform_customer_about_delay">
+        <dc:Bounds x="750" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0z6emm0_di" bpmnElement="finished_informed_delay">
+        <dc:Bounds x="902" y="402" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="896" y="445" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_15ydeof_di" bpmnElement="Gateway_1gl7pou">
+        <dc:Bounds x="755" y="272" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1s1rdbf_di" bpmnElement="service_create_invoice">
+        <dc:Bounds x="610" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1d6vcwp_di" bpmnElement="error_occured">
+        <dc:Bounds x="382" y="319" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="364" y="362" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05q9wr2_di" bpmnElement="timer_passed">
+        <dc:Bounds x="652" y="319" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="635" y="362" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0na8ehd_di" bpmnElement="flow4">
+        <di:waypoint x="950" y="297" />
+        <di:waypoint x="1012" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09s9a2x_di" bpmnElement="flow1">
+        <di:waypoint x="285" y="297" />
+        <di:waypoint x="340" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rkbmsy_di" bpmnElement="flow2">
+        <di:waypoint x="440" y="297" />
+        <di:waypoint x="515" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ddzf5m_di" bpmnElement="flow3">
+        <di:waypoint x="710" y="297" />
+        <di:waypoint x="755" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jmwkym_di" bpmnElement="flow8">
+        <di:waypoint x="950" y="560" />
+        <di:waypoint x="1012" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1f5owye_di" bpmnElement="flow5">
+        <di:waypoint x="400" y="355" />
+        <di:waypoint x="400" y="560" />
+        <di:waypoint x="850" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0miwvy5_di" bpmnElement="flow7">
+        <di:waypoint x="850" y="420" />
+        <di:waypoint x="902" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13weh7g_di" bpmnElement="flow6">
+        <di:waypoint x="670" y="355" />
+        <di:waypoint x="670" y="420" />
+        <di:waypoint x="750" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xrlub7_di" bpmnElement="Flow_0xrlub7">
+        <di:waypoint x="565" y="297" />
+        <di:waypoint x="610" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vx9jo3_di" bpmnElement="Flow_1vx9jo3">
+        <di:waypoint x="805" y="297" />
+        <di:waypoint x="850" y="297" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09g8ojk_di" bpmnElement="Flow_09g8ojk">
+        <di:waypoint x="540" y="272" />
+        <di:waypoint x="540" y="200" />
+        <di:waypoint x="610" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dbtggp_di" bpmnElement="Flow_0dbtggp">
+        <di:waypoint x="710" y="200" />
+        <di:waypoint x="780" y="200" />
+        <di:waypoint x="780" y="272" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

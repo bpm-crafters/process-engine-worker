@@ -2,8 +2,6 @@ spring:
   application:
     name: Order Fulfillment Camunda 7 Embedded
 
-
-
 dev:
   bpm-crafters:
     process-api:
@@ -12,13 +10,25 @@ dev:
           enabled: false
         c7embedded:
           enabled: true
-          external-service-tasks:
-            delivery-strategy: embedded_job
+          service-tasks:
+            delivery-strategy: embedded_scheduled
             worker-id: worker
+            schedule-delivery-fixed-rate-in-seconds: 5
           user-tasks:
-            delivery-strategy: embedded_job
+            delivery-strategy: embedded_scheduled
+            schedule-delivery-fixed-rate-in-seconds: 5
 
 camunda:
+  client: # needed to disable zeebe
+    mode: simple
+    zeebe:
+      enabled: false
+    tasklist:
+      enabled: false
+    optimize:
+      enabled: false
+    identity:
+      enabled: false
   bpm:
     admin-user:
       id: admin
@@ -26,14 +36,16 @@ camunda:
       email: admin@local
       first-name: Admin
       last-name: Administratius
-    auto-deployment-enabled: false
+    login:
+      enabled: true
+      user-id: admin
+    auto-deployment-enabled: true
+    deployment-resource-pattern: C7/*.bpmn
     default-serialization-format: application/json
+    id-generator: simple
 
 
-zeebe:
-  client:
-    broker:
-      gateway-address: localhost:26500
-    connection-mode: ADDRESS
-    security:
-      plaintext: true
+management:
+  health:
+    zeebe:
+      enabled: false # needed to disable zeebe

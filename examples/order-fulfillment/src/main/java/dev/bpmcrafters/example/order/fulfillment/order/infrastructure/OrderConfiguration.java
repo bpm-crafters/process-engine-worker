@@ -11,6 +11,6 @@ import org.springframework.context.annotation.Configuration;
 public class OrderConfiguration {
   @PostConstruct
   public void reportActivation() {
-    log.info("[STARTUP]: ORDER MODULE ACTIVATED");
+    log.info("EXAMPLE: Order context activated.");
   }
 }

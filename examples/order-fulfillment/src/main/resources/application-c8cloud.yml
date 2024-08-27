@@ -13,9 +13,9 @@ dev:
           user-tasks:
             delivery-strategy: subscription_refreshing
             completion-strategy: job
-            fixed-rate-schedule-rate: 5000 # every 5 seconds
+            schedule-delivery-fixed-rate-in-seconds: 5000 # every 5 seconds
             tasklist-url: UNUSED
-            fixed-rate-refresh-rate: 5000 # every 5 seconds
+            subscribing-delivery-initial-delay-in-seconds: 5000 # delay for 5 seconds
 
 zeebe:
   client:

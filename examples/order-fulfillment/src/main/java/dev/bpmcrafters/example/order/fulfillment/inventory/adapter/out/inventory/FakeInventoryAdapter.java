@@ -16,18 +16,20 @@ import java.util.List;
 public class FakeInventoryAdapter implements InventoryOutPort {
 
   private static final String OUT_OF_STOCK = "out-of-stock";
-  private static final Long DELIVERY_TIMEOUT = 20_000L;
+  private static final Long STEP = 10_000L;
+  private static final Long DELIVERY_TIMEOUT = STEP * 6;
+
 
   @Override
   public boolean fetchGoods(String orderId, List<InventoryItemDto> items) {
-    log.info("[INVENTORY ADAPTER] Fetching goods for {}]", orderId);
+    log.info("EXAMPLE: <INVENTORY> Fetching goods for {}]", orderId);
     var inStock = inStock(items);
     if (!inStock) {
-      log.info("[INVENTORY ADAPTER] Some items were not in stock. Wait {} seconds until these are delivered.", DELIVERY_TIMEOUT/1000);
+      log.info("EXAMPLE: <INVENTORY> Some items were not in stock. Wait {} seconds until these are delivered.", DELIVERY_TIMEOUT / 1000);
       inStock = orderAndDeliver();
-      log.info("[INVENTORY ADAPTER] All items have been delivered.");
+      log.info("EXAMPLE: <INVENTORY> All items have been delivered with a delay.");
     }
-    log.info("[INVENTORY ADAPTER] Items are{}in stock", inStock ? " " : " not ");
+    log.info("EXAMPLE: <INVENTORY> Items are{}in stock", inStock ? " " : " not ");
     return inStock;
   }
 
@@ -43,11 +45,16 @@ public class FakeInventoryAdapter implements InventoryOutPort {
 
   /**
    * If item is not in stock, we can re-order and deliver it to stock. This takes some time.
+   *
    * @return status if in stock.
    */
   @SneakyThrows
   private boolean orderAndDeliver() {
-    Thread.sleep(DELIVERY_TIMEOUT);
+    for (long i = 0; i < DELIVERY_TIMEOUT; i = i + STEP) {
+      Thread.sleep(STEP);
+      log.info("EXAMPLE: <INVENTORY> {} / {}", i, DELIVERY_TIMEOUT);
+    }
+
     return true;
   }
 
