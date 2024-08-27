@@ -23,6 +23,11 @@ fun Parameter.isPayload() = this.type.isAssignableFrom(Map::class.java)
 fun Parameter.isTaskInformation() = this.type.isAssignableFrom(TaskInformation::class.java)
 
 /**
+ * Checks if the parameter is variable converter.
+ */
+fun Parameter.isVariableConverter() = this.type.isAssignableFrom(VariableConverter::class.java)
+
+/**
  * Checks if parameter is ExternalTaskCompletionApi
  */
 fun Parameter.isTaskCompletionApiParameter() = this.type.isAssignableFrom(ServiceTaskCompletionApi::class.java)

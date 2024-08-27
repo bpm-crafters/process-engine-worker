@@ -22,14 +22,14 @@ public class FakeInventoryAdapter implements InventoryOutPort {
 
   @Override
   public boolean fetchGoods(String orderId, List<InventoryItemDto> items) {
-    log.info("[INVENTORY ADAPTER] Fetching goods for {}]", orderId);
+    log.info("EXAMPLE: <INVENTORY> Fetching goods for {}]", orderId);
     var inStock = inStock(items);
     if (!inStock) {
-      log.info("[INVENTORY ADAPTER] Some items were not in stock. Wait {} seconds until these are delivered.", DELIVERY_TIMEOUT / 1000);
+      log.info("EXAMPLE: <INVENTORY> Some items were not in stock. Wait {} seconds until these are delivered.", DELIVERY_TIMEOUT / 1000);
       inStock = orderAndDeliver();
-      log.info("[INVENTORY ADAPTER] All items have been delivered with a delay.");
+      log.info("EXAMPLE: <INVENTORY> All items have been delivered with a delay.");
     }
-    log.info("[INVENTORY ADAPTER] Items are{}in stock", inStock ? " " : " not ");
+    log.info("EXAMPLE: <INVENTORY> Items are{}in stock", inStock ? " " : " not ");
     return inStock;
   }
 
@@ -52,7 +52,7 @@ public class FakeInventoryAdapter implements InventoryOutPort {
   private boolean orderAndDeliver() {
     for (long i = 0; i < DELIVERY_TIMEOUT; i = i + STEP) {
       Thread.sleep(STEP);
-      log.info("[INVENTORY ADAPTER] {} / {}", i, DELIVERY_TIMEOUT);
+      log.info("EXAMPLE: <INVENTORY> {} / {}", i, DELIVERY_TIMEOUT);
     }
 
     return true;

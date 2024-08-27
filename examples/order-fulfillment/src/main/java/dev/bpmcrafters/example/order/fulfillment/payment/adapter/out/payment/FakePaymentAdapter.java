@@ -19,13 +19,13 @@ public class FakePaymentAdapter implements PaymentOutPort {
 
   @Override
   public String collectPayment(String reference, BigDecimal amount) {
-    log.info("[PAYMENT] Collecting payment for {}", reference);
+    log.info("EXAMPLE: <PAYMENT> Collecting payment for {}", reference);
     if (amount.equals(MAGIC_NUMBER)) {
-      log.info("[PAYMENT] Payment failed for {}.", reference);
+      log.info("EXAMPLE: <PAYMENT> Payment failed for {}.", reference);
       throw new IllegalArgumentException("Suspicious amount detected.");
     }
 
-    log.info("[PAYMENT] Payment succeeded for {}.", reference);
+    log.info("EXAMPLE: <PAYMENT> Payment succeeded for {}.", reference);
     return UUID.randomUUID().toString();
   }
 }

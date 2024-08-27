@@ -9,6 +9,7 @@ import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd;
 import dev.bpmcrafters.processengineapi.task.UserTaskCompletionApi;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ import java.util.Objects;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class InformCustomerAboutFailedPaymentUseCase implements InformCustomerAboutFailedPaymentInPort {
 
   private final UserTaskOutPort userTaskOutPort;
@@ -29,6 +31,7 @@ public class InformCustomerAboutFailedPaymentUseCase implements InformCustomerAb
 
   @Override
   public PaymentProblem loadFailedPaymentDetails(String taskId) {
+    log.info("EXAMPLE: <USER TASKS> Loaded user task {}", taskId);
     var payload = Objects.requireNonNull(userTaskOutPort.getVariables(taskId), "Could not load task " + taskId);
     var order = variableConverter.mapToType(payload.get("order"), Order.class);
     var rejectionReason = variableConverter.mapToType(payload.get("paymentFailedReason"), String.class);
@@ -45,6 +48,7 @@ public class InformCustomerAboutFailedPaymentUseCase implements InformCustomerAb
   @Override
   @SneakyThrows
   public void confirmFailedPayment(String taskId) {
+    log.info("EXAMPLE: <USER TASKS> Completed user task {}", taskId);
     completionApi.completeTask(
       new CompleteTaskCmd(
         taskId,

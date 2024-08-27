@@ -17,8 +17,9 @@ public class CreateInvoiceWorker {
   @ProcessEngineWorker(topic = "createInvoice")
   @SneakyThrows
   public Map<String, Object> createInvoice(@Variable(name = "order") Order order, TaskInformation taskInformation) {
-    log.info("INVOICE: Creating Invoice for {}", taskInformation.getTaskId());
+    log.info("EXAMPLE: <Worker> Creating Invoice received {}", taskInformation.getTaskId());
     Thread.sleep(10_000L); // take a nap
+    log.info("EXAMPLE: <Worker> Invoice created.");
     return Map.of("invoice", order.invoiceAddress());
   }
 }

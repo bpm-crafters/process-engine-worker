@@ -22,10 +22,11 @@ public class ShipGoodsWorker {
   @ProcessEngineWorker(topic = "shipGoods")
   public Map<String, Object> shipGoods(Map<String, Object> payload, TaskInformation taskInformation) {
 
-    log.info("Received task {}", taskInformation.getTaskId());
+    log.info("EXAMPLE: <Worker> Received task {}", taskInformation.getTaskId());
 
     var order = variableConverter.mapToType(payload.get("order"), Order.class);
     shipGoodsInPort.shipGoods(order.orderId(), order.shippingAddress());
+    log.info("EXAMPLE: <Worker> Goods shipped for task {}", taskInformation.getTaskId());
     return Map.of("goodsShipped", true);
   }
 }

@@ -41,7 +41,7 @@ class ParameterResolverTest {
   }
 
   @Test
-  fun `detect task information only `() {
+  fun `detect task information only`() {
 
     class Worker {
       @ProcessEngineWorker
@@ -54,6 +54,24 @@ class ParameterResolverTest {
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).hasSize(1)
     assertThat(args[0]).isEqualTo(taskInformation)
+    method.invoke(worker, *args)
+  }
+
+
+  @Test
+  fun `detect variable converter only`() {
+
+    class Worker {
+      @ProcessEngineWorker
+      fun work(vc: VariableConverter) {
+      }
+    }
+
+    val worker = Worker()
+    val method = worker.getAnnotatedWorkers().first()
+    val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+    assertThat(args).hasSize(1)
+    assertThat(args[0]).isEqualTo(variableConverter)
     method.invoke(worker, *args)
   }
 

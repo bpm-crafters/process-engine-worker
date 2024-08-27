@@ -41,7 +41,7 @@ public class UserTaskPool implements UserTaskOutPort {
         null,
         (taskInformation, payload) -> {
           if (!tasks.containsKey(taskInformation)) {
-            log.info("Received user task for {} ({}:{})",
+            log.info("EXAMPLE: <USER TASKS> Received user task {} ({}:{})",
               taskInformation.getTaskId(),
               taskInformation.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
               taskInformation.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY));
@@ -49,8 +49,14 @@ public class UserTaskPool implements UserTaskOutPort {
           }
         },
         taskId -> {
-          log.info("Removed user task {}", taskId);
-          tasks.entrySet().removeIf(entry -> entry.getKey().getTaskId().equals(taskId));
+          tasks.keySet().stream().filter(ti -> ti.getTaskId().equals(taskId)).findFirst().ifPresent(ti -> {
+            tasks.remove(ti);
+            log.info("EXAMPLE: <USER TASKS> Removed user task {} ({}:{})",
+              ti.getTaskId(),
+              ti.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
+              ti.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY)
+            );
+          });
         }
       )
     ).get();

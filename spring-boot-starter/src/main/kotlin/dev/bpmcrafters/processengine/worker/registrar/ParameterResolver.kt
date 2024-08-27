@@ -45,6 +45,11 @@ open class ParameterResolver private constructor(
               parameterMatcher = { param -> param.isPayload() },
               parameterExtractor = { _, _, payload, _, _ -> payload },
             ),
+            // Variable converter
+            ParameterResolutionStrategy(
+              parameterMatcher = { param -> param.isVariableConverter() },
+              parameterExtractor = { _, _, _, variableConverter , _ -> variableConverter },
+            ),
             // Annotated variable (`@Variable`)
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isVariable() },
