@@ -4,7 +4,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-root</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
