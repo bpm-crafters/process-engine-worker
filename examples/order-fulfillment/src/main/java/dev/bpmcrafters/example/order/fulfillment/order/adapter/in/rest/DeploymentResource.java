@@ -6,15 +6,10 @@ import dev.bpmcrafters.processengineapi.deploy.DeploymentInformation;
 import dev.bpmcrafters.processengineapi.deploy.NamedResource;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -26,12 +21,12 @@ public class DeploymentResource {
   private final DeploymentApi deploymentApi;
 
   @SneakyThrows
-  @PostMapping("/{resourceName}")
-  public ResponseEntity<DeploymentInformation> deploy(@PathVariable(name = "resourceName") String resourceName) {
+  @PostMapping("/")
+  public ResponseEntity<DeploymentInformation> deploy(@RequestBody DeploymentResourceDto resourceName) {
     var info = deploymentApi.deploy(
       new DeployBundleCommand(
         List.of(
-          NamedResource.fromClasspath(resourceName)
+          NamedResource.fromClasspath(resourceName.path())
         ),
         null
       )
@@ -39,3 +34,4 @@ public class DeploymentResource {
     return ok(info);
   }
 }
+
