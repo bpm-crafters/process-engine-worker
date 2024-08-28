@@ -62,7 +62,7 @@ public class MySmartWorker {
   private final FetchGoodsInPort fetchGoodsInPort;
 
   @ProcessEngineWorker(topic = "fetchGoods")
-  public void fetchGoods(
+  public Map<String, Object> fetchGoods(
     @Variable(name = "order") Order order
   ) {
     // execute some business code
