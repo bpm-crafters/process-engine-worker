@@ -1,0 +1,14 @@
+### Receive order
+// @no-log
+POST http://localhost:8080/deploy/
+Content-Type: application/json
+
+{
+  "path": "C8/Order Fulfillment.bpmn"
+}
+
+> {%
+  client.test("Request executed successfully", function () {
+    client.assert(response.status === 204, `Response status is not 204, but ${response.status}`);
+  });
+%}
