@@ -56,7 +56,10 @@ the execution and use the automatic variable conversion:
 
 ```java
 @Component
+@RequiredArgsConstructor
 public class MySmartWorker {
+
+  private final FetchGoodsInPort fetchGoodsInPort;
 
   @ProcessEngineWorker(topic = "fetchGoods")
   public void fetchGoods(
