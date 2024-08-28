@@ -2,10 +2,12 @@ package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
+import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
 import dev.bpmcrafters.processengineapi.task.*
 import mu.KLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Lazy
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
  */
 @Configuration
+@ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true")
 @AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   @Lazy
@@ -32,6 +35,10 @@ class ProcessEngineStarterRegistrar(
 
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()
+
+    if (annotatedProcessEngineWorkers.isNotEmpty()) {
+      logger.debug { "PROCESS-ENGINE_WORKER-001: Detected annotated workers on $beanName." }
+    }
     annotatedProcessEngineWorkers.map { method ->
 
       val topic = method.getTopic()
@@ -39,7 +46,7 @@ class ProcessEngineStarterRegistrar(
       val autoCompleteTask = method.getAutoComplete()
 
       if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
-        logger.warn { "Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
+        logger.warn { "PROCESS-ENGINE_WORKER-002: Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
       }
 
       val annotatedVariableParameters = method.parameters.filter { it.isVariable() }
@@ -119,15 +126,15 @@ class ProcessEngineStarterRegistrar(
           taskCompletionApi.failTask(
             FailTaskCmd(
               taskId = taskInformation.taskId,
-              reason = cause?.message ?: "Exception during execution of external task worker",
-              errorDetails = cause?.stackTraceToString()
+              reason = cause.message ?: "Exception during execution of external task worker",
+              errorDetails = cause.stackTraceToString()
             )
           ).get()
         }
       }
     },
     termination = {
-      logger.debug { "Terminating task from topic $topic." }
+      logger.debug { "PROCESS-ENGINE_WORKER-010: Terminating task from topic $topic." }
     }
   )
 
