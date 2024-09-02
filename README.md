@@ -56,10 +56,13 @@ the execution and use the automatic variable conversion:
 
 ```java
 @Component
+@RequiredArgsConstructor
 public class MySmartWorker {
 
+  private final FetchGoodsInPort fetchGoodsInPort;
+
   @ProcessEngineWorker(topic = "fetchGoods")
-  public void fetchGoods(
+  public Map<String, Object> fetchGoods(
     @Variable(name = "order") Order order
   ) {
     // execute some business code
@@ -140,3 +143,5 @@ ZEEBE_CLIENT_SECRET=...
 
 After starting application, you can either use Open API endpoints or just run the 
 HTTP client tests using your IntelliJ, located in the example directory.
+
+Don't forget to first deploy the process! Either manually via operate / modeler, or with the HTTP client script: c8-deploy-process.http
