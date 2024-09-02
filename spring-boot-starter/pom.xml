@@ -21,7 +21,7 @@
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
         <artifactId>process-engine-api-bom</artifactId>
-        <version>0.0.5</version>
+        <version>0.0.6</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
