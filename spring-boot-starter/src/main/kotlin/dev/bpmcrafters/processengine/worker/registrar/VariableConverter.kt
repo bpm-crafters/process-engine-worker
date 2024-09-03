@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 
 /**
  * Helper converting variables from a JSON map to type using Jackson.
+ * @since 0.0.3
  */
 open class VariableConverter(
   private val objectMapper: ObjectMapper
