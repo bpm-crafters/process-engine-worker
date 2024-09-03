@@ -14,12 +14,18 @@ import java.util.Map;
 @Slf4j
 public class CreateInvoiceWorker {
 
+  /**
+   * Creats the invoice.
+   * @param order order to create invoice for.
+   * @param taskInformation task information.
+   * @return order (mind the return type, we registered a special result resolver strategy in the infrastructure)
+   */
   @ProcessEngineWorker(topic = "createInvoice")
   @SneakyThrows
-  public Map<String, Object> createInvoice(@Variable(name = "order") Order order, TaskInformation taskInformation) {
+  public Order createInvoice(@Variable(name = "order") Order order, TaskInformation taskInformation) {
     log.info("EXAMPLE: <Worker> Creating Invoice received {}", taskInformation.getTaskId());
     Thread.sleep(10_000L); // take a nap
     log.info("EXAMPLE: <Worker> Invoice created.");
-    return Map.of("invoice", order.invoiceAddress());
+    return order;
   }
 }

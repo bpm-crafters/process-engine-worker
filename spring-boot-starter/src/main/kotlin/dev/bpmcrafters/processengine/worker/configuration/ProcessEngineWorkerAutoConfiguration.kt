@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.configuration
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
 import dev.bpmcrafters.processengine.worker.registrar.ParameterResolver
+import dev.bpmcrafters.processengine.worker.registrar.ResultResolver
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -33,4 +34,13 @@ class ProcessEngineWorkerAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   fun defaultParameterResolver() = ParameterResolver.builder().build()
+
+  /**
+   * Initializes result resolver.
+   * If you want to add your own result resolver, just create you own result resolver and expose it as a bean. You might want
+   * to register you own strategy using [ResultResolver.ResultResolverBuilder#addStrategy] method.
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  fun defaultResultResolver() = ResultResolver.builder().build()
 }

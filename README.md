@@ -88,7 +88,7 @@ registered by the `ParameterResolver` bean. Currently, the following parameters 
 If the return type of the method is of type `Map<String, Object>` or compatible and the `autoComplete` flag is turned
 on the annotation is `true` (defaults to `true` ), the registrar will try to automatically complete the External Task 
 using the returned map as completion variables. If `autoComplete` is true, but not return value is provided, the task
-will be completed without payload. 
+will be completed without payload. This functionality is provided by the `ResultResolver` based on registered strategies.
 
 If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccured`.
 
@@ -96,7 +96,6 @@ You might want to register your own parameter resolution strategies. For this pu
 the parameter resolver bean on your own and register your own strategies:
 
 ```kotlin
-import java.beans.BeanProperty
 
 @Configuration
 class MyConfig {
@@ -110,7 +109,27 @@ class MyConfig {
       ),
     ).build()
   }
+}
 
+```
+
+Optionally, you might want to register own result resolution strategies. For this purpose, please construct
+the result resolver bean on your own and register your own strategies:
+
+```kotlin
+
+@Configuration
+class MyConfig {
+
+  @Bean
+  fun myResultResolver(): ResultResolver {
+    return ResultResolver.builder().addStrategy(
+      ResultResolutionStrategy(
+        resultMatcher = { method -> ... },
+        resultConverter = { result -> ... },
+      ),
+    ).build()
+  }
 }
 
 ```

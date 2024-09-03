@@ -8,6 +8,7 @@ import java.util.function.Predicate
 
 /**
  * A parameter resolver is responsible for resolution of the parameters of the worker method.
+ * @since 0.0.3
  */
 open class ParameterResolver private constructor(
   private val strategies: List<ParameterResolutionStrategy>
