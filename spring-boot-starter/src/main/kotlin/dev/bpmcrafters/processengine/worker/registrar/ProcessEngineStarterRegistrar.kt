@@ -10,13 +10,15 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
+import java.lang.reflect.Method
 
 
 /**
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
+ * @since 0.0.3
  */
 @Configuration
-@ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true")
+@ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 @AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   @Lazy
@@ -27,6 +29,8 @@ class ProcessEngineStarterRegistrar(
   private val variableConverter: VariableConverter,
   @Lazy
   private val parameterResolver: ParameterResolver,
+  @Lazy
+  private val resultResolver: ResultResolver
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -42,9 +46,12 @@ class ProcessEngineStarterRegistrar(
     annotatedProcessEngineWorkers.map { method ->
 
       val topic = method.getTopic()
-      val payloadReturnType = method.hasPayloadReturnType()
+      val payloadReturnType = resultResolver.payloadReturnType(method)
       val autoCompleteTask = method.getAutoComplete()
 
+      // report misconfiguration because: the user selected to autocomplete, there is no result converter and the method has a non-void result.
+      // so probably this result is not converted as payload - and either there should be no result
+      // or there should be a matching converter strategy
       if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
         logger.warn { "PROCESS-ENGINE_WORKER-002: Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
       }
@@ -58,7 +65,7 @@ class ProcessEngineStarterRegistrar(
       }
 
       val subscription = taskSubscriptionApi.subscribeForTask(
-        subscribe(topic, variableNames, autoCompleteTask, payloadReturnType)
+        subscribe(topic, variableNames, autoCompleteTask, payloadReturnType, method)
         { taskInformation, payload ->
           val args: Array<Any> = parameterResolver.createInvocationArguments(
             method = method,
@@ -80,6 +87,8 @@ class ProcessEngineStarterRegistrar(
    * @param topic subscription topic
    * @param payloadDescription description of the variables to be passed.
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
+   * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
+   * @param method process engine worker method.
    * @param actionWithResult worker always returning the result.
    */
   private fun subscribe(
@@ -87,6 +96,7 @@ class ProcessEngineStarterRegistrar(
     payloadDescription: Set<String>? = emptySet(),
     autoCompleteTask: Boolean,
     payloadReturnType: Boolean,
+    method: Method,
     actionWithResult: TaskHandlerWithResult
   ): SubscribeForTaskCmd = SubscribeForTaskCmd(
     restrictions = mapOf(),
@@ -101,9 +111,8 @@ class ProcessEngineStarterRegistrar(
               CompleteTaskCmd(
                 taskId = taskInformation.taskId
               ) {
-                if (payloadReturnType && result != null) {
-                  @Suppress("UNCHECKED_CAST")
-                  result as Map<String, Any>
+                if (payloadReturnType) {
+                  resultResolver.resolve(method, result)
                 } else {
                   mapOf()
                 }
