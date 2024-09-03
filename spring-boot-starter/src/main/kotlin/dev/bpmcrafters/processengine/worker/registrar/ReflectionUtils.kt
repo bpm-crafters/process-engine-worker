@@ -14,23 +14,23 @@ import java.lang.reflect.WildcardType
 /**
  * Checks if the method parameter is payload of type Map<String, Any> or compatible.
  */
-fun Parameter.isPayload() = this.type.isAssignableFrom(Map::class.java)
+fun Parameter.isPayload() = Map::class.java.isAssignableFrom(this.type)
   && (this.parameterizedType as ParameterizedType).isMapOfStringObject()
 
 /**
  * Checks if the parameter is task information.
  */
-fun Parameter.isTaskInformation() = this.type.isAssignableFrom(TaskInformation::class.java)
+fun Parameter.isTaskInformation() = TaskInformation::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if the parameter is variable converter.
  */
-fun Parameter.isVariableConverter() = this.type.isAssignableFrom(VariableConverter::class.java)
+fun Parameter.isVariableConverter() = VariableConverter::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if parameter is ExternalTaskCompletionApi
  */
-fun Parameter.isTaskCompletionApiParameter() = this.type.isAssignableFrom(ServiceTaskCompletionApi::class.java)
+fun Parameter.isTaskCompletionApiParameter() = ServiceTaskCompletionApi::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if the parameter is annotated with a Variable annotation.
@@ -50,15 +50,19 @@ fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.extractV
 /**
  * Checks if the method has a return type compatible with payload of type Map<String, Any>
  */
-fun Method.hasPayloadReturnType() = this.returnType.isAssignableFrom(Map::class.java)
-  && (this.genericReturnType as ParameterizedType).isMapOfStringObject()
+fun Method.hasPayloadReturnType() = Map::class.java.isAssignableFrom(this.returnType) // try if the type is compatible to Map<String, Object>
+  && if (this.genericReturnType is ParameterizedType) {
+  // e.g. Map<String, String>
+  (this.genericReturnType as ParameterizedType).isMapOfStringObject()
+} else {
+  // e.g. class VariableMap implements Map<String, Object> (one of the interfaces are parameterized type matching the Map<String, Any>)
+  (this.genericReturnType as Class<*>).genericInterfaces.filterIsInstance<ParameterizedType>().any { it.isMapOfStringObject() }
+}
 
-/**
- * Checks if the return type is void.
+/*
+ * Checks a two-types parameter type for the type bounds.
+ * Verifies TYPE<*, *> to be compatible to TYPE<String, out Any>.
  */
-fun Method.hasVoidReturnType() = this.returnType == Void.TYPE
-
-
 private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.let {
   it.size == 2
     && it[0].typeName == "java.lang.String"
@@ -68,6 +72,14 @@ private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.l
     && (it[1] as WildcardType).upperBounds[0].typeName == "java.lang.Object")
     )
 }
+
+
+/**
+ * Checks if the return type is void.
+ */
+fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
+
+
 
 /**
  * Retrieves list of worker methods.

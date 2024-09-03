@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-root</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.0.4-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -22,7 +22,7 @@
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
         <artifactId>process-engine-api-bom</artifactId>
-        <version>0.0.6-SNAPSHOT</version>
+        <version>0.0.6</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

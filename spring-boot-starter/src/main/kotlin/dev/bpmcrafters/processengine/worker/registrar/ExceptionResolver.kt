@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException
 
 /**
  * Utility to help unwrapping exceptions.
+ * @since 0.0.3
  */
 class ExceptionResolver {
 
