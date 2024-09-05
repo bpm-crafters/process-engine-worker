@@ -85,6 +85,12 @@ registered by the `ParameterResolver` bean. Currently, the following parameters 
 | Map<String, Object>                    | Payload object containing all variables.                                  |
 | Type annotated with @Variable("name)   | Marker for a process variable.                                            |
 
+Usually, the requested variable are mandatory and the parameter resolver reports an error, if the requested variable is not 
+available in the process payload. If you want to inject the variable only if it exists in the payload you have two options.
+Either you set the parameter `@Variable(name = "...", mandatory = false)` or you use `Optional<T>` instead of `T` as a variable
+type. If you are using Kotlin and don't like optionals, make sure to declare variable type as nullable (`T?` instead of `T`) and 
+set the mandatory flag to false. 
+
 If the return type of the method is of type `Map<String, Object>` or compatible and the `autoComplete` flag is turned
 on the annotation is `true` (defaults to `true` ), the registrar will try to automatically complete the External Task 
 using the returned map as completion variables. If `autoComplete` is true, but not return value is provided, the task
