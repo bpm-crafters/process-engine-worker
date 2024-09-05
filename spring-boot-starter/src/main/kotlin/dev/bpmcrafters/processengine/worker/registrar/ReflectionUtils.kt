@@ -10,6 +10,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.WildcardType
+import java.util.*
 
 /**
  * Checks if the method parameter is payload of type Map<String, Any> or compatible.
@@ -41,6 +42,17 @@ fun Parameter.isVariable() = this.isAnnotationPresent(Variable::class.java)
  * Extracts variable name from the variable annotation of the parameter.
  */
 fun Parameter.extractVariableName() = this.getAnnotation(Variable::class.java).name
+
+/**
+ * Extracts variable mandatory flag.
+ */
+fun Parameter.extractVariableMandatoryFlag() = this.getAnnotation(Variable::class.java).mandatory
+
+/**
+ * Checks if parameter is an Optional
+ */
+fun Parameter.isOptional() = Optional::class.java.isAssignableFrom(this.type)
+
 
 /**
  * Extract variable names from all parameters.

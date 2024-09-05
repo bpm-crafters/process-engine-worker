@@ -4,6 +4,7 @@ import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
+import java.util.*
 import java.util.function.Predicate
 
 /**
@@ -49,15 +50,24 @@ open class ParameterResolver private constructor(
             // Variable converter
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isVariableConverter() },
-              parameterExtractor = { _, _, _, variableConverter , _ -> variableConverter },
+              parameterExtractor = { _, _, _, variableConverter, _ -> variableConverter },
             ),
             // Annotated variable (`@Variable`)
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isVariable() },
               parameterExtractor = { parameter, _, payload, variableConverter, _ ->
                 parameter.extractVariableName().let { variablesName ->
-                  require(payload.keys.contains(variablesName)) { "Expected payload to contain variable '$variablesName', but it contained ${payload.keys.joinToString(", ") { chars -> "'$chars'" }} only." }
-                  variableConverter.mapToType(value = payload[variablesName], type = parameter.type)
+                  if (parameter.extractVariableMandatoryFlag() && !parameter.isOptional()) { // optional allows null
+                    require(payload.keys.contains(variablesName)) { "Expected payload to contain variable '$variablesName', but it contained ${payload.keys.joinToString(", ") { chars -> "'$chars'" }} only." }
+                  }
+                  val value = payload[variablesName]?.let {
+                    variableConverter.mapToType(value = payload[variablesName], type = parameter.type)
+                  }
+                  if (parameter.isOptional()) {
+                    Optional.ofNullable(value)
+                  } else {
+                    value
+                  }
                 }
               }
             )
@@ -112,8 +122,8 @@ open class ParameterResolver private constructor(
                                      payload: Map<String, Any>,
                                      variableConverter: VariableConverter,
                                      taskCompletionApi: ServiceTaskCompletionApi
-  ): Array<Any> {
-    val arguments = method.parameters.mapIndexedNotNull { i: Int, parameter: Parameter ->
+  ): Array<Any?> {
+    val arguments = method.parameters.mapIndexed { i: Int, parameter: Parameter ->
       (this.strategies.firstOrNull { it.parameterMatcher.test(parameter) }
         ?: throw IllegalArgumentException("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument $i of ${method.declaringClass.simpleName}#${method.name} of type ${parameter.type.simpleName}.")
         ).parameterExtractor.invoke(parameter, taskInformation, payload, variableConverter, taskCompletionApi)
