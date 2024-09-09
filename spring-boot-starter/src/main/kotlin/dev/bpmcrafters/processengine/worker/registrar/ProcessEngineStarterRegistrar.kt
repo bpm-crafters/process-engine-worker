@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import java.lang.reflect.Method
+import kotlin.reflect.jvm.kotlinFunction
 
 
 /**
@@ -67,7 +68,7 @@ class ProcessEngineStarterRegistrar(
       val subscription = taskSubscriptionApi.subscribeForTask(
         subscribe(topic, variableNames, autoCompleteTask, payloadReturnType, method)
         { taskInformation, payload ->
-          val args: Array<Any> = parameterResolver.createInvocationArguments(
+          val args: Array<Any?> = parameterResolver.createInvocationArguments(
             method = method,
             taskInformation = taskInformation,
             payload = payload,

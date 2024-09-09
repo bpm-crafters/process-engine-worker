@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
+import java.lang.reflect.InvocationTargetException
 import java.util.*
 
 
@@ -142,6 +143,70 @@ class ParameterResolverTest {
     assertThat(args[0]).isEqualTo("foo")
     assertThat(args[1]).isEqualTo(17L)
     method.invoke(worker, *args)
+  }
+
+  @Test
+  fun `detect annotated non-mandatory variable`() {
+
+    class Worker {
+      @ProcessEngineWorker
+      fun work(@Variable(name = "string", mandatory = false) var1: String?) {
+      }
+    }
+
+    payload["long"] = 17L
+
+    val worker = Worker()
+    val method = worker.getAnnotatedWorkers().first()
+    val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+    assertThat(args).isNotNull
+    assertThat(args).hasSize(1)
+    assertThat(args[0]).isNull()
+    method.invoke(worker, *args)
+  }
+
+  @Test
+  fun `detect annotated non-mandatory optional variable`() {
+
+    class Worker {
+      @ProcessEngineWorker
+      fun work(@Variable(name = "string") var1: Optional<String>) {
+      }
+    }
+
+    payload["long"] = 17L
+
+    val worker = Worker()
+    val method = worker.getAnnotatedWorkers().first()
+    val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+    assertThat(args).isNotNull
+    assertThat(args).hasSize(1)
+    assertThat(args[0]).isInstanceOf(Optional::class.java)
+    assertThat(args[0] as Optional<*>).isEmpty
+    method.invoke(worker, *args)
+  }
+
+  @Test
+  fun `fail to invoke annotated non-mandatory variable`() {
+
+    class Worker {
+      @ProcessEngineWorker
+      fun work(@Variable(name = "string", mandatory = false) var1: String) { // not null is required
+      }
+    }
+
+    payload["long"] = 17L
+
+    val worker = Worker()
+    val method = worker.getAnnotatedWorkers().first()
+    val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+    assertThat(args).isNotNull
+    assertThat(args).hasSize(1)
+    assertThat(args[0]).isNull()
+    assertThrows<InvocationTargetException> {
+      method.invoke(worker, *args)
+    }
+
   }
 
   @Test

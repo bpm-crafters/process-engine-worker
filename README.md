@@ -3,7 +3,7 @@
 
 [![incubating](https://img.shields.io/badge/lifecycle-INCUBATING-orange.svg)](https://github.com/holisticon#open-source-lifecycle)
 [![Development branches](https://github.com/bpm-crafters/process-engine-worker/actions/workflows/development.yml/badge.svg)](https://github.com/bpm-crafters/process-engine-worker/actions/workflows/development.yml)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-api/process-engine-worker/badge.svg)](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-api/process-engine-worker)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter/badge.svg)](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter)
 
 ## Purpose of the library
 
@@ -85,12 +85,20 @@ registered by the `ParameterResolver` bean. Currently, the following parameters 
 | Map<String, Object>                    | Payload object containing all variables.                                  |
 | Type annotated with @Variable("name)   | Marker for a process variable.                                            |
 
+Usually, the requested variable is mandatory and the parameter resolver reports an error, if the requested variable is not 
+available in the process payload. If you want to inject the variable only if it exists in the payload you have two options.
+Either you set the parameter `@Variable(name = "...", mandatory = false)` or you use `Optional<T>` instead of `T` as a variable
+type. If you are using Kotlin and don't like `Optional`, make sure to declare variable type as nullable (`T?` instead of `T`) and 
+set the mandatory flag to `false`. 
+
 If the return type of the method is of type `Map<String, Object>` or compatible and the `autoComplete` flag is turned
-on the annotation is `true` (defaults to `true` ), the registrar will try to automatically complete the External Task 
-using the returned map as completion variables. If `autoComplete` is true, but not return value is provided, the task
-will be completed without payload. This functionality is provided by the `ResultResolver` based on registered strategies.
+on the annotation is `true` (defaults to `true`), the library will try to automatically complete the External Task 
+using the returned map as completion variables. If `autoComplete` is `true`, but no return value is provided, the task
+will be completed without empty payload. This functionality is provided by the `ResultResolver` based on registered strategies.
 
 If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccured`.
+
+## Customizations
 
 You might want to register your own parameter resolution strategies. For this purpose, please construct 
 the parameter resolver bean on your own and register your own strategies:
@@ -133,6 +141,9 @@ class MyConfig {
 }
 
 ```
+
+If you want to switch the entire library off (for example you are in the context of an integrtion test, and parts of your Process Engine API are deactivated),
+you can do it by setting the property `dev.bpm-crafters.process-api.worker.enabled` to `false`.
 
 ## Examples
 
