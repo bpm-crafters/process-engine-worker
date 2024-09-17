@@ -21,6 +21,8 @@
     <!-- TEST -->
     <mockito.version>5.4.0</mockito.version>
     <assertj.version>3.26.3</assertj.version>
+    <process-engine-api.version>0.1.0</process-engine-api.version>
+    <spring-boot.version>3.3.3</spring-boot.version>
   </properties>
 
   <modules>
