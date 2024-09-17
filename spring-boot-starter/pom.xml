@@ -4,7 +4,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-root</artifactId>
-    <version>0.0.5</version>
+    <version>0.1.0</version>
   </parent>
 
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
@@ -14,14 +14,14 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>3.3.3</version>
+        <version>${spring-boot.version}</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
         <artifactId>process-engine-api-bom</artifactId>
-        <version>0.0.6</version>
+        <version>${process-engine-api.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -51,8 +51,8 @@
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
     <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-databind</artifactId>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
   </dependencies>
 
