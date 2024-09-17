@@ -5,6 +5,7 @@ package dev.bpmcrafters.processengine.worker
  */
 @MustBeDocumented
 @Target(AnnotationTarget.FUNCTION)
+@SuppressWarnings("UnusedReturnValue")
 annotation class ProcessEngineWorker(
   /**
    * Topic name to subscribe this worker for.

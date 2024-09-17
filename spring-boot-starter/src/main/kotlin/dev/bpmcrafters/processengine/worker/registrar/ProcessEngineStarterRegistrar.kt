@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import java.lang.reflect.Method
-import kotlin.reflect.jvm.kotlinFunction
 
 
 /**
@@ -42,19 +41,21 @@ class ProcessEngineStarterRegistrar(
     val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()
 
     if (annotatedProcessEngineWorkers.isNotEmpty()) {
-      logger.debug { "PROCESS-ENGINE_WORKER-001: Detected annotated workers on $beanName." }
+      logger.debug { "PROCESS-ENGINE-WORKER-001: Detected ${annotatedProcessEngineWorkers.size} annotated workers on $beanName." }
+      logger.trace { "PROCESS-ENGINE-WORKER-001: Detected annotated workers on $beanName are: ${annotatedProcessEngineWorkers.map { it.name }}." }
     }
     annotatedProcessEngineWorkers.map { method ->
 
       val topic = method.getTopic()
+      // detects among all result resolver if the specified payload may be converted to payload return type
       val payloadReturnType = resultResolver.payloadReturnType(method)
       val autoCompleteTask = method.getAutoComplete()
 
       // report misconfiguration because: the user selected to autocomplete, there is no result converter and the method has a non-void result.
       // so probably this result is not converted as payload - and either there should be no result
-      // or there should be a matching converter strategy
+      // or there should be a matching converter strategy inside the result resolver
       if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
-        logger.warn { "PROCESS-ENGINE_WORKER-002: Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
+        logger.warn { "PROCESS-ENGINE-WORKER-002: Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
       }
 
       val annotatedVariableParameters = method.parameters.filter { it.isVariable() }
@@ -106,8 +107,10 @@ class ProcessEngineStarterRegistrar(
     payloadDescription = payloadDescription,
     action = { taskInformation, payload ->
       try {
+        logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
         actionWithResult.invoke(taskInformation, payload).also { result ->
           if (autoCompleteTask) {
+            logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId}" }
             taskCompletionApi.completeTask(
               CompleteTaskCmd(
                 taskId = taskInformation.taskId
@@ -121,9 +124,11 @@ class ProcessEngineStarterRegistrar(
             ).get()
           }
         }
+        logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}." }
       } catch (e: Exception) {
         val cause = exceptionResolver.getCause(e)
         if (cause is BpmnErrorOccurred) {
+          logger.trace { "PROCESS-ENGINE-WORKER-012: external task worker thrown an BPMN Error ${cause.errorCode}" }
           taskCompletionApi.completeTaskByError(
             CompleteTaskByErrorCmd(
               taskId = taskInformation.taskId,
@@ -133,6 +138,7 @@ class ProcessEngineStarterRegistrar(
             )
           ).get()
         } else {
+          logger.error(e) { "PROCESS-ENGINE-WORKER-011: Exception during execution of external task worker" }
           taskCompletionApi.failTask(
             FailTaskCmd(
               taskId = taskInformation.taskId,
@@ -144,9 +150,12 @@ class ProcessEngineStarterRegistrar(
       }
     },
     termination = {
-      logger.debug { "PROCESS-ENGINE_WORKER-010: Terminating task from topic $topic." }
+      logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task from topic $topic." }
     }
   )
 
+  /**
+   * Task handler as a function.
+   */
   fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any>) -> Any?
 }
