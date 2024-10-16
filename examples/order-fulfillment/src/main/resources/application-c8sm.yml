@@ -9,28 +9,30 @@ dev:
         c7embedded:
           enabled: false
         c8:
+          enabled: true
           service-tasks:
             delivery-strategy: subscription
             worker-id: worker
-            subscribing-delivery-initial-delay-in-seconds: 5000
           user-tasks:
             delivery-strategy: subscription_refreshing
             completion-strategy: job
-            schedule-delivery-fixed-rate-in-seconds: 5000 # every 5 seconds
+            schedule-delivery-fixed-rate-in-seconds: 5 # every 5 seconds
             tasklist-url: UNUSED
-            subscribing-delivery-initial-delay-in-seconds: 5000 # every 5 seconds
-
-zeebe:
-  client:
-    broker:
-      gateway-address: localhost:26500
-    connection-mode: ADDRESS
-    security:
-      plaintext: true
 
 camunda:
   bpm:
     enabled: false
+  client:
+    mode: self-managed
+    auth:
+      username: demo
+      password: demo
+    zeebe:
+      base-url: http://localhost:26500
+    tasklist:
+      base-url: http://localhost:8080/tasklist
+    identity:
+      enabled: false
 
 logging:
   level:
