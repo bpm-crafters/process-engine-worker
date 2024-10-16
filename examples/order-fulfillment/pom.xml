@@ -88,7 +88,6 @@
       <artifactId>camunda-platform-7-autologin</artifactId>
       <version>0.1.0</version>
     </dependency>
-
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -97,17 +96,10 @@
 
     <!-- C8 -->
     <dependency>
-      <groupId>io.camunda.spring</groupId>
-      <artifactId>spring-boot-starter-camunda</artifactId>
-      <version>8.5.3</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+      <version>8.6.3</version>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>io.camunda.spring</groupId>
-      <artifactId>java-common</artifactId>
-      <version>8.4.1</version>
-    </dependency>
-    -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-tasklist-client-java</artifactId>
