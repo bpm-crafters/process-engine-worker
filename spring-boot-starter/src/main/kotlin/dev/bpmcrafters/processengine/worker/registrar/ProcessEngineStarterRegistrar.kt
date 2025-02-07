@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Lazy
 import java.lang.reflect.Method
 
 
+private val logger = KotlinLogging.logger {}
 /**
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
  * @since 0.0.3
@@ -34,7 +35,6 @@ class ProcessEngineStarterRegistrar(
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
-  private val logger = KotlinLogging.logger {}
 
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()
