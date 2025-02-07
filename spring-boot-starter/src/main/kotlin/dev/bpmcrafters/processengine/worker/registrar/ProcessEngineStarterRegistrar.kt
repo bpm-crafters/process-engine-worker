@@ -4,7 +4,7 @@ import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
 import dev.bpmcrafters.processengineapi.task.*
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -34,8 +34,7 @@ class ProcessEngineStarterRegistrar(
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
-
-  companion object : KLogging()
+  private val logger = KotlinLogging.logger {}
 
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()

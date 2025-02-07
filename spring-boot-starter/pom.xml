@@ -33,6 +33,13 @@
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-api</groupId>
       <artifactId>process-engine-api</artifactId>
+      <exclusions>
+        <!-- FIXME remove if https://github.com/bpm-crafters/process-engine-api/issues/171 is resolved -->
+        <exclusion>
+          <groupId>io.github.microutils</groupId>
+          <artifactId>kotlin-logging-jvm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
