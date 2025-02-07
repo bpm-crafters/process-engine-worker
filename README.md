@@ -21,7 +21,31 @@ Add the following dependency to your project's class path:
 </dependency>
 ```
 
-Provide a Spring Component and annotate its method as following and doing everything else manually:
+The simplest way to implement the worker is to provide a component, with a worker method receiving typed
+objects and returning a map of variables, which are automatically published as process variables.
+
+```java
+@Component
+@RequiredArgsConstructor
+public class MySmartWorker {
+
+  private final FetchGoodsInPort fetchGoodsInPort;
+
+  @ProcessEngineWorker(topic = "fetchGoods")
+  public Map<String, Object> fetchGoods(
+    @Variable(name = "order") Order order
+  ) {
+    // execute some business code
+    var fetched = fetchGoodsInPort.fetchGoods(order);
+    
+    return Map.of("shipped", fetched);
+  }
+}
+
+```
+
+If you need more control in your worker, you can supply more parameters in your worker method, including the
+`ExternalTaskCompletionApi` and invoke it manually:
 
 ```java 
 
@@ -49,29 +73,6 @@ public class MyWorker {
     ).get();
   }
 }
-```
-
-You can get it even more convenient, if you want the worker to auto complete the task after
-the execution and use the automatic variable conversion:
-
-```java
-@Component
-@RequiredArgsConstructor
-public class MySmartWorker {
-
-  private final FetchGoodsInPort fetchGoodsInPort;
-
-  @ProcessEngineWorker(topic = "fetchGoods")
-  public Map<String, Object> fetchGoods(
-    @Variable(name = "order") Order order
-  ) {
-    // execute some business code
-    var fetched = fetchGoodsInPort.fetchGoods(order);
-    
-    return Map.of("shipped", fetched);
-  }
-}
-
 ```
 
 Parameter resolution of the method annotated with `ProcessEngineWorker` is based on a set of strategies
