@@ -28,7 +28,7 @@ public class FetchGoodsWorker {
   @SneakyThrows
   public void fetchGoods(
     TaskInformation taskInformation,
-    ServiceTaskCompletionApi externalTaskCompletionApi,
+    ServiceTaskCompletionApi serviceTaskCompletionApi,
     @Variable(name = "order") Order order
   ) {
     log.info("EXAMPLE: <Worker> Received task {}", taskInformation.getTaskId());
@@ -37,7 +37,7 @@ public class FetchGoodsWorker {
 
     if (inStock) {
       log.info("Example: <Worker> Goods are in stock.");
-      externalTaskCompletionApi.completeTask(
+      serviceTaskCompletionApi.completeTask(
         new CompleteTaskCmd(
           taskInformation.getTaskId(),
           () -> Map.of("shipped", true)
