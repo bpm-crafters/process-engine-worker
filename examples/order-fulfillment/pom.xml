@@ -9,7 +9,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-worker-example-order-fulfillemnt</artifactId>
+  <artifactId>process-engine-worker-example-order-fulfillment</artifactId>
   <description>Example: Order Fulfillment.</description>
 
   <dependencyManagement>
