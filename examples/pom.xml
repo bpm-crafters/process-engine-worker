@@ -15,6 +15,7 @@
 
   <modules>
     <module>order-fulfillment</module>
+    <module>camunda7-remote-starter-example</module>
   </modules>
 
   <dependencyManagement>

@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: camunda7-external-task-example
+  jpa:
+    open-in-view: true
+    database: postgresql
+    generate-ddl: true
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/worker-database
+    username: sa
+    password: sa
+
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
+
+logging:
+  level:
+    org.springframework.context.support.[PostProcessorRegistrationDelegate$BeanPostProcessorChecker]: ERROR
+
+camunda:
+  bpm:
+    client:
+      base-url: http://localhost:9090/engine-rest
