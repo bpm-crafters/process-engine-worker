@@ -6,4 +6,4 @@ import org.springframework.boot.runApplication
 fun main() = runApplication<ExampleApplication>().let { }
 
 @SpringBootApplication
-class ExampleApplication
+class ExampleApplication {}

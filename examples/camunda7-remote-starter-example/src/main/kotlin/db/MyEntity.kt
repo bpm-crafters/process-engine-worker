@@ -16,7 +16,16 @@ class MyEntity(
 
   @Column(name = "name_", unique = true)
   var name: String,
+
+  @Column(name = "verified")
+  var verified: Boolean = false,
 ) {
 
   constructor() : this(name = "")
+
+  override fun toString(): String {
+    return "MyEntity(id='$id', name='$name', verified=$verified)"
+  }
+
+
 }
