@@ -65,6 +65,8 @@ class ProcessEngineStarterRegistrar(
         null // null means no limitation
       }
 
+      val isTransactional: Boolean = false;
+
       val subscription = taskSubscriptionApi.subscribeForTask(
         subscribe(topic, variableNames, autoCompleteTask, payloadReturnType, method)
         { taskInformation, payload ->
@@ -107,6 +109,9 @@ class ProcessEngineStarterRegistrar(
     action = { taskInformation, payload ->
       try {
         logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
+
+        
+
         actionWithResult.invoke(taskInformation, payload).also { result ->
           if (autoCompleteTask) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId}" }

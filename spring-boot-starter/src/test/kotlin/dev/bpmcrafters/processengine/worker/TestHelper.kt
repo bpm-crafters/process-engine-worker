@@ -25,5 +25,8 @@ object TestHelper {
   }
 
   fun postgresContainer() = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
+    .withDatabaseName("integration-test")
+    .withUsername("integration-user")
+    .withPassword("5up3R53Cr3T")
 
 }

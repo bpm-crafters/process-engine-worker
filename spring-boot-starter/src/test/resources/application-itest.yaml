@@ -3,10 +3,13 @@ spring:
     name: ITest
   main:
     banner-mode: off
+  jpa:
+    open-in-view: true
+    database: postgresql
+    generate-ddl: true
 
 feign:
   client:
     config:
       default:
-        url: "http://localhost:38080/engine-rest/"
-        logger-level: BASIC
+        loggerLevel: BASIC

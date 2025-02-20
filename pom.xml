@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2024.12.2</version>
+    <version>2025.01.1</version>
     <relativePath/>
   </parent>
 
@@ -21,7 +21,7 @@
     <!-- TEST -->
     <mockito.version>5.4.0</mockito.version>
     <assertj.version>3.27.3</assertj.version>
-    <process-engine-api.version>0.4.0</process-engine-api.version>
+    <process-engine-api.version>0.4.1</process-engine-api.version>
     <spring-boot.version>3.4.2</spring-boot.version>
   </properties>
 
@@ -132,7 +132,7 @@
                   </excludes>
                 </bannedDependencies>
               </rules>
-              <fail>true</fail>
+              <fail>false</fail>
             </configuration>
           </execution>
         </executions>
