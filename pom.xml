@@ -21,7 +21,9 @@
     <!-- TEST -->
     <mockito.version>5.4.0</mockito.version>
     <assertj.version>3.27.3</assertj.version>
-    <process-engine-api.version>0.4.1</process-engine-api.version>
+    <!-- FIXME: release version -->
+<!--    <process-engine-api.version>0.4.2-SNAPSHOT</process-engine-api.version>-->
+    <process-engine-api.version>0.4.3-SNAPSHOT</process-engine-api.version>
     <spring-boot.version>3.4.2</spring-boot.version>
   </properties>
 
@@ -62,7 +64,7 @@
     <dependency>
       <groupId>io.github.oshai</groupId>
       <artifactId>kotlin-logging-jvm</artifactId>
-      <version>7.0.3</version>
+      <version>7.0.4</version>
     </dependency>
 
     <!-- TEST -->

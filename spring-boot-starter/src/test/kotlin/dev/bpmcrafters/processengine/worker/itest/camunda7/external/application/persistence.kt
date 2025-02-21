@@ -30,4 +30,6 @@ class MyEntity(
   }
 }
 
-interface MyEntityRepository : CrudRepository<MyEntity, String>
+interface MyEntityRepository : CrudRepository<MyEntity, String> {
+  fun findByName(name: String): MyEntity?
+}

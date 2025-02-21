@@ -25,4 +25,8 @@ class MyEntityService(private val repository: MyEntityRepository) {
     return entity
   }
 
+  fun findByName(name: String): MyEntity? {
+    return repository.findByName(name)
+  }
+
 }

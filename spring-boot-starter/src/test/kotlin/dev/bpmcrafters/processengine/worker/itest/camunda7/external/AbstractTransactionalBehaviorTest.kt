@@ -2,11 +2,13 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
 import dev.bpmcrafters.processengine.worker.TestHelper
 import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
+import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntityService
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
 import org.assertj.core.api.Assertions.assertThat
-import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.RepositoryService
-import org.junit.jupiter.api.Test
+import org.camunda.bpm.engine.RuntimeService
+import org.camunda.bpm.engine.runtime.ProcessInstance
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
@@ -18,8 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(classes = [TestApplication::class])
 @Testcontainers
 @ActiveProfiles("itest")
-class TransactionalBehaviorITest {
-
+abstract class AbstractTransactionalBehaviorTest {
   companion object {
 
     @Container
@@ -37,20 +38,48 @@ class TransactionalBehaviorITest {
       registry.add("spring.datasource.username") { postgresContainer.username }
       registry.add("spring.datasource.password") { postgresContainer.password }
       registry.add("spring.datasource.driver-class-name") { postgresContainer.driverClassName }
+      registry.add("camunda.bpm.client.base-url") { "http://localhost:${camundaContainer.firstMappedPort}/engine-rest/" }
       registry.add("feign.client.config.default.url") { "http://localhost:${camundaContainer.firstMappedPort}/engine-rest/" }
     }
   }
 
   @Autowired
-  private lateinit var repositoryService: RepositoryService
+  protected lateinit var repositoryService: RepositoryService
 
-  @Test
-  fun `makes sure process gets deployed with remote rest client`() {
+  @Autowired
+  protected lateinit var runtimeService: RuntimeService
+
+  @Autowired
+  protected lateinit var myEntityService: MyEntityService
+
+  @BeforeEach
+  fun setUp() {
     repositoryService.createDeployment()
-      .name("Simple Process")
+      .name("Example Process")
       .addClasspathResource("bpmn/example-process.bpmn")
       .deploy()
 
-    assertThat(repositoryService.createProcessDefinitionQuery().active().count()).isEqualTo(1)
+    assertThat(repositoryService.createProcessDefinitionQuery().active().latestVersion().count()).isEqualTo(1)
+  }
+
+  protected fun processInstanceIsRunning(processInstanceId: String): Boolean {
+    return runtimeService.createProcessInstanceQuery()
+      .active()
+      .processInstanceId(processInstanceId)
+      .count() > 0
+  }
+
+  protected fun startProcess(name: String, verified: Boolean, apiCallShouldFail: Boolean = false): ProcessInstance {
+    return runtimeService.startProcessInstanceByKey(
+      "example_process", mapOf(
+        "name" to name,
+        "verified" to verified,
+        "apiCallShouldFail" to apiCallShouldFail
+      )
+    )
+  }
+
+  protected fun entityExistsForName(name: String): Boolean {
+    return myEntityService.findByName(name) != null
   }
 }
