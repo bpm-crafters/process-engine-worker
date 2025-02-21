@@ -8,21 +8,21 @@ import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility.await
 import org.camunda.bpm.engine.RuntimeService
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
-@Import(NoTransactionalAnnotationSuccessTest.WorkerWithoutTransactionalAnnotation::class)
-class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest() {
+@Import(RequiredTransactionalAnnotationSuccessTest.WorkerRequiredTransactionalAnnotation::class)
+class RequiredTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest() {
 
-  class WorkerWithoutTransactionalAnnotation(
+  open class WorkerRequiredTransactionalAnnotation(
     myEntityService: MyEntityService,
     runtimeService: RuntimeService,
   ) : AbstractExampleProcessWorker(myEntityService = myEntityService, runtimeService = runtimeService) {
 
+    @Transactional
     @ProcessEngineWorker(
       topic = "example.create-entity"
     )
@@ -35,6 +35,7 @@ class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest()
       return super.createEntity(task, name, verified, apiCallShouldFail)
     }
 
+    @Transactional
     @ProcessEngineWorker(
       topic = "example.verify-entity",
     )
@@ -107,8 +108,8 @@ class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest()
     await().atMost(30, SECONDS).untilAsserted {
       assertThat(runtimeService.createProcessInstanceQuery().processInstanceId(pi2.id).active().count()).isEqualTo(0)
     }
-    // entity still exists -> atomicity violated
-    assertThat(entityExistsForName(name2)).isTrue()
+
+    assertThat(entityExistsForName(name2)).isFalse()
   }
 
 }

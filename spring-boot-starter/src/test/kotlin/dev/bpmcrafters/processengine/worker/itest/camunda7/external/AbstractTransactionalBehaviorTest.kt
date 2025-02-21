@@ -2,12 +2,14 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
 import dev.bpmcrafters.processengine.worker.TestHelper
 import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
+import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.AbstractExampleProcessWorker
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntityService
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
 import org.assertj.core.api.Assertions.assertThat
 import org.camunda.bpm.engine.RepositoryService
 import org.camunda.bpm.engine.RuntimeService
 import org.camunda.bpm.engine.runtime.ProcessInstance
+import org.hibernate.validator.internal.util.stereotypes.Lazy
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
