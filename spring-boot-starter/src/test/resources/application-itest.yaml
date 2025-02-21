@@ -8,8 +8,16 @@ spring:
     database: postgresql
     generate-ddl: true
 
-feign:
-  client:
-    config:
-      default:
-        loggerLevel: BASIC
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c7remote:
+          enabled: true
+          service-tasks:
+            delivery-strategy: remote_subscribed
+            worker-id: embedded-worker
+            lock-time-in-seconds: 30
+          user-tasks:
+            schedule-delivery-fixed-rate-in-seconds: 1
+            delivery-strategy: remote_scheduled

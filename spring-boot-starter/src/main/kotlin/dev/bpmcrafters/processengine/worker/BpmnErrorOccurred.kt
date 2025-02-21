@@ -3,7 +3,7 @@ package dev.bpmcrafters.processengine.worker
 /**
  * Exception for throwing a BPMN error.
  */
-class BpmnErrorOccurred(
+open class BpmnErrorOccurred(
   /**
    * Message details.
    */
@@ -17,3 +17,4 @@ class BpmnErrorOccurred(
    */
   val payload: Map<String, Any> = mapOf()
 ) : RuntimeException(message)
+// TODO: this probably wont stay Runtime

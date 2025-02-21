@@ -1,49 +1,24 @@
-package dev.bpmcrafters.processengine.worker
+package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import dev.bpmcrafters.processengine.worker.TestHelper
 import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
-import feign.Logger
+import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
 import org.assertj.core.api.Assertions.assertThat
+import org.camunda.bpm.engine.ProcessEngineConfiguration
 import org.camunda.bpm.engine.RepositoryService
-import org.camunda.community.rest.EnableCamundaRestClient
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.text.SimpleDateFormat
 
-@SpringBootTest
+@SpringBootTest(classes = [TestApplication::class])
 @Testcontainers
 @ActiveProfiles("itest")
 class TransactionalBehaviorITest {
-
-  @Configuration
-  @EnableCamundaRestClient
-  @SpringBootApplication
-  class Config {
-
-    @Bean
-    fun objectMapper(): ObjectMapper {
-      val mapper = ObjectMapper()
-      mapper.registerModule(Jdk8Module())
-      mapper.registerModule(JavaTimeModule())
-      mapper.registerModule(KotlinModule.Builder().build())
-      mapper.setDateFormat(SimpleDateFormat("yyyy-MM-dd'T'hh:MM:ss.SSSz"))
-      return mapper
-    }
-
-
-  }
 
   companion object {
 
@@ -66,10 +41,8 @@ class TransactionalBehaviorITest {
     }
   }
 
-
   @Autowired
   private lateinit var repositoryService: RepositoryService
-
 
   @Test
   fun `makes sure process gets deployed with remote rest client`() {

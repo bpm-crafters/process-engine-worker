@@ -11,7 +11,6 @@ spring:
     username: sa
     password: sa
 
-
 server:
   port: 8080
 
