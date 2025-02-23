@@ -7,7 +7,6 @@ import jakarta.persistence.Table
 import org.springframework.data.repository.CrudRepository
 import java.util.UUID
 
-
 @Entity(name = "MyEntity")
 @Table(name = "my_entity")
 class MyEntity(

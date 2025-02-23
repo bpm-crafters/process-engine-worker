@@ -2,7 +2,6 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external.application
 
 import org.springframework.stereotype.Service
 
-
 @Service
 class MyEntityService(private val repository: MyEntityRepository) {
 
@@ -28,5 +27,4 @@ class MyEntityService(private val repository: MyEntityRepository) {
   fun findByName(name: String): MyEntity? {
     return repository.findByName(name)
   }
-
 }

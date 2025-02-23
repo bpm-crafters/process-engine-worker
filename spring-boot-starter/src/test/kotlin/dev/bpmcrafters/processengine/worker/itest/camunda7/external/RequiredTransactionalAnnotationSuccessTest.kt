@@ -111,5 +111,4 @@ class RequiredTransactionalAnnotationSuccessTest : AbstractTransactionalBehavior
 
     assertThat(entityExistsForName(name2)).isFalse()
   }
-
 }
