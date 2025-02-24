@@ -24,7 +24,8 @@ public class ReceivePaymentWorker {
   private final ReceivePaymentInPort receivePaymentInPort;
 
   @ProcessEngineWorker(topic = "retrievePayment")
-  public Map<String, Object> receivePayment(TaskInformation taskInformation, @Variable(name = "order") Order order) {
+  public Map<String, Object> receivePayment(TaskInformation taskInformation, @Variable(name = "order") Order order)
+    throws BpmnErrorOccurred {
 
     log.info("EXAMPLE: <Worker> Received task {}", taskInformation.getTaskId());
     try {

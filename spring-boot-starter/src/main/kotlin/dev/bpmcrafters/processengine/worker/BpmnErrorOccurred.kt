@@ -2,6 +2,9 @@ package dev.bpmcrafters.processengine.worker
 
 /**
  * Exception for throwing a BPMN error.
+ * As an implementer of the process engine worker you can either throw this exception
+ * directly from your worker or subclass it with your business exception.
+ * @since 0.0.1
  */
 open class BpmnErrorOccurred(
   /**
@@ -16,5 +19,5 @@ open class BpmnErrorOccurred(
    * Payload passed to the process engine.
    */
   val payload: Map<String, Any> = mapOf()
-) : RuntimeException(message)
-// TODO: this probably wont stay Runtime
+) : Exception(message)
+
