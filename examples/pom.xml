@@ -13,9 +13,16 @@
   <packaging>pom</packaging>
   <description>Example: Parent for the examples.</description>
 
+  <properties>
+    <!-- Never deploy examples -->
+    <deploy.skip>true</deploy.skip>
+    <gpg.skip>true</gpg.skip>
+    <dokka.skip>true</dokka.skip>
+  </properties>
+
   <modules>
     <module>order-fulfillment</module>
-    <module>camunda7-remote-starter-example</module>
+    <module>camunda7-remote-starter-native</module>
   </modules>
 
   <dependencyManagement>
