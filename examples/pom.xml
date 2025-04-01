@@ -22,10 +22,8 @@
     <dependencies>
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
-        <artifactId>process-engine-api-bom</artifactId>
+        <artifactId>process-engine-api</artifactId>
         <version>${process-engine-api.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-worker</groupId>
