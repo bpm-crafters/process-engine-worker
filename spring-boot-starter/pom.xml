@@ -4,7 +4,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-root</artifactId>
-    <version>0.1.3</version>
+    <version>0.2.0</version>
   </parent>
 
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
@@ -18,14 +18,6 @@
         <scope>import</scope>
         <type>pom</type>
       </dependency>
-      <dependency>
-        <groupId>dev.bpm-crafters.process-engine-api</groupId>
-        <artifactId>process-engine-api-bom</artifactId>
-        <version>${process-engine-api.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 
@@ -33,6 +25,7 @@
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-api</groupId>
       <artifactId>process-engine-api</artifactId>
+      <version>${process-engine-api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -41,6 +34,14 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -53,6 +54,71 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-kotlin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <!-- Testing -->
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility-kotlin</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- C7 remote -->
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+      <artifactId>process-engine-adapter-camunda-platform-c7-remote-spring-boot-starter</artifactId>
+      <version>${process-engine-adapters-c7.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.springboot</groupId>
+      <artifactId>camunda-bpm-spring-boot-starter-external-task-client</artifactId>
+      <version>7.22.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.community.rest</groupId>
+      <artifactId>camunda-platform-7-rest-client-spring-boot-starter</artifactId>
+      <version>7.22.3</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

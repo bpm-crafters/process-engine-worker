@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: ITest
+  main:
+    banner-mode: off
+  jpa:
+    open-in-view: true
+    database: postgresql
+    generate-ddl: true
+
+dev:
+  bpm-crafters:
+    process-api:
+      worker:
+        register-process-workers: true
+      adapter:
+        c7remote:
+          enabled: true
+          service-tasks:
+            delivery-strategy: remote_subscribed
+            worker-id: embedded-worker
+            lock-time-in-seconds: 30
+          user-tasks:
+            schedule-delivery-fixed-rate-in-seconds: 100
+            delivery-strategy: remote_scheduled
+
+logging:
+  level:
+    dev.bpmcrafters: TRACE

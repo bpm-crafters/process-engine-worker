@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1tbjsw7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.32.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:collaboration id="Collaboration_1jqrwzn">
+    <bpmn:participant id="Participant_0aoqlgh" name="External Client transaction example" processRef="Process_1j0zchx" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1j0zchx" name="External Client transaction example" isExecutable="true" camunda:versionTag="1" camunda:historyTimeToLive="1">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="name" label="Name" type="string" defaultValue="Jan">
+            <camunda:validation>
+              <camunda:constraint name="required" />
+            </camunda:validation>
+          </camunda:formField>
+          <camunda:formField id="verified" label="Verified" type="boolean" defaultValue="false">
+            <camunda:validation />
+          </camunda:formField>
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_075wq2r</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="task_create_entity" name="Create Entity" camunda:type="external" camunda:topic="example.create-entity">
+      <bpmn:incoming>Flow_075wq2r</bpmn:incoming>
+      <bpmn:outgoing>Flow_03etaj7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_1fjtiwr" attachedToRef="task_create_entity">
+      <bpmn:outgoing>Flow_08nplvt</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1xr3xv1" errorRef="Error_17tnhi1" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_075wq2r" sourceRef="StartEvent_1" targetRef="task_create_entity" />
+    <bpmn:sequenceFlow id="Flow_03etaj7" sourceRef="task_create_entity" targetRef="Gateway_0mrf0r6" />
+    <bpmn:sequenceFlow id="Flow_08nplvt" sourceRef="Event_1fjtiwr" targetRef="Activity_0pf9yxx" />
+    <bpmn:sequenceFlow id="Flow_1ry7gjj" sourceRef="Activity_1t06zuf" targetRef="Event_1pxphqs" />
+    <bpmn:endEvent id="Event_1pxphqs">
+      <bpmn:incoming>Flow_1ry7gjj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_196nra8" sourceRef="Gateway_0mrf0r6" targetRef="Activity_1t06zuf" />
+    <bpmn:sequenceFlow id="Flow_1by8and" sourceRef="Activity_0pf9yxx" targetRef="Activity_0edc923" />
+    <bpmn:userTask id="Activity_1t06zuf" name="Confirm Creation">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="id" label="Id" type="string">
+            <camunda:properties />
+            <camunda:validation>
+              <camunda:constraint name="readonly" />
+            </camunda:validation>
+          </camunda:formField>
+          <camunda:formField id="name" label="Name" type="string">
+            <camunda:validation>
+              <camunda:constraint name="readonly" />
+            </camunda:validation>
+          </camunda:formField>
+          <camunda:formField id="verified" label="Verified" type="boolean">
+            <camunda:validation>
+              <camunda:constraint name="readonly" />
+            </camunda:validation>
+          </camunda:formField>
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_196nra8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ry7gjj</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_0mrf0r6">
+      <bpmn:incoming>Flow_03etaj7</bpmn:incoming>
+      <bpmn:incoming>Flow_0c45zfu</bpmn:incoming>
+      <bpmn:outgoing>Flow_196nra8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Activity_0pf9yxx" name="Verify">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="id" label="Id" type="string">
+            <camunda:validation>
+              <camunda:constraint name="readonly" />
+            </camunda:validation>
+          </camunda:formField>
+          <camunda:formField id="name" label="Name" type="string">
+            <camunda:validation>
+              <camunda:constraint name="readonly" />
+            </camunda:validation>
+          </camunda:formField>
+          <camunda:formField id="verified" label="Verified" type="boolean">
+            <camunda:validation>
+              <camunda:constraint name="required" />
+            </camunda:validation>
+          </camunda:formField>
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_08nplvt</bpmn:incoming>
+      <bpmn:outgoing>Flow_1by8and</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_0c45zfu" sourceRef="Activity_0edc923" targetRef="Gateway_0mrf0r6" />
+    <bpmn:serviceTask id="Activity_0edc923" name="Verify Entity" camunda:type="external" camunda:topic="example.verify-entity">
+      <bpmn:incoming>Flow_1by8and</bpmn:incoming>
+      <bpmn:outgoing>Flow_0c45zfu</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmn:error id="Error_17tnhi1" name="ERROR" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1jqrwzn">
+      <bpmndi:BPMNShape id="Participant_0aoqlgh_di" bpmnElement="Participant_0aoqlgh" isHorizontal="true">
+        <dc:Bounds x="160" y="90" width="880" height="360" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="232" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0egsece_di" bpmnElement="task_create_entity">
+        <dc:Bounds x="320" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1pxphqs_di" bpmnElement="Event_1pxphqs">
+        <dc:Bounds x="962" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0pagajm_di" bpmnElement="Activity_1t06zuf">
+        <dc:Bounds x="810" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0mrf0r6_di" bpmnElement="Gateway_0mrf0r6" isMarkerVisible="true">
+        <dc:Bounds x="715" y="205" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_11ex0lv_di" bpmnElement="Activity_0pf9yxx">
+        <dc:Bounds x="430" y="310" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0k5bujo_di" bpmnElement="Activity_0edc923">
+        <dc:Bounds x="600" y="310" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0m35ihf_di" bpmnElement="Event_1fjtiwr">
+        <dc:Bounds x="372" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_075wq2r_di" bpmnElement="Flow_075wq2r">
+        <di:waypoint x="268" y="230" />
+        <di:waypoint x="320" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03etaj7_di" bpmnElement="Flow_03etaj7">
+        <di:waypoint x="420" y="230" />
+        <di:waypoint x="715" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08nplvt_di" bpmnElement="Flow_08nplvt">
+        <di:waypoint x="390" y="288" />
+        <di:waypoint x="390" y="350" />
+        <di:waypoint x="430" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ry7gjj_di" bpmnElement="Flow_1ry7gjj">
+        <di:waypoint x="910" y="230" />
+        <di:waypoint x="962" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_196nra8_di" bpmnElement="Flow_196nra8">
+        <di:waypoint x="765" y="230" />
+        <di:waypoint x="810" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1by8and_di" bpmnElement="Flow_1by8and">
+        <di:waypoint x="530" y="350" />
+        <di:waypoint x="600" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0c45zfu_di" bpmnElement="Flow_0c45zfu">
+        <di:waypoint x="700" y="350" />
+        <di:waypoint x="740" y="350" />
+        <di:waypoint x="740" y="255" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

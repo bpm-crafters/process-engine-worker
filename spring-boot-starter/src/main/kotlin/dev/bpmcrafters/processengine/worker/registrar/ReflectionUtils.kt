@@ -6,6 +6,7 @@ import dev.bpmcrafters.processengine.worker.Variable
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.aop.support.AopUtils
+import org.springframework.core.annotation.AnnotationUtils
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
@@ -92,7 +93,6 @@ private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.l
 fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
 
 
-
 /**
  * Retrieves list of worker methods.
  */
@@ -105,7 +105,7 @@ fun Any.getAnnotatedWorkers(): List<Method> = AopUtils
  * Detects worker topic either using the annotation or defaulting to method name.
  */
 fun Method.getTopic(): String {
-  val workerAnnotation = this.getAnnotation(ProcessEngineWorker::class.java)
+  val workerAnnotation = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!
   return if (workerAnnotation.topic != DEFAULT_UNSET_TOPIC) {
     workerAnnotation.topic
   } else {
@@ -119,4 +119,33 @@ fun Method.getTopic(): String {
 fun Method.getAutoComplete(): Boolean {
   return this.getAnnotation(ProcessEngineWorker::class.java).autoComplete
 }
+
+/**
+ * Checks if the method of the worker is transactional.
+ * @return true, if the method should be executed transactional and be atomic with completion of the worker.
+ */
+fun Method.isTransactional() =
+  this.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)?.isTransactionalRequired() ?: false
+    || this.declaringClass.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)?.isTransactionalRequired() ?: false
+    || this.getAnnotation(jakarta.transaction.Transactional::class.java)?.isTransactionRequired() ?: false
+    || this.declaringClass.getAnnotation(jakarta.transaction.Transactional::class.java)?.isTransactionRequired() ?: false
+
+
+/**
+ * Resolves Spring TX propagation types.
+ */
+private fun org.springframework.transaction.annotation.Transactional.isTransactionalRequired() =
+  this.propagation == org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
+    || this.propagation == org.springframework.transaction.annotation.Propagation.REQUIRED
+    || this.propagation == org.springframework.transaction.annotation.Propagation.SUPPORTS
+    || this.propagation == org.springframework.transaction.annotation.Propagation.MANDATORY
+
+/**
+ * Resolves Jakarta TX propagation types.
+ */
+private fun jakarta.transaction.Transactional.isTransactionRequired() =
+  this.value == jakarta.transaction.Transactional.TxType.REQUIRED
+    || this.value == jakarta.transaction.Transactional.TxType.REQUIRES_NEW
+    || this.value == jakarta.transaction.Transactional.TxType.SUPPORTS
+    || this.value == jakarta.transaction.Transactional.TxType.MANDATORY
 
