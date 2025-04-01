@@ -29,7 +29,7 @@
 
   <modules>
     <module>spring-boot-starter</module>
-    <module>examples</module>
+    <!-- more modules see below -->
   </modules>
 
   <dependencyManagement>
@@ -92,8 +92,21 @@
       <artifactId>mockito-kotlin</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>example</id>
+      <activation>
+        <property>
+          <name>!skipExamples</name>
+        </property>
+      </activation>
+      <modules>
+        <module>examples</module>
+      </modules>
+    </profile>
+  </profiles>
 
   <build>
     <defaultGoal>clean jacoco:prepare-agent package</defaultGoal>
