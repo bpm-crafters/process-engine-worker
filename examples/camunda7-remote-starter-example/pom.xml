@@ -55,7 +55,7 @@
 
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
-      <artifactId>process-engine-adapter-camunda-platform-c7-testing</artifactId>
+      <artifactId>process-engine-adapter-camunda-platform-c7-remote-spring-boot-starter</artifactId>
       <version>${process-engine-adapters-c7.version}</version>
     </dependency>
 

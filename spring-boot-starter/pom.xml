@@ -82,12 +82,6 @@
       <version>${process-engine-adapters-c7.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
-      <artifactId>process-engine-adapter-camunda-platform-c7-testing</artifactId>
-      <version>${process-engine-adapters-c7.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
