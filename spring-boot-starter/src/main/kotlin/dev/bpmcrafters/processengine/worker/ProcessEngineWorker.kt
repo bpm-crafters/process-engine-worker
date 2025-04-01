@@ -2,10 +2,10 @@ package dev.bpmcrafters.processengine.worker
 
 /**
  * Indicates a method to be a worker.
+ * @since 0.0.1
  */
 @MustBeDocumented
 @Target(AnnotationTarget.FUNCTION)
-@SuppressWarnings("UnusedReturnValue")
 annotation class ProcessEngineWorker(
   /**
    * Topic name to subscribe this worker for.

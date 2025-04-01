@@ -9,7 +9,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-worker-example-order-fulfillemnt</artifactId>
+  <artifactId>process-engine-worker-example-order-fulfillment</artifactId>
   <description>Example: Order Fulfillment.</description>
 
   <dependencyManagement>
@@ -18,6 +18,20 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${spring-boot.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+        <artifactId>process-engine-adapter-camunda-platform-c7-bom</artifactId>
+        <version>${process-engine-adapters-c7.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+        <artifactId>process-engine-adapter-camunda-platform-c8-bom</artifactId>
+        <version>${process-engine-adapters-c8.version}</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -52,35 +66,14 @@
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
       <artifactId>process-engine-worker-spring-boot-starter</artifactId>
-      <exclusions>
-        <!-- FIXME remove if https://github.com/bpm-crafters/process-engine-api/issues/171 is resolved -->
-        <exclusion>
-          <groupId>io.github.microutils</groupId>
-          <artifactId>kotlin-logging-jvm</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <groupId>dev.bpm-crafters.process-engine-api</groupId>
-      <artifactId>process-engine-api-adapter-camunda-platform-c8-spring-boot-starter</artifactId>
-      <exclusions>
-        <!-- FIXME remove if https://github.com/bpm-crafters/process-engine-api/issues/171 is resolved -->
-        <exclusion>
-          <groupId>io.github.microutils</groupId>
-          <artifactId>kotlin-logging-jvm</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+      <artifactId>process-engine-adapter-camunda-platform-c8-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
-      <groupId>dev.bpm-crafters.process-engine-api</groupId>
-      <artifactId>process-engine-api-adapter-camunda-platform-c7-embedded-spring-boot-starter</artifactId>
-      <exclusions>
-        <!-- FIXME remove if https://github.com/bpm-crafters/process-engine-api/issues/171 is resolved -->
-        <exclusion>
-          <groupId>io.github.microutils</groupId>
-          <artifactId>kotlin-logging-jvm</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+      <artifactId>process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter</artifactId>
     </dependency>
 
     <!-- C7 -->

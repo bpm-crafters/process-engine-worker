@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
+import dev.bpmcrafters.processengineapi.Empty
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
@@ -10,7 +11,9 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
+import org.springframework.transaction.support.TransactionTemplate
 import java.lang.reflect.Method
+import java.util.concurrent.Future
 
 
 private val logger = KotlinLogging.logger {}
@@ -31,7 +34,9 @@ class ProcessEngineStarterRegistrar(
   @Lazy
   private val parameterResolver: ParameterResolver,
   @Lazy
-  private val resultResolver: ResultResolver
+  private val resultResolver: ResultResolver,
+  @Lazy
+  private val transactionalTemplate: TransactionTemplate
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -65,9 +70,18 @@ class ProcessEngineStarterRegistrar(
         null // null means no limitation
       }
 
+      // check if the method or class is marked to run in transaction
+      val isTransactional = method.isTransactional()
+
       val subscription = taskSubscriptionApi.subscribeForTask(
-        subscribe(topic, variableNames, autoCompleteTask, payloadReturnType, method)
-        { taskInformation, payload ->
+        subscribe(
+          topic = topic,
+          payloadDescription = variableNames,
+          autoCompleteTask = autoCompleteTask,
+          isTransactional = isTransactional,
+          payloadReturnType = payloadReturnType,
+          method = method
+        ) { taskInformation, payload ->
           val args: Array<Any?> = parameterResolver.createInvocationArguments(
             method = method,
             taskInformation = taskInformation,
@@ -88,6 +102,7 @@ class ProcessEngineStarterRegistrar(
    * @param topic subscription topic
    * @param payloadDescription description of the variables to be passed.
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
+   * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
    * @param method process engine worker method.
    * @param actionWithResult worker always returning the result.
@@ -96,6 +111,7 @@ class ProcessEngineStarterRegistrar(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
     autoCompleteTask: Boolean,
+    isTransactional: Boolean,
     payloadReturnType: Boolean,
     method: Method,
     actionWithResult: TaskHandlerWithResult
@@ -105,9 +121,16 @@ class ProcessEngineStarterRegistrar(
     taskDescriptionKey = topic,
     payloadDescription = payloadDescription,
     action = { taskInformation, payload ->
-      try {
-        logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
-        actionWithResult.invoke(taskInformation, payload).also { result ->
+
+      /*
+       * encapsulate as a function and call it directly or inside of transaction
+       */
+      fun workerAndApiInvocation() =
+        try {
+          logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
+          // execute worker
+          val result = actionWithResult.invoke(taskInformation, payload)
+          // complete
           if (autoCompleteTask) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId}" }
             taskCompletionApi.completeTask(
@@ -115,38 +138,47 @@ class ProcessEngineStarterRegistrar(
                 taskId = taskInformation.taskId
               ) {
                 if (payloadReturnType) {
-                  resultResolver.resolve(method, result)
+                  resultResolver.resolve(method = method, result = result)
                 } else {
                   mapOf()
                 }
               }
             ).get()
           }
+          logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}." }
+        } catch (e: Exception) {
+          val cause = exceptionResolver.getCause(e)
+          if (cause is BpmnErrorOccurred) {
+            logger.trace { "PROCESS-ENGINE-WORKER-012: external task worker thrown an BPMN Error ${cause.errorCode}" }
+            taskCompletionApi.completeTaskByError(
+              CompleteTaskByErrorCmd(
+                taskId = taskInformation.taskId,
+                errorCode = cause.errorCode,
+                errorMessage = cause.message,
+                payloadSupplier = { cause.payload }
+              )
+            ).get()
+          } else {
+            logger.error(e) { "PROCESS-ENGINE-WORKER-011: Exception during execution of external task worker" }
+            taskCompletionApi.failTask(
+              FailTaskCmd(
+                taskId = taskInformation.taskId,
+                reason = cause.message ?: "Exception during execution of external task worker",
+                errorDetails = cause.stackTraceToString()
+              )
+            ).get()
+          }
         }
-        logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}." }
-      } catch (e: Exception) {
-        val cause = exceptionResolver.getCause(e)
-        if (cause is BpmnErrorOccurred) {
-          logger.trace { "PROCESS-ENGINE-WORKER-012: external task worker thrown an BPMN Error ${cause.errorCode}" }
-          taskCompletionApi.completeTaskByError(
-            CompleteTaskByErrorCmd(
-              taskId = taskInformation.taskId,
-              errorCode = cause.errorCode,
-              errorMessage = cause.message,
-              payloadSupplier = { cause.payload }
-            )
-          ).get()
-        } else {
-          logger.error(e) { "PROCESS-ENGINE-WORKER-011: Exception during execution of external task worker" }
-          taskCompletionApi.failTask(
-            FailTaskCmd(
-              taskId = taskInformation.taskId,
-              reason = cause.message ?: "Exception during execution of external task worker",
-              errorDetails = cause.stackTraceToString()
-            )
-          ).get()
+
+      // depending on transactional annotations, execute either in a new transaction or direct
+      if (isTransactional) {
+        transactionalTemplate.executeWithoutResult {
+          workerAndApiInvocation()
         }
+      } else {
+        workerAndApiInvocation()
       }
+
     },
     termination = {
       logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task from topic $topic." }

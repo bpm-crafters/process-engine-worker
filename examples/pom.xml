@@ -13,18 +13,24 @@
   <packaging>pom</packaging>
   <description>Example: Parent for the examples.</description>
 
+  <properties>
+    <!-- Never deploy examples -->
+    <deploy.skip>true</deploy.skip>
+    <gpg.skip>true</gpg.skip>
+    <dokka.skip>true</dokka.skip>
+  </properties>
+
   <modules>
     <module>order-fulfillment</module>
+    <module>camunda7-remote-starter-native</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
-        <artifactId>process-engine-api-bom</artifactId>
+        <artifactId>process-engine-api</artifactId>
         <version>${process-engine-api.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-worker</groupId>

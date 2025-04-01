@@ -1,0 +1,8 @@
+-------------------------------------------------------------------------------
+
+Camunda 7 remote client starter Example (powered by Spring Boot ${spring-boot.version})
+
+  Name:       ${spring.application.name}
+  Swagger-UI: http://localhost:${server.port}/swagger-ui/index.html
+
+-------------------------------------------------------------------------------
