@@ -44,7 +44,7 @@ public class UserTaskPool implements UserTaskOutPort {
             log.info("EXAMPLE: <USER TASKS> Received user task {} ({}:{})",
               taskInformation.getTaskId(),
               taskInformation.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
-              taskInformation.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY));
+              taskInformation.getMeta().get(CommonRestrictions.ACTIVITY_ID));
             tasks.put(taskInformation, payload);
           }
         },
@@ -54,7 +54,7 @@ public class UserTaskPool implements UserTaskOutPort {
             log.info("EXAMPLE: <USER TASKS> Removed user task {} ({}:{})",
               ti.getTaskId(),
               ti.getMeta().get(CommonRestrictions.PROCESS_DEFINITION_KEY),
-              ti.getMeta().get(CommonRestrictions.TASK_DEFINITION_KEY)
+              ti.getMeta().get(CommonRestrictions.ACTIVITY_ID)
             );
           });
         }
