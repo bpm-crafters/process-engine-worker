@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 public class UserTaskPool implements UserTaskOutPort {
 
   private final TaskSubscriptionApi subscriptionApi;
-
   private final ConcurrentHashMap<TaskInformation, Map<String, ?>> tasks = new ConcurrentHashMap<>();
 
   @PostConstruct
@@ -48,8 +47,8 @@ public class UserTaskPool implements UserTaskOutPort {
             tasks.put(taskInformation, payload);
           }
         },
-        taskId -> {
-          tasks.keySet().stream().filter(ti -> ti.getTaskId().equals(taskId)).findFirst().ifPresent(ti -> {
+        (TaskInformation taskInformation) -> {
+          tasks.keySet().stream().filter(ti -> ti.getTaskId().equals(taskInformation.getTaskId())).findFirst().ifPresent(ti -> {
             tasks.remove(ti);
             log.info("EXAMPLE: <USER TASKS> Removed user task {} ({}:{})",
               ti.getTaskId(),
