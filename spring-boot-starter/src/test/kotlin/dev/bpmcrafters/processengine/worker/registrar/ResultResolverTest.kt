@@ -27,7 +27,7 @@ class ResultResolverTest {
   fun `detects method returning generic map`() {
     class Worker {
       @ProcessEngineWorker
-      fun work(): Map<String, out Any> {
+      fun work(): Map<String, Any> {
         return mapOf("string" to "value", "string2" to "other")
       }
     }

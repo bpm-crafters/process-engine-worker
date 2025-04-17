@@ -181,7 +181,7 @@ class ProcessEngineStarterRegistrar(
 
     },
     termination = {
-      logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task from topic $topic." }
+      logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task ${it.taskId} from topic $topic" }
     }
   )
 
