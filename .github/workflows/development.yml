@@ -1,4 +1,5 @@
 name: Development branches
+
 permissions:
   contents: read
 
