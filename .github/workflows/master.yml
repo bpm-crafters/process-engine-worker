@@ -1,5 +1,9 @@
 name: Produces and releases artifacts
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches:
