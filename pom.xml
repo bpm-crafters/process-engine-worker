@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2025.04.3</version>
+    <version>2025.05.1</version>
     <relativePath/>
   </parent>
 
@@ -20,7 +20,7 @@
   <properties>
     <spring-boot.version>3.4.5</spring-boot.version>
     <process-engine-api.version>1.1</process-engine-api.version>
-    <process-engine-adapters-c7.version>2025.04.3</process-engine-adapters-c7.version>
+    <process-engine-adapters-c7.version>2025.05.1</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2025.04.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>5.4.0</mockito.version>
