@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-examples</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -13,7 +13,7 @@
   <description>Example: Transactional behavior of external task client using C7 external task client</description>
 
   <properties>
-    <camunda.version>7.22.0</camunda.version>
+    <camunda.version>7.23.0</camunda.version>
   </properties>
 
   <dependencyManagement>
@@ -44,7 +44,7 @@
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-      <version>2.8.6</version>
+      <version>2.8.8</version>
     </dependency>
 
     <!-- Native Camunda -->

@@ -5,23 +5,23 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2025.04.1</version>
+    <version>2025.05.1</version>
     <relativePath/>
   </parent>
 
   <groupId>dev.bpm-crafters.process-engine-worker</groupId>
   <artifactId>process-engine-worker-root</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
   <name>${project.artifactId}</name>
   <description>Process Engine Worker</description>
   <url>https://github.com/bpm-crafters/process-engine-worker/</url>
   <packaging>pom</packaging>
 
   <properties>
-    <spring-boot.version>3.4.4</spring-boot.version>
+    <spring-boot.version>3.4.5</spring-boot.version>
     <process-engine-api.version>1.1</process-engine-api.version>
-    <process-engine-adapters-c7.version>2025.04.2</process-engine-adapters-c7.version>
-    <process-engine-adapters-c8.version>2025.04.1</process-engine-adapters-c8.version>
+    <process-engine-adapters-c7.version>2025.05.1</process-engine-adapters-c7.version>
+    <process-engine-adapters-c8.version>2025.05.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>5.4.0</mockito.version>
     <assertj.version>3.27.3</assertj.version>

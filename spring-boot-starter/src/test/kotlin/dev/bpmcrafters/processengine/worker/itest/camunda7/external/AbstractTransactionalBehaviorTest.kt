@@ -25,7 +25,7 @@ abstract class AbstractTransactionalBehaviorTest {
 
     @Container
     @JvmStatic
-    val camundaContainer = Camunda7RunTestContainer("run-7.22.0")
+    val camundaContainer = Camunda7RunTestContainer("run-7.23.0")
 
     @Container
     @JvmStatic
