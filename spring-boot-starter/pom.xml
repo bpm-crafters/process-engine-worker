@@ -69,7 +69,6 @@
     </dependency>
 
     <!-- Testing -->
-
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility-kotlin</artifactId>
@@ -111,13 +110,13 @@
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
       <artifactId>camunda-bpm-spring-boot-starter-external-task-client</artifactId>
-      <version>7.23.0</version>
+      <version>${camunda-bpm-spring-boot-starter-external-task-client.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.camunda.community.rest</groupId>
-      <artifactId>camunda-platform-7-rest-client-spring-boot-starter</artifactId>
-      <version>7.23.2</version>
+      <artifactId>camunda-platform-7-rest-client-spring-boot-starter-feign</artifactId>
+      <version>${camunda-platform-7-rest-client-spring-boot-starter-feign.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

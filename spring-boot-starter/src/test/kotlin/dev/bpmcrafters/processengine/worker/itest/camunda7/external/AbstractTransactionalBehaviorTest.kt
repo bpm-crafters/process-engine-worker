@@ -4,13 +4,20 @@ import dev.bpmcrafters.processengine.worker.TestHelper
 import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntityService
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
+import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
+import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
+import dev.bpmcrafters.processengineapi.deploy.NamedResource
+import dev.bpmcrafters.processengineapi.process.StartProcessApi
+import dev.bpmcrafters.processengineapi.process.StartProcessByDefinitionCmd
 import org.assertj.core.api.Assertions.assertThat
-import org.camunda.bpm.engine.RepositoryService
-import org.camunda.bpm.engine.RuntimeService
-import org.camunda.bpm.engine.runtime.ProcessInstance
+import org.camunda.community.rest.client.api.DeploymentApiClient
+import org.camunda.community.rest.client.api.ProcessDefinitionApi
+import org.camunda.community.rest.client.api.ProcessDefinitionApiClient
+import org.camunda.community.rest.client.api.ProcessInstanceApiClient
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatusCode
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -42,41 +49,61 @@ abstract class AbstractTransactionalBehaviorTest {
       registry.add("feign.client.config.default.url") { "http://localhost:${camundaContainer.firstMappedPort}/engine-rest/" }
     }
   }
+  @Autowired
+  private lateinit var deploymentApi: DeploymentApi
+  @Autowired
+  private lateinit var startProcessApi: StartProcessApi
 
   @Autowired
-  protected lateinit var repositoryService: RepositoryService
-
+  private lateinit var processDefinitionApiClient: ProcessDefinitionApiClient
   @Autowired
-  protected lateinit var runtimeService: RuntimeService
-
+  private lateinit var processInstanceApiClient: ProcessInstanceApiClient
   @Autowired
-  protected lateinit var myEntityService: MyEntityService
+  private lateinit var myEntityService: MyEntityService
 
   @BeforeEach
   fun setUp() {
-    repositoryService.createDeployment()
-      .name("Example Process")
-      .addClasspathResource("bpmn/example-process.bpmn")
-      .deploy()
-
-    assertThat(repositoryService.createProcessDefinitionQuery().active().latestVersion().count()).isEqualTo(1)
+    deploymentApi.deploy(
+      DeployBundleCommand(
+        listOf(NamedResource.fromClasspath("bpmn/example-process.bpmn"))
+      )
+    ).get().let { deployment ->
+      assertThat(deployment).isNotNull
+    }
   }
 
   protected fun processInstanceIsRunning(processInstanceId: String): Boolean {
-    return runtimeService.createProcessInstanceQuery()
-      .active()
-      .processInstanceId(processInstanceId)
-      .count() > 0
+    return processInstanceApiClient.getProcessInstancesCount(
+      processInstanceId,
+      null, null,
+      null,
+      null, null, null, null,
+      null,
+      null, null, null, null,
+      true,
+      false,
+      false,
+      null, null,null, null,
+      null, null, null,
+      null,
+      null,
+      true,
+      null, null, null
+    )?.body?.count == 1L
   }
 
-  protected fun startProcess(name: String, verified: Boolean, apiCallShouldFail: Boolean = false): ProcessInstance {
-    return runtimeService.startProcessInstanceByKey(
-      "example_process", mapOf(
-        "name" to name,
-        "verified" to verified,
-        "apiCallShouldFail" to apiCallShouldFail
+  protected fun startProcess(name: String, verified: Boolean, apiCallShouldFail: Boolean = false): String {
+    return startProcessApi.startProcess(
+      StartProcessByDefinitionCmd(
+        definitionKey = "example_process",
+        mapOf(
+          "name" to name,
+          "verified" to verified,
+          "apiCallShouldFail" to apiCallShouldFail
+        )
       )
-    )
+    ).get()
+      .instanceId
   }
 
   protected fun entityExistsForName(name: String): Boolean {

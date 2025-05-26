@@ -3,13 +3,14 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external.application
 import dev.bpmcrafters.processengineapi.CommonRestrictions
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.camunda.bpm.engine.RuntimeService
+import org.camunda.community.rest.client.api.ProcessInstanceApiClient
+import org.camunda.community.rest.client.model.SuspensionStateDto
 
 private val logger = KotlinLogging.logger {}
 
 abstract class AbstractExampleProcessWorker(
   protected val myEntityService: MyEntityService,
-  protected val runtimeService: RuntimeService,
+  protected val processInstanceApiClient: ProcessInstanceApiClient,
 ) {
 
   open fun createEntity(
@@ -22,8 +23,8 @@ abstract class AbstractExampleProcessWorker(
 
     if (apiCallShouldFail) {
       val processInstanceId = task.meta[CommonRestrictions.PROCESS_INSTANCE_ID]!!
-      logger.info { "simulating external API error by suspending the processInstance: ${processInstanceId}" }
-      runtimeService.suspendProcessInstanceById(processInstanceId)
+      logger.info { "simulating external API error by suspending the processInstance: $processInstanceId" }
+      processInstanceApiClient.updateSuspensionStateById(processInstanceId, SuspensionStateDto().suspended(true))
     }
 
     // this fails with unique constraint when we use the name twice

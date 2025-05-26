@@ -27,7 +27,8 @@ public class ReceiveOrderUseCase implements ReceiveOrderInPort {
     startProcessApi.startProcess(
       new StartProcessByMessageCmd(
         "Msg_OrderReceived",
-        () -> Map.of("order", order)
+        () -> Map.of("order", order),
+        Map.of()
       )
     ).get();
   }
