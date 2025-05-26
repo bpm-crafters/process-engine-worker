@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-examples</artifactId>
-    <version>0.4.0</version>
+    <version>0.4.1</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -32,6 +32,13 @@
         <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
         <artifactId>process-engine-adapter-camunda-platform-c8-bom</artifactId>
         <version>${process-engine-adapters-c8.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-bom</artifactId>
+        <version>7.23.0</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -85,46 +92,29 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-plugin-spin</artifactId>
-      <version>7.23.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.camunda.spin</groupId>
-      <artifactId>camunda-spin-core</artifactId>
-      <version>7.23.0</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.spin</groupId>
       <artifactId>camunda-spin-dataformat-json-jackson</artifactId>
-      <version>7.23.0</version>
     </dependency>
     <dependency>
       <groupId>io.holunda</groupId>
       <artifactId>camunda-platform-7-autologin</artifactId>
-      <version>0.1.3</version>
-      <exclusions>
-        <!-- FIXME remove if https://github.com/bpm-crafters/process-engine-api/issues/171 is resolved -->
-        <exclusion>
-          <groupId>io.github.microutils</groupId>
-          <artifactId>kotlin-logging-jvm</artifactId>
-        </exclusion>
-      </exclusions>
+      <version>2025.05.1</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
     </dependency>
 
-
     <!-- C8 -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>spring-boot-starter-camunda-sdk</artifactId>
-      <version>8.7.2</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-tasklist-client-java</artifactId>
-      <version>8.7.1</version>
     </dependency>
 
   </dependencies>
