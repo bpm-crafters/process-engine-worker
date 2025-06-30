@@ -16,6 +16,14 @@ open class ParameterResolver private constructor(
 ) {
   companion object {
 
+    fun Map<String, Any>.toVariableList(): String {
+      return if (this.isEmpty()) {
+        "no process variables"
+      } else {
+        this.keys.joinToString(", ") { chars -> "'$chars'" }
+      }
+    }
+
     /**
      * Creates a new builder responsible for creation of the parameter resolver.
      */
@@ -58,7 +66,9 @@ open class ParameterResolver private constructor(
               parameterExtractor = { parameter, _, payload, variableConverter, _ ->
                 parameter.extractVariableName().let { variablesName ->
                   if (parameter.extractVariableMandatoryFlag() && !parameter.isOptional()) { // optional allows null
-                    require(payload.keys.contains(variablesName)) { "Expected payload to contain variable '$variablesName', but it contained ${payload.keys.joinToString(", ") { chars -> "'$chars'" }} only." }
+                    require(payload.keys.contains(variablesName)) {
+                      "Expected payload to contain variable '$variablesName', but it contained ${payload.toVariableList()}."
+                    }
                   }
                   val value = payload[variablesName]?.let {
                     variableConverter.mapToType(value = payload[variablesName], type = parameter.type)
