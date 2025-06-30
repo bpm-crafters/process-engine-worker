@@ -224,7 +224,7 @@ class ParameterResolverTest {
     val worker = Worker()
     val method = worker.getAnnotatedWorkers().first()
     val exception = assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
-    assertThat(exception).hasMessage("Expected payload to contain variable 'not-existing', but it contained 'string', 'long' only.")
+    assertThat(exception).hasMessage("Expected payload to contain variable 'not-existing', but it contained 'string', 'long'.")
 
   }
 
