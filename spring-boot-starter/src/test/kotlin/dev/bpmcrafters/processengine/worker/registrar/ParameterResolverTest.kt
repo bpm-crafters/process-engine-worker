@@ -81,21 +81,22 @@ class ParameterResolverTest {
 
     class Worker {
       @ProcessEngineWorker
-      fun work(payload: Map<String, Any>, ti: TaskInformation, api: ServiceTaskCompletionApi) {
+      fun work_A(payload: Map<String, Any>, ti: TaskInformation, api: ServiceTaskCompletionApi) {
       }
 
       @ProcessEngineWorker
-      fun work2(ti: TaskInformation, payload: Map<String, Any>, api: ServiceTaskCompletionApi) {
+      fun work_B(ti: TaskInformation, payload: Map<String, Any>, api: ServiceTaskCompletionApi) {
       }
 
       @ProcessEngineWorker
-      fun work3(api: ServiceTaskCompletionApi, ti: TaskInformation, payload: Map<String, Any>) {
+      fun work_C(api: ServiceTaskCompletionApi, ti: TaskInformation, payload: Map<String, Any>) {
       }
     }
 
     val worker = Worker()
+    val workers = worker.getAnnotatedWorkers()
 
-    val work = worker.getAnnotatedWorkers()[0]
+    val work = workers.first { it.name == "work_A" }
     val args = resolver.createInvocationArguments(work, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(3)
@@ -104,7 +105,7 @@ class ParameterResolverTest {
     assertThat(args[2]).isEqualTo(taskCompletionApi)
     work.invoke(worker, *args)
 
-    val work2 = worker.getAnnotatedWorkers()[1]
+    val work2 = workers.first { it.name == "work_B" }
     val args2 = resolver.createInvocationArguments(work2, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args2).isNotNull
     assertThat(args2).hasSize(3)
@@ -113,7 +114,7 @@ class ParameterResolverTest {
     assertThat(args2[2]).isEqualTo(taskCompletionApi)
     work2.invoke(worker, *args2)
 
-    val work3 = worker.getAnnotatedWorkers()[2]
+    val work3 = workers.first { it.name == "work_C" }
     val args3 = resolver.createInvocationArguments(work3, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args3).isNotNull
     assertThat(args3).hasSize(3)
@@ -223,7 +224,8 @@ class ParameterResolverTest {
 
     val worker = Worker()
     val method = worker.getAnnotatedWorkers().first()
-    val exception = assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
+    val exception =
+      assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
     assertThat(exception).hasMessage("Expected payload to contain variable 'not-existing', but it contained 'string', 'long'.")
 
   }
@@ -239,7 +241,8 @@ class ParameterResolverTest {
 
     val worker = Worker()
     val method = worker.getAnnotatedWorkers().first()
-    val exception = assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
+    val exception =
+      assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
     assertThat(exception).hasMessage("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument 1 of Worker#work of type String.")
 
   }
