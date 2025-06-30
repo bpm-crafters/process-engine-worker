@@ -5,6 +5,7 @@ import dev.bpmcrafters.processengineapi.task.TaskInformation
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.util.*
+import java.util.function.Function
 import java.util.function.Predicate
 
 /**
@@ -43,22 +44,22 @@ open class ParameterResolver private constructor(
             // TaskInformation
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isTaskInformation() },
-              parameterExtractor = { _, taskInformation, _, _, _ -> taskInformation },
+              parameterExtractor = { parameterExtractor -> parameterExtractor.taskInformation },
             ),
             // ServiceTaskCompletionApi
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isTaskCompletionApiParameter() },
-              parameterExtractor = { _, _, _, _, taskCompletionApi -> taskCompletionApi },
+              parameterExtractor = { parameterExtractor -> parameterExtractor.taskCompletionApi },
             ),
             // Payload: Map<String, Any>
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isPayload() },
-              parameterExtractor = { _, _, payload, _, _ -> payload },
+              parameterExtractor = { parameterExtractor -> parameterExtractor.payload },
             ),
             // Variable converter
             ParameterResolutionStrategy(
               parameterMatcher = { param -> param.isVariableConverter() },
-              parameterExtractor = { _, _, _, variableConverter, _ -> variableConverter },
+              parameterExtractor = { parameterExtractor -> parameterExtractor.variableConverter },
             ),
             // Annotated variable (`@Variable`)
             ParameterResolutionStrategy(
@@ -115,7 +116,30 @@ open class ParameterResolver private constructor(
   data class ParameterResolutionStrategy(
     val parameterMatcher: Predicate<Parameter>,
     val parameterExtractor: (Parameter, TaskInformation, Map<String, Any>, VariableConverter, ServiceTaskCompletionApi) -> Any?
-  )
+  ) {
+
+    /**
+     * Java friendly secondary constructor that makes it easier to implement
+     * the parameterExtractor function.
+     */
+    constructor(
+      parameterMatcher: Predicate<Parameter>,
+      parameterExtractor: Function<ParameterExtractor, Any?>
+    ) : this(
+      parameterMatcher = parameterMatcher,
+      parameterExtractor = { parameter, taskInformation, payload, variableConverter, taskCompletionApi ->
+        parameterExtractor.apply(
+          ParameterExtractor(
+            parameter = parameter,
+            taskInformation = taskInformation,
+            payload = payload,
+            variableConverter = variableConverter,
+            taskCompletionApi = taskCompletionApi
+          )
+        )
+      }
+    )
+  }
 
   /**
    * At the end, the parameter resolver is getting an annotated worker method and is responsible for creation a list of arguments to be passed to the
@@ -127,11 +151,12 @@ open class ParameterResolver private constructor(
    * @param variableConverter converter from JSON to variable map.
    * @return arguments list.
    */
-  open fun createInvocationArguments(method: Method,
-                                     taskInformation: TaskInformation,
-                                     payload: Map<String, Any>,
-                                     variableConverter: VariableConverter,
-                                     taskCompletionApi: ServiceTaskCompletionApi
+  open fun createInvocationArguments(
+    method: Method,
+    taskInformation: TaskInformation,
+    payload: Map<String, Any>,
+    variableConverter: VariableConverter,
+    taskCompletionApi: ServiceTaskCompletionApi
   ): Array<Any?> {
     val arguments = method.parameters.mapIndexed { i: Int, parameter: Parameter ->
       (this.strategies.firstOrNull { it.parameterMatcher.test(parameter) }
@@ -141,4 +166,14 @@ open class ParameterResolver private constructor(
     return arguments.toTypedArray()
   }
 
+  /**
+   * Wraps parameters of parameterExtractor for simplified usage from java.
+   */
+  data class ParameterExtractor(
+    val parameter: Parameter,
+    val taskInformation: TaskInformation,
+    val payload: Map<String, Any>,
+    val variableConverter: VariableConverter,
+    val taskCompletionApi: ServiceTaskCompletionApi
+  )
 }
