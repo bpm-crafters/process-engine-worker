@@ -17,6 +17,14 @@ open class ParameterResolver private constructor(
 ) {
   companion object {
 
+    fun Map<String, Any>.toVariableList(): String {
+      return if (this.isEmpty()) {
+        "no process variables"
+      } else {
+        this.keys.joinToString(", ") { chars -> "'$chars'" }
+      }
+    }
+
     /**
      * Creates a new builder responsible for creation of the parameter resolver.
      */
@@ -60,11 +68,7 @@ open class ParameterResolver private constructor(
                 parameter.extractVariableName().let { variablesName ->
                   if (parameter.extractVariableMandatoryFlag() && !parameter.isOptional()) { // optional allows null
                     require(payload.keys.contains(variablesName)) {
-                      "Expected payload to contain variable '$variablesName', but it contained ${
-                        payload.keys.joinToString(
-                          ", "
-                        ) { chars -> "'$chars'" }
-                      } only."
+                      "Expected payload to contain variable '$variablesName', but it contained ${payload.toVariableList()}."
                     }
                   }
                   val value = payload[variablesName]?.let {
@@ -156,8 +160,11 @@ open class ParameterResolver private constructor(
   ): Array<Any?> {
     val arguments = method.parameters.mapIndexed { i: Int, parameter: Parameter ->
       (this.strategies.firstOrNull { it.parameterMatcher.test(parameter) }
-        ?: throw IllegalArgumentException("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument $i of ${method.declaringClass.simpleName}#${method.name} of type ${parameter.type.simpleName}.")
-        ).parameterExtractor.invoke(parameter, taskInformation, payload, variableConverter, taskCompletionApi)
+        ?: throw IllegalArgumentException(
+          "Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. "
+            + "Could not find a strategy to resolve argument $i of ${method.declaringClass.simpleName}#${method.name} of type ${parameter.type.simpleName}."
+        )
+      ).parameterExtractor.invoke(parameter, taskInformation, payload, variableConverter, taskCompletionApi)
     }
     return arguments.toTypedArray()
   }
