@@ -8,6 +8,7 @@
   </parent>
 
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
+  <name>${project.artifactId}</name>
 
   <dependencyManagement>
     <dependencies>
