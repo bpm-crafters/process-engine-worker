@@ -1,7 +1,5 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
-import org.springframework.transaction.TransactionException
-import org.springframework.transaction.TransactionSystemException
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ExecutionException
 
@@ -25,18 +23,13 @@ class ExceptionResolver {
       } else {
         e
       }
-      is TransactionSystemException -> if (e.applicationException != null) {
-        getCause(e.applicationException!!)
-      } else if (e.cause != null) {
+
+      is ExecutionException -> if (e.cause != null) {
         getCause(e.cause!!)
       } else {
         e
       }
-      is ExecutionException, is TransactionException -> if (e.cause != null) {
-        getCause(e.cause!!)
-      } else {
-        e
-      }
+
       else -> e
     }
   }
