@@ -3,7 +3,8 @@
 
 [![incubating](https://img.shields.io/badge/lifecycle-INCUBATING-orange.svg)](https://github.com/holisticon#open-source-lifecycle)
 [![Development branches](https://github.com/bpm-crafters/process-engine-worker/actions/workflows/development.yml/badge.svg)](https://github.com/bpm-crafters/process-engine-worker/actions/workflows/development.yml)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter/badge.svg)](https://maven-badges.herokuapp.com/maven-central/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter)
+[![Maven Central Version](https://img.shields.io/maven-central/v/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter)](https://central.sonatype.com/artifact/dev.bpm-crafters.process-engine-worker/process-engine-worker-spring-boot-starter)
+
 
 ## Purpose of the library
 
