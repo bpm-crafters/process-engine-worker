@@ -9,8 +9,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-worker-example-order-fulfillment</artifactId>
-  <description>Example: Order Fulfillment.</description>
+  <artifactId>process-engine-worker-example-camunda7-embedded-starter-transaction</artifactId>
+  <description>Example: Transactional behavior of external task client using C7 embedded</description>
 
   <dependencyManagement>
     <dependencies>
@@ -29,13 +29,6 @@
         <type>pom</type>
       </dependency>
       <dependency>
-        <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
-        <artifactId>process-engine-adapter-camunda-platform-c8-bom</artifactId>
-        <version>${process-engine-adapters-c8.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-      <dependency>
         <groupId>org.camunda.bpm</groupId>
         <artifactId>camunda-bom</artifactId>
         <version>7.23.0</version>
@@ -46,10 +39,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -68,22 +57,15 @@
       <version>2.8.9</version>
     </dependency>
 
-
-    <!-- Lib -->
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
       <artifactId>process-engine-worker-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
-      <artifactId>process-engine-adapter-camunda-platform-c8-spring-boot-starter</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
       <artifactId>process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter</artifactId>
     </dependency>
 
-    <!-- C7 -->
     <dependency>
       <groupId>org.camunda.bpm.springboot</groupId>
       <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
@@ -106,32 +88,14 @@
       <artifactId>h2</artifactId>
     </dependency>
 
-    <!-- C8 -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>spring-boot-starter-camunda-sdk</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-tasklist-client-java</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
-    <!-- configure to be an ordinary Java Project -->
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
-
     <plugins>
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
       </plugin>
     </plugins>
   </build>
-
 </project>

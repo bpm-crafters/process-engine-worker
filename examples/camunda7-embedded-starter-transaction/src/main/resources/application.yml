@@ -1,0 +1,44 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: camunda7-embedded-external-task-example
+  jpa:
+    open-in-view: true
+    database: h2
+    generate-ddl: true
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
+
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      email: admin@local
+      first-name: Admin
+      last-name: Administratius
+    login:
+      enabled: true
+      user-id: admin
+    auto-deployment-enabled: true
+    deployment-resource-pattern: bpmn/*.bpmn
+    default-serialization-format: application/json
+    id-generator: simple
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c7embedded:
+          enabled: true
+          service-tasks:
+            delivery-strategy: embedded_scheduled
+            worker-id: worker
+            schedule-delivery-fixed-rate-in-seconds: 5
+          user-tasks:
+            delivery-strategy: embedded_scheduled
+            schedule-delivery-fixed-rate-in-seconds: 5
