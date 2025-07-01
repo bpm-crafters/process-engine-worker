@@ -4,21 +4,20 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import java.util.*
 
 @Entity(name = "MyEntity")
 @Table(name = "my_entity")
 class MyEntity(
   @Id
-  @Column(name = "id_")
-  var id: String = UUID.randomUUID().toString(),
+  @Column(name = "process_instance_id_")
+  var processInstanceId: String,
 
-  @Column(name = "name_", unique = true)
-  var name: String
+  @Column(name = "task_id_", unique = true)
+  var taskId: String
 ) {
-  constructor() : this(name = "")
+  constructor() : this(processInstanceId = "", taskId = "")
 
   override fun toString(): String {
-    return "MyEntity(id='$id', name='$name')"
+    return "MyEntity(processInstanceId='$processInstanceId', taskId='$taskId')"
   }
 }

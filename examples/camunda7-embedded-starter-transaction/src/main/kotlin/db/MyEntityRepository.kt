@@ -2,6 +2,4 @@ package dev.bpmcrafters.example.camunda7embedded.db
 
 import org.springframework.data.repository.CrudRepository
 
-interface MyEntityRepository : CrudRepository<MyEntity, String> {
-  fun name(name: String): MutableList<MyEntity>
-}
+interface MyEntityRepository : CrudRepository<MyEntity, String>
