@@ -23,6 +23,7 @@
   <modules>
     <module>order-fulfillment</module>
     <module>camunda7-remote-starter-native</module>
+    <module>camunda7-embedded-starter-transaction</module>
   </modules>
 
   <dependencyManagement>

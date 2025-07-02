@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
-import org.springframework.transaction.TransactionException
-import org.springframework.transaction.TransactionSystemException
+import java.lang.reflect.UndeclaredThrowableException
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ExecutionException
 
@@ -18,6 +17,13 @@ class ExceptionResolver {
    */
   fun getCause(e: Throwable): Throwable {
     return when (e) {
+      is UndeclaredThrowableException -> if (e.undeclaredThrowable != null) {
+        getCause(e.undeclaredThrowable!!)
+      } else if (e.cause != null) {
+        getCause(e.cause!!)
+      } else {
+        e
+      }
       is InvocationTargetException -> if (e.targetException != null) {
         getCause(e.targetException!!)
       } else if (e.cause != null) {
@@ -25,18 +31,13 @@ class ExceptionResolver {
       } else {
         e
       }
-      is TransactionSystemException -> if (e.applicationException != null) {
-        getCause(e.applicationException!!)
-      } else if (e.cause != null) {
+
+      is ExecutionException -> if (e.cause != null) {
         getCause(e.cause!!)
       } else {
         e
       }
-      is ExecutionException, is TransactionException -> if (e.cause != null) {
-        getCause(e.cause!!)
-      } else {
-        e
-      }
+
       else -> e
     }
   }
