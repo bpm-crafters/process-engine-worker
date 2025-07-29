@@ -24,8 +24,6 @@ camunda:
     login:
       enabled: true
       user-id: admin
-    auto-deployment-enabled: true
-    deployment-resource-pattern: bpmn/*.bpmn
     default-serialization-format: application/json
     id-generator: simple
 
