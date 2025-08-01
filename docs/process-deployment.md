@@ -5,7 +5,7 @@ title: Process Deployment
 Process Deployment supports deployments of process resources like BPMN and DMN files to the Process Engine.
 It is built on top of the Process Engine API and provides a simple way to deploy process resources automatically on spring boot startup.
 
-Add the Process Engine Worker dependency to your projects classpath and you are ready to go. In Maven add the following to you `pom.xml`:
+Add the Process Engine Worker dependency to your projects classpath and you are ready to go. In Maven add the following to your `pom.xml`:
 
 ```xml
 <dependency>
