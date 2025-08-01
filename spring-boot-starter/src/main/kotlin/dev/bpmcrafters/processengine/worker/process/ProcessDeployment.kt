@@ -29,7 +29,7 @@ open class ProcessDeployment(
     resources.forEach { resource ->
       try {
         val deploymentResult = deploymentApi.deploy(DeployBundleCommand(
-          listOf(NamedResource(resource.filename, resource.inputStream))
+          listOf(NamedResource(resource.filename ?: "unknown", resource.inputStream))
         )).get(30, TimeUnit.SECONDS)
         logger.info { "Deployed: ${resource.filename} with key ${deploymentResult.deploymentKey}" }
       } catch (e: Exception) {
