@@ -6,7 +6,7 @@ Process Engine Worker is an independent component built on top of Process Engine
 for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and 
 API and allows to build universal workers.
 
-First of all add the Process Engine Worker dependency to you project classpath. In Maven add the following to you `pom.xml`:
+First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to you `pom.xml`:
 
 ```xml
 <dependency>

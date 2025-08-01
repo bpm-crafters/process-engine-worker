@@ -24,14 +24,17 @@ camunda:
     login:
       enabled: true
       user-id: admin
-    auto-deployment-enabled: true
-    deployment-resource-pattern: bpmn/*.bpmn
     default-serialization-format: application/json
     id-generator: simple
 
 dev:
   bpm-crafters:
     process-api:
+      worker:
+        deployment:
+          enabled: true
+          bpmnResourcePattern: "classpath*:/**/*.bpmn"
+          dmnResourcePattern: "classpath*:/**/*.dmn"
       adapter:
         c7embedded:
           enabled: true
