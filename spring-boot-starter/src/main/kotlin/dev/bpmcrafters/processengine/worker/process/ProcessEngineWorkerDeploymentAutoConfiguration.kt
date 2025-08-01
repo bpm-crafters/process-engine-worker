@@ -25,7 +25,7 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
     prefix = ProcessEngineWorkerDeploymentProperties.PREFIX,
     name = ["enabled"],
     havingValue = "true",
-    matchIfMissing = true
+    matchIfMissing = false
   )
   fun autoDeploymentOnStartup(processDeployment: ProcessDeployment): AutoDeploymentOnStartup {
     return AutoDeploymentOnStartup(processDeployment)

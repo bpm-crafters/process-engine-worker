@@ -30,6 +30,11 @@ camunda:
 dev:
   bpm-crafters:
     process-api:
+      worker:
+        deployment:
+          enabled: true
+          bpmnResourcePattern: "classpath*:/**/*.bpmn"
+          dmnResourcePattern: "classpath*:/**/*.dmn"
       adapter:
         c7embedded:
           enabled: true

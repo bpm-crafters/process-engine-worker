@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class ProcessEngineWorkerDeploymentProperties(
   val bpmnResourcePattern: String = "classpath*:/**/*.bpmn",
   val dmnResourcePattern: String = "classpath*:/**/*.dmn",
-  val enabled: Boolean = true
+  val enabled: Boolean = false
 ) {
   companion object {
     const val PREFIX = "dev.bpm-crafters.process-api.worker.deployment"
