@@ -1,5 +1,5 @@
-import dev.bpmcrafters.processengine.worker.process.ProcessDeployment
-import dev.bpmcrafters.processengine.worker.process.ProcessEngineWorkerDeploymentProperties
+package dev.bpmcrafters.processengine.worker.process
+
 import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
 import dev.bpmcrafters.processengineapi.deploy.DeploymentInformation
