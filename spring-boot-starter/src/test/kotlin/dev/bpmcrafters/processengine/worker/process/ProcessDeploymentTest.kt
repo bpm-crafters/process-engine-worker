@@ -1,10 +1,10 @@
 package dev.bpmcrafters.processengine.worker.process
 
+import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerDeploymentProperties
 import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
 import dev.bpmcrafters.processengineapi.deploy.DeploymentInformation
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatNoException
+import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.*
@@ -39,7 +39,7 @@ class ProcessDeploymentTest {
     processDeployment.deployResources()
 
     val captor = argumentCaptor<DeployBundleCommand>()
-    verify(deploymentApi, times(2)).deploy(captor.capture())
+    verify(deploymentApi, times(1)).deploy(captor.capture())
     val deployedFilenames = captor.allValues.flatMap { it.resources }.map { it.name }
     assertThat(deployedFilenames).containsExactlyInAnyOrder("process.bpmn", "decision.dmn")
   }
@@ -56,7 +56,7 @@ class ProcessDeploymentTest {
   }
 
   @Test
-  fun `should handle deployment failure gracefully`() {
+  fun `should propagate deployment failure to the caller`() {
     val bpmnResource = mock<Resource>()
     whenever(bpmnResource.filename).thenReturn("process.bpmn")
     whenever(bpmnResource.inputStream).thenReturn(ByteArrayInputStream("bpmn".toByteArray()))
@@ -68,9 +68,9 @@ class ProcessDeploymentTest {
     whenever(deploymentApi.deploy(any<DeployBundleCommand>()))
       .thenReturn(CompletableFuture.failedFuture(RuntimeException("Deployment failed")))
 
-    assertThatNoException().isThrownBy {
+    assertThatException().isThrownBy {
       processDeployment.deployResources()
-    }
+    }.withMessage("java.lang.RuntimeException: Deployment failed")
 
   }
 
