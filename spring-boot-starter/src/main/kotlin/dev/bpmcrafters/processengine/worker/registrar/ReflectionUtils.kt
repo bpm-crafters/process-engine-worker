@@ -2,6 +2,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Companion.DEFAULT_UNSET_TOPIC
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
 import dev.bpmcrafters.processengine.worker.Variable
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
@@ -118,6 +119,13 @@ fun Method.getTopic(): String {
  */
 fun Method.getAutoComplete(): Boolean {
   return this.getAnnotation(ProcessEngineWorker::class.java).autoComplete
+}
+
+/**
+ * Returns the auto-completion flag from annotation.
+ */
+fun Method.getCompletion(): Completion {
+  return this.getAnnotation(ProcessEngineWorker::class.java).completion
 }
 
 /**

@@ -2,6 +2,7 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
 import dev.bpmcrafters.processengine.worker.TestHelper
 import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
+import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntity
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntityService
 import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
 import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
@@ -10,14 +11,16 @@ import dev.bpmcrafters.processengineapi.deploy.NamedResource
 import dev.bpmcrafters.processengineapi.process.StartProcessApi
 import dev.bpmcrafters.processengineapi.process.StartProcessByDefinitionCmd
 import org.assertj.core.api.Assertions.assertThat
-import org.camunda.community.rest.client.api.DeploymentApiClient
-import org.camunda.community.rest.client.api.ProcessDefinitionApi
-import org.camunda.community.rest.client.api.ProcessDefinitionApiClient
+import org.camunda.community.rest.client.api.ExternalTaskApiClient
+import org.camunda.community.rest.client.api.HistoryApiClient
 import org.camunda.community.rest.client.api.ProcessInstanceApiClient
+import org.camunda.community.rest.client.model.ExternalTaskDto
+import org.camunda.community.rest.client.model.ExternalTaskQueryDto
+import org.camunda.community.rest.client.model.HistoricActivityInstanceDto
+import org.camunda.community.rest.client.model.HistoricActivityInstanceQueryDto
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.HttpStatusCode
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -53,9 +56,10 @@ abstract class AbstractTransactionalBehaviorTest {
   private lateinit var deploymentApi: DeploymentApi
   @Autowired
   private lateinit var startProcessApi: StartProcessApi
-
   @Autowired
-  private lateinit var processDefinitionApiClient: ProcessDefinitionApiClient
+  private lateinit var externalTaskApiClient: ExternalTaskApiClient
+  @Autowired
+  private lateinit var historyApiClient: HistoryApiClient
   @Autowired
   private lateinit var processInstanceApiClient: ProcessInstanceApiClient
   @Autowired
@@ -92,13 +96,36 @@ abstract class AbstractTransactionalBehaviorTest {
     )?.body?.count == 1L
   }
 
-  protected fun startProcess(name: String, verified: Boolean, apiCallShouldFail: Boolean = false): String {
+  protected fun getExternalTasks(processInstanceId: String): List<ExternalTaskDto> {
+    return externalTaskApiClient
+      .queryExternalTasks(0, Int.MAX_VALUE, ExternalTaskQueryDto().apply { this.processInstanceId = processInstanceId })
+      .body as List<ExternalTaskDto>
+  }
+
+  protected fun getHistoricActivityInstances(processInstanceId: String, activityId: String): List<HistoricActivityInstanceDto> {
+    return historyApiClient.queryHistoricActivityInstances(
+      0,
+      Int.MAX_VALUE,
+      HistoricActivityInstanceQueryDto().apply {
+        this.processInstanceId = processInstanceId
+        this.activityId = activityId
+      })
+      .body as List<HistoricActivityInstanceDto>
+  }
+
+  protected fun startProcess(
+    name: String,
+    verified: Boolean,
+    simulateRandomTechnicalError: Boolean = false,
+    apiCallShouldFail: Boolean = false
+  ): String {
     return startProcessApi.startProcess(
       StartProcessByDefinitionCmd(
         definitionKey = "example_process",
         mapOf(
           "name" to name,
           "verified" to verified,
+          "simulateRandomTechnicalError" to simulateRandomTechnicalError,
           "apiCallShouldFail" to apiCallShouldFail
         )
       )
@@ -107,6 +134,10 @@ abstract class AbstractTransactionalBehaviorTest {
   }
 
   protected fun entityExistsForName(name: String): Boolean {
-    return myEntityService.findByName(name) != null
+    return findEntityByName(name) != null
+  }
+
+  protected fun findEntityByName(name: String): MyEntity? {
+    return myEntityService.findByName(name)
   }
 }

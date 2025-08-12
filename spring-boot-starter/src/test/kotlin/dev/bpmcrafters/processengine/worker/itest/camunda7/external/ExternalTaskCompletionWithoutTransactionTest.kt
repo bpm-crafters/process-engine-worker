@@ -13,8 +13,8 @@ import org.springframework.context.annotation.Import
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
-@Import(NoTransactionalAnnotationSuccessTest.WorkerWithoutTransactionalAnnotation::class)
-class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest() {
+@Import(ExternalTaskCompletionWithoutTransactionTest.WorkerWithoutTransactionalAnnotation::class)
+class ExternalTaskCompletionWithoutTransactionTest : AbstractTransactionalBehaviorTest() {
 
   class WorkerWithoutTransactionalAnnotation(
     myEntityService: MyEntityService,
@@ -31,9 +31,10 @@ class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest()
       task: TaskInformation,
       @Variable(name = "name") name: String,
       @Variable(name = "verified") verified: Boolean,
+      @Variable(name = "simulateRandomTechnicalError") simulateRandomTechnicalError: Boolean,
       @Variable(name = "apiCallShouldFail") apiCallShouldFail: Boolean
     ): Map<String, Any> {
-      return super.createEntity(task, name, verified, apiCallShouldFail)
+      return super.createEntity(task, name, verified, simulateRandomTechnicalError, apiCallShouldFail)
     }
 
     @ProcessEngineWorker(
@@ -48,7 +49,7 @@ class NoTransactionalAnnotationSuccessTest : AbstractTransactionalBehaviorTest()
   fun `happy path create two verified valid entity`() {
     val name = "Jan-${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true)
-    await().untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isTrue()
     }
 
