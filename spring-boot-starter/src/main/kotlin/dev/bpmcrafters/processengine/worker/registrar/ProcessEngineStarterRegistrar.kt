@@ -74,6 +74,8 @@ class ProcessEngineStarterRegistrar(
         null // null means no limitation
       }
 
+      val completion = method.getCompletion()
+
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()
 
@@ -82,7 +84,7 @@ class ProcessEngineStarterRegistrar(
           topic = topic,
           payloadDescription = variableNames,
           autoCompleteTask = autoCompleteTask,
-          completion = method.getCompletion(),
+          completion = completion,
           isTransactional = isTransactional,
           payloadReturnType = payloadReturnType,
           method = method
@@ -134,17 +136,20 @@ class ProcessEngineStarterRegistrar(
           val result = transactionalTemplate.execute {
             val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
             if (autoCompleteTask && completeInTransaction) {
-              completeTask(taskInformation, IN_TRANSACTION, payloadReturnType, method, result)
+              logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} before commit" }
+              completeTask(taskInformation, payloadReturnType, method, result)
             }
             result
           }
           if (autoCompleteTask && !completeInTransaction) {
-            completeTask(taskInformation, AFTER_TRANSACTION, payloadReturnType, method, result)
+            logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
+            completeTask(taskInformation, payloadReturnType, method, result)
           }
         } else {
           val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
           if (autoCompleteTask) {
-            completeTask(taskInformation, DEFAULT, payloadReturnType, method, result)
+            logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} (there is and was no transaction)" }
+            completeTask(taskInformation, payloadReturnType, method, result)
           }
         }
       } catch (e: Exception) {
@@ -170,23 +175,7 @@ class ProcessEngineStarterRegistrar(
     return result
   }
 
-  private fun completeInTransaction(complete: Completion): Boolean =
-    if (complete == DEFAULT) {
-      processEngineWorkerProperties.completeTasksInTransaction
-    } else {
-      complete == IN_TRANSACTION
-    }
-
-  private fun completeTask(taskInformation: TaskInformation, completion: Completion, payloadReturnType: Boolean, method: Method, result: Any?) {
-    logger.trace {
-      "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} ${
-        when (completion) {
-          IN_TRANSACTION -> "in transaction"
-          AFTER_TRANSACTION -> "after transaction"
-          DEFAULT -> "(there is and was no transaction)"
-        }
-      }"
-    }
+  private fun completeTask(taskInformation: TaskInformation, payloadReturnType: Boolean, method: Method, result: Any?) {
     taskCompletionApi.completeTask(
       CompleteTaskCmd(
         taskId = taskInformation.taskId
@@ -235,8 +224,14 @@ class ProcessEngineStarterRegistrar(
         logger.error(cause) { "PROCESS-ENGINE-WORKER-011: Exception during execution of external task worker" }
       }
     }
-
   }
+
+  private fun completeInTransaction(complete: Completion): Boolean =
+    if (complete == DEFAULT) {
+      processEngineWorkerProperties.completeTasksInTransaction
+    } else {
+      complete == BEFORE_COMMIT
+    }
 
   /**
    * Task handler as a function.

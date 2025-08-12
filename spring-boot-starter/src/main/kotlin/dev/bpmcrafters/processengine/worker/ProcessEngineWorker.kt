@@ -33,9 +33,21 @@ annotation class ProcessEngineWorker(
     const val DEFAULT_UNSET_TOPIC = "__unset"
   }
 
+  /**
+   * Completion constants.
+   */
   enum class Completion {
+    /**
+     * Use default configured via property.
+     */
     DEFAULT,
-    IN_TRANSACTION,
-    AFTER_TRANSACTION,
+    /**
+     * Execute external task completion before the transaction is committed.
+     */
+    BEFORE_COMMIT,
+    /**
+     * Execute external task completion after transaction is committed.
+     */
+    AFTER_COMMIT,
   }
 }
