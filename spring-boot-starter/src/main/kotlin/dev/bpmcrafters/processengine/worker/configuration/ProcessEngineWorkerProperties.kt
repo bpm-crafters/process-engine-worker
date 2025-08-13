@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = PREFIX)
 data class ProcessEngineWorkerProperties(
   val registerProcessWorkers: Boolean = true,
-  val completeTasksInTransaction: Boolean = true,
+  val completeTasksBeforeCommit: Boolean = false,
 ) {
   companion object {
     const val PREFIX = "dev.bpm-crafters.process-api.worker"

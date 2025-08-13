@@ -4,11 +4,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
 import org.springframework.context.annotation.Import
+import org.springframework.test.context.TestPropertySource
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
 @Import(WorkerWithTransactionalAnnotation::class)
-class ExternalTaskCompletionInTransactionTest : AbstractTransactionalBehaviorTest() {
+@TestPropertySource(properties = [
+  "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=true"
+])
+class ExternalTaskCompletionBeforeCommitTest : AbstractTransactionalBehaviorTest() {
 
   @Test
   fun `happy path create two verified valid entity`() {

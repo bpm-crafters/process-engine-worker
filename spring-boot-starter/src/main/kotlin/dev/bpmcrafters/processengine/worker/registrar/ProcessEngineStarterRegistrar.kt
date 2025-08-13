@@ -132,16 +132,16 @@ class ProcessEngineStarterRegistrar(
       try {
         // depending on transactional annotations, execute either in a new transaction or direct
         if (isTransactional) {
-          val completeInTransaction = completeInTransaction(completion)
+          val completeBeforeCommit = completeBeforeCommit(completion)
           val result = transactionalTemplate.execute {
             val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
-            if (autoCompleteTask && completeInTransaction) {
+            if (autoCompleteTask && completeBeforeCommit) {
               logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} before commit" }
               completeTask(taskInformation, payloadReturnType, method, result)
             }
             result
           }
-          if (autoCompleteTask && !completeInTransaction) {
+          if (autoCompleteTask && !completeBeforeCommit) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
             completeTask(taskInformation, payloadReturnType, method, result)
           }
@@ -226,9 +226,9 @@ class ProcessEngineStarterRegistrar(
     }
   }
 
-  private fun completeInTransaction(complete: Completion): Boolean =
+  private fun completeBeforeCommit(complete: Completion): Boolean =
     if (complete == DEFAULT) {
-      processEngineWorkerProperties.completeTasksInTransaction
+      processEngineWorkerProperties.completeTasksBeforeCommit
     } else {
       complete == BEFORE_COMMIT
     }
