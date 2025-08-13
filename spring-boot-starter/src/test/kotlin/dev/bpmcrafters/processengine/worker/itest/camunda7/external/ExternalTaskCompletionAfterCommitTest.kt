@@ -10,9 +10,9 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 @Import(WorkerWithTransactionalAnnotation::class)
 @TestPropertySource(properties = [
-  "dev.bpm-crafters.process-api.worker.complete-tasks-in-transaction=false"
+  "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
 ])
-class ExternalTaskCompletionAfterTransactionTest : AbstractTransactionalBehaviorTest() {
+class ExternalTaskCompletionAfterCommitTest : AbstractTransactionalBehaviorTest() {
 
   @Test
   fun `successful worker completes task after of transaction has been committed`() {
