@@ -4,6 +4,7 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Companion.DEFAULT_UNSET_TOPIC
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
 import dev.bpmcrafters.processengine.worker.Variable
+import dev.bpmcrafters.processengine.worker.Variable.Companion.DEFAULT_UNNAMED_NAME
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.aop.support.AopUtils
@@ -43,7 +44,14 @@ fun Parameter.isVariable() = this.isAnnotationPresent(Variable::class.java)
 /**
  * Extracts variable name from the variable annotation of the parameter.
  */
-fun Parameter.extractVariableName() = this.getAnnotation(Variable::class.java).name
+fun Parameter.extractVariableName(): String {
+  val variableAnnotation = AnnotationUtils.findAnnotation(this, Variable::class.java)!!
+  return if (variableAnnotation.name == DEFAULT_UNNAMED_NAME) {
+    this.name
+  } else {
+    variableAnnotation.name
+  }
+}
 
 /**
  * Extracts variable mandatory flag.

@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2025.07.3</version>
+    <version>2025.08.1</version>
     <relativePath/>
   </parent>
 
@@ -122,6 +122,10 @@
         <artifactId>kotlin-maven-plugin</artifactId>
         <groupId>org.jetbrains.kotlin</groupId>
         <configuration>
+          <args>
+            <arg>-java-parameters</arg>
+            <arg>-Xannotation-default-target=param-property</arg>
+          </args>
           <jvmTarget>17</jvmTarget>
           <compilerPlugins>
             <plugin>spring</plugin>
