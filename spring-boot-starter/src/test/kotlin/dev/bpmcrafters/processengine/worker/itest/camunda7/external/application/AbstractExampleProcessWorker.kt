@@ -17,9 +17,16 @@ abstract class AbstractExampleProcessWorker(
     task: TaskInformation,
     name: String,
     verified: Boolean,
+    simulateRandomTechnicalError: Boolean,
     apiCallShouldFail: Boolean
   ): Map<String, Any> {
     logger.info { "start executing worker 'example.create-entity' " }
+
+    if (simulateRandomTechnicalError) {
+      val message = "Simulating a technical error for task ${task.taskId}"
+      logger.info { message }
+      throw RuntimeException(message)
+    }
 
     if (apiCallShouldFail) {
       val processInstanceId = task.meta[CommonRestrictions.PROCESS_INSTANCE_ID]!!
