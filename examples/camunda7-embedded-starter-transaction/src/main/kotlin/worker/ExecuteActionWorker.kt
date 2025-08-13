@@ -19,7 +19,7 @@ class ExecuteActionWorker(
   private val dbService: DbService
 ) {
 
-  @ProcessEngineWorker(topic = "execute-action")
+  @ProcessEngineWorker("execute-action")
   fun execute(taskInformation: TaskInformation): Map<String, Any> {
     val id = taskInformation.meta[CommonRestrictions.PROCESS_INSTANCE_ID] as String
     dbService.save(

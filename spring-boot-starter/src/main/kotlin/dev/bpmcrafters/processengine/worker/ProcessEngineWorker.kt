@@ -1,5 +1,8 @@
 package dev.bpmcrafters.processengine.worker
 
+import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate.DEFAULT_VALUE
+import org.springframework.core.annotation.AliasFor
+
 /**
  * Indicates a method to be a worker.
  * @since 0.0.1
@@ -10,7 +13,13 @@ annotation class ProcessEngineWorker(
   /**
    * Topic name to subscribe this worker for.
    */
+  @get: AliasFor(attribute = "value")
   val topic: String = DEFAULT_UNSET_TOPIC,
+  /**
+   * Topic name to subscribe this worker for.
+   */
+  @get: AliasFor(attribute = "topic")
+  val value: String = DEFAULT_UNSET_TOPIC,
   /**
    * Flag, indicating if the task should be automatically completed after the execution of the worker.
    * Defaults to true. If the return type of the annotated method is Map<String, Any> it will overrule

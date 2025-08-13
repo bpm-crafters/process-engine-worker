@@ -1,5 +1,7 @@
 package dev.bpmcrafters.processengine.worker
 
+import org.springframework.core.annotation.AliasFor
+
 /**
  * Indicates a typed process variable to be injected into the worker method.
  * @since 0.0.1
