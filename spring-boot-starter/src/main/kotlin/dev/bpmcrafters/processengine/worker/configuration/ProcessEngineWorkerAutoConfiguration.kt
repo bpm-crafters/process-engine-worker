@@ -1,16 +1,14 @@
 package dev.bpmcrafters.processengine.worker.configuration
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
+import dev.bpmcrafters.processengine.worker.registrar.JacksonVariableConverter
 import dev.bpmcrafters.processengine.worker.registrar.ParameterResolver
 import dev.bpmcrafters.processengine.worker.registrar.ResultResolver
-import org.springframework.beans.factory.annotation.Qualifier
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
  * Auto configuration.
@@ -24,7 +22,8 @@ class ProcessEngineWorkerAutoConfiguration {
    */
   @Bean
   @ConditionalOnMissingBean
-  fun defaultVariableConverter(objectMapper: ObjectMapper): VariableConverter = VariableConverter(objectMapper = objectMapper)
+  fun defaultJacksonVariableConverter(objectMapper: ObjectMapper): VariableConverter
+    = JacksonVariableConverter(objectMapper = objectMapper)
 
   /**
    * Initializes parameter resolver.

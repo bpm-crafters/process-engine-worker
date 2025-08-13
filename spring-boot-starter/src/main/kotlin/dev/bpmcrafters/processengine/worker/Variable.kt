@@ -1,6 +1,10 @@
 package dev.bpmcrafters.processengine.worker
 
+import dev.bpmcrafters.processengine.worker.registrar.JacksonVariableConverter
+import dev.bpmcrafters.processengine.worker.registrar.NoneVariableConverter
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
 import org.springframework.core.annotation.AliasFor
+import kotlin.reflect.KClass
 
 /**
  * Indicates a typed process variable to be injected into the worker method.
@@ -22,7 +26,11 @@ annotation class Variable(
     /**
      * Indicates that a variable is mandatory. Defaults to `true`.
      */
-    val mandatory: Boolean = true
+    val mandatory: Boolean = true,
+    /**
+     * Specifies a converter class for this variable. Defaults to Jackson converter.
+     */
+    val converter: KClass<out VariableConverter> = NoneVariableConverter::class,
 ) {
     companion object {
         /**

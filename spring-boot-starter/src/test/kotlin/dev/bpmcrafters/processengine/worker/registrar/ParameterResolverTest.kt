@@ -23,7 +23,7 @@ class ParameterResolverTest {
   private val resolver = ParameterResolver.builder().build()
   private val taskInformation = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
   private val payload: MutableMap<String, Any> = mutableMapOf()
-  private val variableConverter = VariableConverter(ObjectMapper())
+  private val variableConverter = JacksonVariableConverter(ObjectMapper())
   private val taskCompletionApi = mock<ServiceTaskCompletionApi>()
 
   @Test
@@ -64,7 +64,7 @@ class ParameterResolverTest {
 
     class Worker {
       @ProcessEngineWorker
-      fun work(vc: VariableConverter) {
+      fun work(vc: JacksonVariableConverter) {
       }
     }
 
@@ -186,6 +186,28 @@ class ParameterResolverTest {
     assertThat(args[0] as Optional<*>).isEmpty
     method.invoke(worker, *args)
   }
+
+  @Test
+  fun `detect annotated mandatory variable with custom converter`() {
+
+    class Worker {
+      @ProcessEngineWorker
+      fun work(@Variable(name = "string", converter = MyEnum.Converter::class) var1: MyEnum) {
+      }
+    }
+
+    payload["string"] = "TWO"
+
+    val worker = Worker()
+    val method = worker.getAnnotatedWorkers().first()
+    val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+    assertThat(args).isNotNull
+    assertThat(args).hasSize(1)
+    assertThat(args[0]).isInstanceOf(MyEnum::class.java)
+    assertThat(args[0] as MyEnum).isEqualTo(MyEnum.TWO)
+    method.invoke(worker, *args)
+  }
+
 
   @Test
   fun `fail to invoke annotated non-mandatory variable`() {
