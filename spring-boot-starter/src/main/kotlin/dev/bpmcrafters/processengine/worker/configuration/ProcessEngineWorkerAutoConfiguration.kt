@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration
 
 /**
  * Auto configuration.
+ * @since 0.5.0
  */
 @Configuration
 @EnableConfigurationProperties(ProcessEngineWorkerProperties::class)

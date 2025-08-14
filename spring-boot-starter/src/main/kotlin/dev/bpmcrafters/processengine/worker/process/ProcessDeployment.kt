@@ -15,37 +15,38 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Implements configuration of the deployment.
+ * @since 0.5.0
  */
 open class ProcessDeployment(
-    private val resourcePatternResolver: ResourcePatternResolver,
-    private val deploymentApi: DeploymentApi,
-    private val processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
+  private val resourcePatternResolver: ResourcePatternResolver,
+  private val deploymentApi: DeploymentApi,
+  private val processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
 ) {
 
-    /**
-     * Deploys resources, configured via properties.
-     */
-    open fun deployResources(): DeploymentInformation? {
-        val namedResources = buildList<Resource> {
-            try {
-                addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.bpmnResourcePattern))
-                addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.dmnResourcePattern))
-            } catch (e: IOException) {
-                logger.warn(e) { "PROCESS-ENGINE-WORKER-051: Failed to load resources for deployment." }
-            }
-        }.map { resource -> NamedResource(resource.filename ?: "unknown", resource.inputStream) }
+  /**
+   * Deploys resources, configured via properties.
+   */
+  open fun deployResources(): DeploymentInformation? {
+    val namedResources = buildList<Resource> {
+      try {
+        addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.bpmnResourcePattern))
+        addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.dmnResourcePattern))
+      } catch (e: IOException) {
+        logger.warn(e) { "PROCESS-ENGINE-WORKER-051: Failed to load resources for deployment." }
+      }
+    }.map { resource -> NamedResource(resource.filename ?: "unknown", resource.inputStream) }
 
-        if (namedResources.isEmpty()) {
-            return null
-        }
-
-        return deploymentApi.deploy(
-            DeployBundleCommand(resources = namedResources)
-        ).get(processEngineWorkerDeploymentProperties.deploymentTimeoutInSeconds, TimeUnit.SECONDS)
-            .also { deploymentResult ->
-                logger.info { "PROCESS-ENGINE-WORKER-050: Deployed ${namedResources.size} resources with key ${deploymentResult.deploymentKey}." }
-            }
+    if (namedResources.isEmpty()) {
+      return null
     }
+
+    return deploymentApi.deploy(
+      DeployBundleCommand(resources = namedResources)
+    ).get(processEngineWorkerDeploymentProperties.deploymentTimeoutInSeconds, TimeUnit.SECONDS)
+      .also { deploymentResult ->
+        logger.info { "PROCESS-ENGINE-WORKER-050: Deployed ${namedResources.size} resources with key ${deploymentResult.deploymentKey}." }
+      }
+  }
 }
 
 

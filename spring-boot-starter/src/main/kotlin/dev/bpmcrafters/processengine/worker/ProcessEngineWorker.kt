@@ -1,6 +1,5 @@
 package dev.bpmcrafters.processengine.worker
 
-import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate.DEFAULT_VALUE
 import org.springframework.core.annotation.AliasFor
 
 /**
