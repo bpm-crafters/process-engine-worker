@@ -192,7 +192,7 @@ class ParameterResolverTest {
 
     class Worker {
       @ProcessEngineWorker
-      fun work(@Variable(name = "string", converter = MyEnum.Converter::class) var1: MyEnum) {
+      fun work(@Variable(name = "string", converter = MyEnum.Converter::class) var1: MyEnum, completionApi: ServiceTaskCompletionApi) {
       }
     }
 
@@ -202,7 +202,7 @@ class ParameterResolverTest {
     val method = worker.getAnnotatedWorkers().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
-    assertThat(args).hasSize(1)
+    assertThat(args).hasSize(2)
     assertThat(args[0]).isInstanceOf(MyEnum::class.java)
     assertThat(args[0] as MyEnum).isEqualTo(MyEnum.TWO)
     method.invoke(worker, *args)
