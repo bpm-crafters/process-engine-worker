@@ -32,7 +32,7 @@ public class MySmartWorker {
 
   private final FetchGoodsInPort fetchGoodsInPort;
 
-  @ProcessEngineWorker(topic = "fetchGoods")
+  @ProcessEngineWorker("fetchGoods")
   public Map<String, Object> fetchGoods(
     @Variable(name = "order") Order order
   ) {
@@ -79,13 +79,13 @@ public class MyWorker {
 Parameter resolution of the method annotated with `ProcessEngineWorker` is based on a set of strategies
 registered by the `ParameterResolver` bean. Currently, the following parameters are resolved:
 
-| Type                                   | Purpose                                                                   |
-|----------------------------------------|---------------------------------------------------------------------------|
-| TaskInformation                        | Helper abstracting all information about the external task.               |
-| ExternTaskCompletionApi                | API for completing the external task manually                             |
-| VariableConverter                      | Special utility to read the process variable map and deliver typed value  | 
-| Map<String, Object>                    | Payload object containing all variables.                                  |
-| Type annotated with @Variable("name)   | Marker for a process variable.                                            |
+| Type                                     | Purpose                                                                   |
+|------------------------------------------|---------------------------------------------------------------------------|
+| TaskInformation                          | Helper abstracting all information about the external task.               |
+| ExternTaskCompletionApi                  | API for completing the external task manually                             |
+| VariableConverter                        | Special utility to read the process variable map and deliver typed value  | 
+| Map<String, Object>                      | Payload object containing all variables.                                  |
+| Type annotated with `@Variable("name")`  | Marker for a process variable.                                            |
 
 Usually, the requested variable is mandatory and the parameter resolver reports an error, if the requested variable is not 
 available in the process payload. If you want to inject the variable only if it exists in the payload you have two options.
@@ -103,7 +103,8 @@ If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccur
 ## Customizations
 
 You might want to register your own parameter resolution strategies. For this purpose, please construct 
-the parameter resolver bean on your own and register your own strategies:
+the parameter resolver bean on your own and register your own strategies. Your custom strategy must implement
+`ParameterResolutionStrategy` interface:
 
 ```kotlin
 
@@ -113,10 +114,7 @@ class MyConfig {
   @Bean
   fun myParameterResolver(): ParameterResolver {
     return ParameterResolver.builder().addStrategy(
-      ParameterResolutionStrategy(
-        parameterMatcher = { param -> ... },
-        parameterExtractor = { param, taskInformation, payload, variableConverter, taskCompletionApi -> ... },
-      ),
+      MyCustomParameterResolutionStrategy(),
     ).build()
   }
 }
@@ -144,7 +142,7 @@ class MyConfig {
 
 ```
 
-If you want to switch the entire library off (for example you are in the context of an integrtion test, and parts of your Process Engine API are deactivated),
+If you want to switch the entire library off (for example you are in the context of an integration test, and parts of your Process Engine API are deactivated),
 you can do it by setting the property `dev.bpm-crafters.process-api.worker.enabled` to `false`.
 
 ## Examples
