@@ -14,6 +14,14 @@ import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.WildcardType
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
+import kotlin.reflect.full.primaryConstructor
+
+/**
+ * Local cache from converter class to instance.
+ */
+private val converters = ConcurrentHashMap<KClass<out VariableConverter>, VariableConverter>()
 
 /**
  * Checks if the method parameter is payload of type Map<String, Any> or compatible.
@@ -54,6 +62,22 @@ fun Parameter.extractVariableName(): String {
 }
 
 /**
+ * Extracts variable converter for the variable if the parameter is annotated.
+ * @param defaultVariableConverter default converter, if none is specified.
+ * @return converter for variable.
+ */
+fun Parameter.extractVariableConverter(defaultVariableConverter: VariableConverter): VariableConverter {
+  val variableAnnotation = AnnotationUtils.findAnnotation(this, Variable::class.java)!!
+  return if (Variable.DefaultVariableConverter::class != variableAnnotation.converter) {
+    converters.getOrPut(variableAnnotation.converter) {
+      variableAnnotation.converter.primaryConstructor!!.call()
+    }
+  } else {
+    defaultVariableConverter
+  }
+}
+
+/**
  * Extracts variable mandatory flag.
  */
 fun Parameter.extractVariableMandatoryFlag() = this.getAnnotation(Variable::class.java).mandatory
@@ -72,14 +96,16 @@ fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.extractV
 /**
  * Checks if the method has a return type compatible with payload of type Map<String, Any>
  */
-fun Method.hasPayloadReturnType() = Map::class.java.isAssignableFrom(this.returnType) // try if the type is compatible to Map<String, Object>
-  && if (this.genericReturnType is ParameterizedType) {
-  // e.g. Map<String, String>
-  (this.genericReturnType as ParameterizedType).isMapOfStringObject()
-} else {
-  // e.g. class VariableMap implements Map<String, Object> (one of the interfaces are parameterized type matching the Map<String, Any>)
-  (this.genericReturnType as Class<*>).genericInterfaces.filterIsInstance<ParameterizedType>().any { it.isMapOfStringObject() }
-}
+fun Method.hasPayloadReturnType() =
+  Map::class.java.isAssignableFrom(this.returnType) // try if the type is compatible to Map<String, Object>
+    && if (this.genericReturnType is ParameterizedType) {
+    // e.g. Map<String, String>
+    (this.genericReturnType as ParameterizedType).isMapOfStringObject()
+  } else {
+    // e.g. class VariableMap implements Map<String, Object> (one of the interfaces are parameterized type matching the Map<String, Any>)
+    (this.genericReturnType as Class<*>).genericInterfaces.filterIsInstance<ParameterizedType>()
+      .any { it.isMapOfStringObject() }
+  }
 
 /*
  * Checks a two-types parameter type for the type bounds.
@@ -141,10 +167,13 @@ fun Method.getCompletion(): Completion {
  * @return true, if the method should be executed transactional and be atomic with completion of the worker.
  */
 fun Method.isTransactional() =
-  this.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)?.isTransactionalRequired() ?: false
-    || this.declaringClass.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)?.isTransactionalRequired() ?: false
+  this.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)
+    ?.isTransactionalRequired() ?: false
+    || this.declaringClass.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)
+    ?.isTransactionalRequired() ?: false
     || this.getAnnotation(jakarta.transaction.Transactional::class.java)?.isTransactionRequired() ?: false
-    || this.declaringClass.getAnnotation(jakarta.transaction.Transactional::class.java)?.isTransactionRequired() ?: false
+    || this.declaringClass.getAnnotation(jakarta.transaction.Transactional::class.java)
+    ?.isTransactionRequired() ?: false
 
 
 /**

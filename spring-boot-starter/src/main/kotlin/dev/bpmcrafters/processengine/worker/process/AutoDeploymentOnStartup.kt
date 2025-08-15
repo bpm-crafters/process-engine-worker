@@ -5,6 +5,7 @@ import org.springframework.context.ApplicationListener
 
 /**
  * Trigger to deploy resources on start-up of application.
+ * @since 0.5.0
  */
 class AutoDeploymentOnStartup (
   private val processDeployment: ProcessDeployment
