@@ -2,7 +2,8 @@ package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
-import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.*
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.BEFORE_COMMIT
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAULT
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
@@ -29,17 +30,17 @@ private val logger = KotlinLogging.logger {}
 @AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   private val processEngineWorkerProperties: ProcessEngineWorkerProperties,
-  @Lazy
+  @param:Lazy
   private val taskSubscriptionApi: TaskSubscriptionApi,
-  @Lazy
+  @param:Lazy
   private val taskCompletionApi: ServiceTaskCompletionApi,
-  @Lazy
+  @param:Lazy
   private val variableConverter: VariableConverter,
-  @Lazy
+  @param:Lazy
   private val parameterResolver: ParameterResolver,
-  @Lazy
+  @param:Lazy
   private val resultResolver: ResultResolver,
-  @Lazy
+  @param:Lazy
   private val transactionalTemplate: TransactionTemplate
 ) : BeanPostProcessor {
 

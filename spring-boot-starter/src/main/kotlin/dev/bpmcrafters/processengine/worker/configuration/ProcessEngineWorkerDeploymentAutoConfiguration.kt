@@ -12,37 +12,38 @@ import org.springframework.core.io.support.ResourcePatternResolver
 
 /**
  * Auto-configuration for auto-deployment.
+ * 0.5.0
  */
 @AutoConfiguration
 @EnableConfigurationProperties(ProcessEngineWorkerDeploymentProperties::class)
 class ProcessEngineWorkerDeploymentAutoConfiguration {
 
-    /**
-     * Create a process deployment bean, independent of the auto-deployment feature.
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    fun processDeployment(
-        resourcePatternResolver: ResourcePatternResolver,
-        deploymentApi: DeploymentApi,
-        processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
-    ) = ProcessDeployment(
-        resourcePatternResolver = resourcePatternResolver,
-        deploymentApi = deploymentApi,
-        processEngineWorkerDeploymentProperties = processEngineWorkerDeploymentProperties
-    )
+  /**
+   * Create a process deployment bean, independent of the auto-deployment feature.
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  fun processDeployment(
+    resourcePatternResolver: ResourcePatternResolver,
+    deploymentApi: DeploymentApi,
+    processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
+  ) = ProcessDeployment(
+    resourcePatternResolver = resourcePatternResolver,
+    deploymentApi = deploymentApi,
+    processEngineWorkerDeploymentProperties = processEngineWorkerDeploymentProperties
+  )
 
-    /**
-     * Configures a trigger for auto-deployment triggered by application start event.
-     */
-    @ConditionalOnProperty(
-        prefix = ProcessEngineWorkerDeploymentProperties.PREFIX,
-        name = ["enabled"],
-        havingValue = "true",
-        matchIfMissing = false
-    )
-    @Bean
-    fun autoDeploymentOnStartup(processDeployment: ProcessDeployment) =
-        AutoDeploymentOnStartup(processDeployment = processDeployment)
+  /**
+   * Configures a trigger for auto-deployment triggered by application start event.
+   */
+  @ConditionalOnProperty(
+    prefix = ProcessEngineWorkerDeploymentProperties.PREFIX,
+    name = ["enabled"],
+    havingValue = "true",
+    matchIfMissing = false
+  )
+  @Bean
+  fun autoDeploymentOnStartup(processDeployment: ProcessDeployment) =
+    AutoDeploymentOnStartup(processDeployment = processDeployment)
 
 }

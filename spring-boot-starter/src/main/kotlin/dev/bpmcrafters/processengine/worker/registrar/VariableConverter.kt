@@ -1,26 +1,16 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
-import com.fasterxml.jackson.databind.ObjectMapper
-
 /**
- * Helper converting variables from a JSON map to type using Jackson.
- * @since 0.0.3
+ * Interface for variable converter.
+ * @since 0.6.0
  */
-open class VariableConverter(
-  private val objectMapper: ObjectMapper
-) {
-
+@FunctionalInterface
+interface VariableConverter {
   /**
-   * Reads from the map-tree structure to a target type.
-   * @param value map-tree structure.
+   * Converts from a payload value representation to an instance of a target type.
+   * @param value value structure.
    * @param type target class.
    * @return cast value.
    */
-  open fun <T : Any> mapToType(value: Any?, type: Class<T>): T {
-    return if (value != null && !type.isInstance(value)) {
-      objectMapper.readValue(objectMapper.writeValueAsString(value), type)
-    } else {
-      type.cast(value)
-    }
-  }
+  fun <T : Any> mapToType(value: Any?, type: Class<T>): T
 }
