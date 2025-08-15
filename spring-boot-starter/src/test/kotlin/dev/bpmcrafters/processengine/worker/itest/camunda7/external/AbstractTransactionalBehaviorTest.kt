@@ -18,6 +18,7 @@ import org.camunda.community.rest.client.model.ExternalTaskDto
 import org.camunda.community.rest.client.model.ExternalTaskQueryDto
 import org.camunda.community.rest.client.model.HistoricActivityInstanceDto
 import org.camunda.community.rest.client.model.HistoricActivityInstanceQueryDto
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -64,9 +65,12 @@ abstract class AbstractTransactionalBehaviorTest {
   private lateinit var processInstanceApiClient: ProcessInstanceApiClient
   @Autowired
   private lateinit var myEntityService: MyEntityService
+  @Autowired
+  private lateinit var camundaTaskClient: org.camunda.bpm.client.ExternalTaskClient
 
   @BeforeEach
   fun setUp() {
+    camundaTaskClient.start()
     deploymentApi.deploy(
       DeployBundleCommand(
         listOf(NamedResource.fromClasspath("bpmn/example-process.bpmn"))
@@ -74,6 +78,11 @@ abstract class AbstractTransactionalBehaviorTest {
     ).get().let { deployment ->
       assertThat(deployment).isNotNull
     }
+  }
+
+  @AfterEach
+  fun tearDown() {
+    camundaTaskClient.stop()
   }
 
   protected fun processInstanceIsRunning(processInstanceId: String): Boolean {
