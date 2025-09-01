@@ -51,10 +51,14 @@ class WorkerDocumentationGeneratorMojo: AbstractMojo() {
   @Parameter
   var platformSpecificConfig: EngineSpecificConfig = EngineSpecificConfig()
 
+  // Minimal factory hook for testing/injection
+  var generatorFactory: (MavenProject, TargetPlattform, File, EngineSpecificConfig, InputValueNamingPolicy) -> WorkerDocumentationGenerator =
+    { project, target, outputDir, cfg, naming -> WorkerDocumentationGenerator(project, target, outputDir, cfg, naming) }
+
   override fun execute() {
     log.info("Generating element templates for ${project?.artifactId}")
 
-    val workerDocumentationGenerator = WorkerDocumentationGenerator(
+    val workerDocumentationGenerator = generatorFactory(
       requireNotNull(project),
       requireNotNull(targetPlatform),
       requireNotNull(outputDirectory),

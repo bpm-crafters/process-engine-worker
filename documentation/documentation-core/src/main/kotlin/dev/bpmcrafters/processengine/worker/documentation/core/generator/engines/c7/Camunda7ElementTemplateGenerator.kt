@@ -21,7 +21,7 @@ class Camunda7ElementTemplateGenerator: EngineDocumentationGenerator {
       .withAppliesTo(mutableListOf(BPMNElementType.BPMN_SERVICE_TASK.value))
 
     if (processEngineWorkerDocumentationInfo.version > 0) {
-      elementTemplate.version = processEngineWorkerDocumentationInfo.version as Double
+      elementTemplate.version = processEngineWorkerDocumentationInfo.version.toDouble()
     }
 
 
