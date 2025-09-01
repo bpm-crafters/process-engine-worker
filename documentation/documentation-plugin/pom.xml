@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-    <artifactId>process-engine-worker-root</artifactId>
+    <artifactId>process-engine-worker-documentation</artifactId>
     <version>0.6.1-SNAPSHOT</version>
   </parent>
 
