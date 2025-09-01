@@ -43,11 +43,11 @@ jobs:
 
       # Build
       - name: Build with Maven
-        run: ./mvnw clean verify -U -B -ntp -T4
+        run: ./mvnw clean install -U -B -ntp -T4
 
       # itest
       - name: Run itest
-        run: ./mvnw integration-test failsafe:verify -Pitest -ntp -U -B -T4
+        run: ./mvnw integration-test failsafe:install -Pitest -ntp -U -B -T4
 
 
 #      - name: Upload coverage to Codecov
