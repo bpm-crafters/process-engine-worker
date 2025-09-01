@@ -47,7 +47,7 @@ jobs:
 
       # itest
       - name: Run itest
-        run: ./mvnw integration-test failsafe:install -Pitest -ntp -U -B -T4
+        run: ./mvnw integration-test failsafe:verify -Pitest -ntp -U -B -T4
 
 
 #      - name: Upload coverage to Codecov
