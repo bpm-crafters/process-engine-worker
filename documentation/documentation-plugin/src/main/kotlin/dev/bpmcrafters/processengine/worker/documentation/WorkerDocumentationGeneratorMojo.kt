@@ -1,11 +1,6 @@
 package dev.bpmcrafters.processengine.worker.documentation
 
-import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
-import dev.bpmcrafters.processengine.worker.documentation.api.ProcessEngineWorkerDocumentation
-import dev.bpmcrafters.processengine.worker.documentation.core.InputValueNamingPolicy
-import dev.bpmcrafters.processengine.worker.documentation.core.TargetPlattform
-import dev.bpmcrafters.processengine.worker.documentation.core.generator.DocumentationGenerator
-import org.apache.commons.io.FileUtils
+import dev.bpmcrafters.processengine.worker.documentation.core.*
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.logging.Log
@@ -14,14 +9,7 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.plugins.annotations.ResolutionScope
 import org.apache.maven.project.MavenProject
-import org.reflections.Reflections
-import org.reflections.scanners.Scanners
-import org.reflections.util.ClasspathHelper
-import org.reflections.util.ConfigurationBuilder
 import java.io.File
-import java.io.IOException
-import java.net.URL
-import java.net.URLClassLoader
 
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.RUNTIME)
 class WorkerDocumentationGeneratorMojo: AbstractMojo() {
@@ -57,51 +45,36 @@ class WorkerDocumentationGeneratorMojo: AbstractMojo() {
   @Parameter(name = "clean", property = "elementtemplategen.clean", defaultValue = "false")
   var clean: Boolean = false
 
+  /**
+   * Platform-specific configuration options
+   */
+  @Parameter
+  var platformSpecificConfig: EngineSpecificConfig = EngineSpecificConfig()
+
   override fun execute() {
     log.info("Generating element templates for ${project?.artifactId}")
 
-    // Clean output directory
-    if (clean) {
-      try {
+    val workerDocumentationGenerator = WorkerDocumentationGenerator(
+      requireNotNull(project),
+      requireNotNull(targetPlatform),
+      requireNotNull(outputDirectory),
+      platformSpecificConfig,
+      requireNotNull(inputValueNamingPolicy)
+    )
+
+    try {
+      if (clean) {
         log.info("Cleaning output directory...")
-        FileUtils.deleteDirectory(outputDirectory)
-      } catch(e: IOException) {
-        log.error("Failed to clean output directory.", e)
-        throw MojoExecutionException("Failed to clean output directory.", e)
+        workerDocumentationGenerator.clean()
       }
+      log.info("Generate worker documentation")
+      workerDocumentationGenerator.generate()
+    } catch (e: DocumentationFailedException) {
+      log.error(e.message)
+      log.debug(e)
+      throw MojoExecutionException(e.message)
     }
 
-    // Find annotated workers
-    val classpathURLs = project!!.compileClasspathElements
-      .map { File(it).toURI().toURL() }
-    val urlClassLoader = URLClassLoader(classpathURLs.toTypedArray<URL?>(), javaClass.getClassLoader())
-    val reflections = Reflections(
-      ConfigurationBuilder()
-        .setUrls(ClasspathHelper.forClassLoader(urlClassLoader))
-        .addClassLoaders(urlClassLoader)
-        .addScanners(Scanners.MethodsAnnotated)
-    )
-    val workers = reflections.getMethodsAnnotatedWith(ProcessEngineWorker::class.java)
-    val generator = DocumentationGenerator(outputDirectory!!, targetPlatform!!, inputValueNamingPolicy!!)
-
-    // generate documentation for each worker
-    workers.forEach({
-      val inputParams = it.parameterTypes
-
-      if (inputParams.size > 1) {
-        throw MojoExecutionException("Worker method ${it.name} has more than one parameter.")
-      }
-
-      try {
-        val workerAnnotation = it.getAnnotation(ProcessEngineWorker::class.java)
-        val documentationAnnotation = it.getAnnotation(ProcessEngineWorkerDocumentation::class.java)
-
-        generator.generate(workerAnnotation, documentationAnnotation, inputParams.first(), it.returnType)
-      } catch(e: NullPointerException) {
-        log.error("Worker method ${it.name} is missing required annotation.", e)
-        throw MojoExecutionException("Worker method ${it.name} is missing @ProcessEngineWorkerDocumentation annotation.")
-      }
-    })
   }
 
 }

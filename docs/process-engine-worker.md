@@ -75,8 +75,72 @@ If the annotation `@org.springframework.transaction.annotation.Transactional` wi
 is used, the library will execute the worker method and the completion of the external task via API in the same transaction. This will lead to 
 a transaction rollback, if the external task can't be completed (e.g. due to a network error).
 
+## Documentation
 
+You can automatically document your workers with the `process-engine-worker-documentation-api` and create on each build with the  `process-engine-worker-documentation-maven-plugin` maven plugin element templates for the workers.
 
+1. Add the `process-engine-worker-documentation-api`
 
+```xml
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+      <artifactId>process-engine-worker-documentation-api</artifactId>
+      <version>${process-engine-worker.version}</version>
+    </dependency>
+```
 
+2. Add the `@ProcessEngineWorkerDocumentation` annotation to your worker
 
+```kotlin
+  @ProcessEngineWorker("example-worker")
+  @ProcessEngineWorkerDocumentation(name = "Example Worker", description = "Example worker for documentation generation")
+  fun execute(@Variable(name = "exampleDto") exampleDto: ExampleDto): ExampleDto {
+    return exampleDto
+  }
+```
+
+3. Add the `@ProcessEngineWorkerPropertyDocumentation` annotation to your in and output variables
+
+```kotlin
+data class ExampleDto(
+  @field:ProcessEngineWorkerPropertyDocumentation(label = "Example Input")
+  val exampleInput: String
+) {
+}
+```
+
+```java
+public record ExampleDto(
+  @ProcessEngineWorkerPropertyDocumentation(label = "Example Input")
+  private String exampleInput
+){}
+```
+
+4. Add the maven plugin to your `pom.xml`s plugin section
+
+```xml
+      <plugin>
+        <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+        <artifactId>process-engine-worker-documentation-maven-plugin</artifactId>
+        <version>0.6.1-SNAPSHOT</version>
+        <configuration>
+          <targetPlatform>C7</targetPlatform>
+          <inputValueNamingPolicy>ATTRIBUTE_NAME</inputValueNamingPolicy>
+          <clean>true</clean>
+          <outputDirectory>src/main/resources/bpmn/element-templates</outputDirectory>
+          <platformSpecificConfig>
+            <c7>
+              <asyncAfterDefaultValue>true</asyncAfterDefaultValue>
+            </c7>
+          </platformSpecificConfig>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+      </plugin>
+```

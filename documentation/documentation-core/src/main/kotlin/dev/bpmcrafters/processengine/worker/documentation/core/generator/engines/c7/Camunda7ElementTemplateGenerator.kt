@@ -8,12 +8,13 @@ import dev.bpmcrafters.processengine.worker.documentation.c7.elementtemplates.ge
 import dev.bpmcrafters.processengine.worker.documentation.c7.elementtemplates.gen.CamundaC7ElementTemplate
 import dev.bpmcrafters.processengine.worker.documentation.c7.elementtemplates.gen.Constraints
 import dev.bpmcrafters.processengine.worker.documentation.c7.elementtemplates.gen.Property
+import dev.bpmcrafters.processengine.worker.documentation.core.EngineSpecificConfig
 import dev.bpmcrafters.processengine.worker.documentation.core.InputValueNamingPolicy
 import dev.bpmcrafters.processengine.worker.documentation.core.TargetPlattform
 import dev.bpmcrafters.processengine.worker.documentation.core.generator.*
 
 class Camunda7ElementTemplateGenerator: EngineDocumentationGenerator {
-  override fun generate(processEngineWorkerDocumentationInfo: ProcessEngineWorkerDocumentationInfo, namingPolicy: InputValueNamingPolicy): GenerationResult {
+  override fun generate(processEngineWorkerDocumentationInfo: ProcessEngineWorkerDocumentationInfo, namingPolicy: InputValueNamingPolicy, engineSpecificConfig: EngineSpecificConfig): GenerationResult {
     val elementTemplate = CamundaC7ElementTemplate()
       .withName(processEngineWorkerDocumentationInfo.name)
       .withId(processEngineWorkerDocumentationInfo.type)
@@ -35,12 +36,12 @@ class Camunda7ElementTemplateGenerator: EngineDocumentationGenerator {
 
 
     // Add asyncBefore property
-    val asyncBeforeProperty = createAsyncBeforeProperty()
+    val asyncBeforeProperty = createAsyncBeforeProperty(engineSpecificConfig.c7.asyncBeforeDefaultValue)
     elementTemplate.properties.add(asyncBeforeProperty)
 
 
     // Add asyncAfter property
-    val asyncAfterProperty = createAsyncAfterProperty()
+    val asyncAfterProperty = createAsyncAfterProperty(engineSpecificConfig.c7.asyncAfterDefaultValue)
     elementTemplate.properties.add(asyncAfterProperty)
 
 
@@ -144,12 +145,11 @@ class Camunda7ElementTemplateGenerator: EngineDocumentationGenerator {
       )
   }
 
-  // TODO async before should be configurable
-  private fun createAsyncBeforeProperty(): Property {
+  private fun createAsyncBeforeProperty(asyncBefore: Boolean): Property {
     return Property()
       .withLabel("Async Before")
       .withType("Boolean")
-      .withValue(false)
+      .withValue(asyncBefore)
       .withEditable(true)
       .withChoices(null)
       .withBinding(
@@ -159,12 +159,11 @@ class Camunda7ElementTemplateGenerator: EngineDocumentationGenerator {
       )
   }
 
-  // TODO async before should be configurable
-  private fun createAsyncAfterProperty(): Property {
+  private fun createAsyncAfterProperty(asyncAfter: Boolean): Property {
     return Property()
       .withLabel("Async After")
       .withType("Boolean")
-      .withValue(false)
+      .withValue(asyncAfter)
       .withEditable(true)
       .withChoices(null)
       .withBinding(
