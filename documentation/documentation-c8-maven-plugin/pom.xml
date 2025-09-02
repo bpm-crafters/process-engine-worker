@@ -9,8 +9,10 @@
     <version>0.6.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>process-engine-worker-documentation-core</artifactId>
+  <artifactId>process-engine-worker-documentation-c8-maven-plugin</artifactId>
   <name>${project.artifactId}</name>
+  <packaging>maven-plugin</packaging>
+  <description>Maven plugin to generate camunda 8 element templates</description>
 
   <properties>
     <org.apache.maven.version>3.9.11</org.apache.maven.version>
@@ -20,12 +22,6 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>${org.reflections.version}</version>
-    </dependency>
-
     <!--Maven-->
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -47,26 +43,32 @@
     </dependency>
 
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.20.0</version>
-    </dependency>
-
-    <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-      <artifactId>process-engine-worker-spring-boot-starter</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-      <artifactId>process-engine-worker-documentation-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-      <artifactId>process-engine-worker-documentation-generator-api</artifactId>
+      <artifactId>process-engine-worker-documentation-core</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>${org.apache.maven-plugins.version}</version>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>${org.apache.maven-plugins.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
 </project>

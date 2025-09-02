@@ -3,12 +3,15 @@ package dev.bpmcrafters.processengine.worker.documentation.core
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.documentation.api.ProcessEngineWorkerDocumentation
 import dev.bpmcrafters.processengine.worker.documentation.api.ProcessEngineWorkerPropertyDocumentation
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.EngineDocumentationGeneratorApi
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.GenerationResult
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.TargetPlattform
 import org.apache.maven.project.MavenProject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
+import org.mockito.Mockito.`when`
+import org.mockito.kotlin.*
 import java.io.File
 
 class WorkerDocumentationGeneratorTest {
@@ -31,6 +34,14 @@ class WorkerDocumentationGeneratorTest {
   @TempDir
   lateinit var tempDir: File
 
+  private val generationResult = GenerationResult(
+    name = "Test Worker",
+    fileName = "Test-Worker.json",
+    content = "test",
+    version = 0,
+    engine = TargetPlattform.C7
+  )
+
   @Test
   fun `generate creates element template file for annotated worker`() {
     val testClassesPath = File(this::class.java.protectionDomain.codeSource.location.toURI()).path
@@ -39,26 +50,23 @@ class WorkerDocumentationGeneratorTest {
       on { compileClasspathElements } doReturn(listOf(testClassesPath))
     }
 
+    val engineGenerator = mock<EngineDocumentationGeneratorApi>()
+    `when`(engineGenerator.generate(any())).thenReturn(generationResult)
+
     val generator = WorkerDocumentationGenerator(
       project = project,
-      engine = TargetPlattform.C7,
       outputDirectory = tempDir,
-      engineSpecificConfig = EngineSpecificConfig(),
-      inputValueNamingPolicy = InputValueNamingPolicy.EMPTY
+      engineGenerator
     )
 
-    // when
     generator.generate()
 
-    // then
     val expectedFile = File(tempDir, "Test-Worker.json")
     assertThat(expectedFile).exists()
     val content = expectedFile.readText()
     assertThat(content)
-      .contains("\"name\" : \"Test Worker\"")
-      .contains("\"id\" : \"testTopic\"")
-      .contains("Input: In Label")
-      .contains("Output: Out Label")
+      .isEqualTo("test")
+    verify(engineGenerator).generate(any())
   }
 
   @Test
@@ -66,6 +74,9 @@ class WorkerDocumentationGeneratorTest {
     val project = mock<MavenProject> {
       on { compileClasspathElements } doReturn(emptyList())
     }
+
+    val engineGenerator = mock<EngineDocumentationGeneratorApi>()
+    `when`(engineGenerator.generate(any())).thenReturn(generationResult)
 
     // create a file inside
     val testFile = File(tempDir, "some.txt").writeText("data")
@@ -75,15 +86,14 @@ class WorkerDocumentationGeneratorTest {
 
     val generator = WorkerDocumentationGenerator(
       project = project,
-      engine = TargetPlattform.C7,
       outputDirectory = tempDir,
-      engineSpecificConfig = EngineSpecificConfig(),
-      inputValueNamingPolicy = InputValueNamingPolicy.EMPTY
+      engineGenerator
     )
 
     generator.clean()
 
     assertThat(tempDir.exists())
       .isFalse()
+    verify(engineGenerator, never()).generate(any())
   }
 }

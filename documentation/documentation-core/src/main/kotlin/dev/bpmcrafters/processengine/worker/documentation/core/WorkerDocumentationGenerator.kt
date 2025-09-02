@@ -3,10 +3,10 @@ package dev.bpmcrafters.processengine.worker.documentation.core
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.documentation.api.ProcessEngineWorkerDocumentation
 import dev.bpmcrafters.processengine.worker.documentation.api.ProcessEngineWorkerPropertyDocumentation
-import dev.bpmcrafters.processengine.worker.documentation.core.generator.EngineDocumentationGenerator
-import dev.bpmcrafters.processengine.worker.documentation.core.generator.ProcessEngineWorkerDocumentationInfo
-import dev.bpmcrafters.processengine.worker.documentation.core.generator.ProcessEngineWorkerPropertyInfo
-import dev.bpmcrafters.processengine.worker.documentation.core.generator.engines.c7.Camunda7ElementTemplateGenerator
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.DocumentationFailedException
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.EngineDocumentationGeneratorApi
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.ProcessEngineWorkerDocumentationInfo
+import dev.bpmcrafters.processengine.worker.documentation.generator.api.ProcessEngineWorkerPropertyInfo
 import org.apache.commons.io.FileUtils
 import org.apache.maven.project.MavenProject
 import org.reflections.Reflections
@@ -20,15 +20,9 @@ import java.net.URLClassLoader
 
 class WorkerDocumentationGenerator(
   val project: MavenProject,
-  val engine: TargetPlattform,
   val outputDirectory: File,
-  val engineSpecificConfig: EngineSpecificConfig,
-  val inputValueNamingPolicy: InputValueNamingPolicy = InputValueNamingPolicy.EMPTY,
+  val engineDocumentationGenerator: EngineDocumentationGeneratorApi
 ) {
-
-  val engineDocumentationGenerators = listOf<EngineDocumentationGenerator>(
-    Camunda7ElementTemplateGenerator()
-  )
 
   /**
    * Clean the output directory
@@ -57,10 +51,6 @@ class WorkerDocumentationGenerator(
     )
     val workers = reflections.getMethodsAnnotatedWith(ProcessEngineWorker::class.java)
 
-    val engine = engineDocumentationGenerators
-      .filter { it.isSupported(engine) }
-      .let { if (it.size != 1) throw DocumentationFailedException("Expected exactly one engine documentation generator for $engine, but got ${it.size}", null) else it.first() }
-
     // generate documentation for each worker
     workers.forEach {
       if (it.parameterTypes.size > 1) {
@@ -83,7 +73,7 @@ class WorkerDocumentationGenerator(
           generateProperties(returnType)
         )
 
-        val result = engine.generate(processEngineWorkerDocumentation, inputValueNamingPolicy, engineSpecificConfig)
+        val result = engineDocumentationGenerator.generate(processEngineWorkerDocumentation)
 
         FileUtils.createParentDirectories(outputDirectory)
         val workerDocumentation = File(outputDirectory, result.fileName)

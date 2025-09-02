@@ -10,11 +10,13 @@
   </parent>
 
   <artifactId>process-engine-worker-documentation</artifactId>
-  <name>${artifactId}</name>
+  <name>${project.artifactId}</name>
   <modules>
     <module>documentation-api</module>
+    <module>generator-api</module>
     <module>documentation-core</module>
-    <module>documentation-plugin</module>
+    <module>documentation-c8-maven-plugin</module>
+    <module>documentation-c7-maven-plugin</module>
   </modules>
   <packaging>pom</packaging>
 

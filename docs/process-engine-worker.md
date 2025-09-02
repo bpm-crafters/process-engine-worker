@@ -118,29 +118,49 @@ public record ExampleDto(
 
 4. Add the maven plugin to your `pom.xml`s plugin section
 
+**C7 Maven Plugin**
+
 ```xml
-      <plugin>
-        <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-        <artifactId>process-engine-worker-documentation-maven-plugin</artifactId>
-        <version>0.6.1-SNAPSHOT</version>
-        <configuration>
-          <targetPlatform>C7</targetPlatform>
-          <inputValueNamingPolicy>ATTRIBUTE_NAME</inputValueNamingPolicy>
-          <clean>true</clean>
-          <outputDirectory>src/main/resources/bpmn/element-templates</outputDirectory>
-          <platformSpecificConfig>
-            <c7>
-              <asyncAfterDefaultValue>true</asyncAfterDefaultValue>
-            </c7>
-          </platformSpecificConfig>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <phase>process-classes</phase>
-          </execution>
-        </executions>
-      </plugin>
+  <plugin>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-documentation-c7-maven-plugin</artifactId>
+    <version>0.6.1-SNAPSHOT</version>
+    <configuration>
+      <clean>true</clean>
+      <outputDirectory>src/main/resources/bpmn/element-templates</outputDirectory>
+      <c7Config>
+        <asyncAfterDefaultValue>true</asyncAfterDefaultValue>
+      </c7Config>
+    </configuration>
+    <executions>
+      <execution>
+        <goals>
+          <goal>generate</goal>
+        </goals>
+        <phase>process-classes</phase>
+      </execution>
+    </executions>
+  </plugin>
+```
+
+**C8 Maven Plugin**
+
+```xml
+  <plugin>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-documentation-c8-maven-plugin</artifactId>
+    <version>0.6.1-SNAPSHOT</version>
+    <configuration>
+      <clean>true</clean>
+      <outputDirectory>src/main/resources/bpmn/element-templates</outputDirectory>
+    </configuration>
+    <executions>
+      <execution>
+        <goals>
+          <goal>generate</goal>
+        </goals>
+        <phase>process-classes</phase>
+      </execution>
+    </executions>
+  </plugin>
 ```

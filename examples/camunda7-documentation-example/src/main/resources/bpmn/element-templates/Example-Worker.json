@@ -40,7 +40,7 @@
       "name" : "camunda:asyncAfter"
     }
   }, {
-    "value" : "${exampleInput}",
+    "value" : "${}",
     "label" : "Input: Example Input",
     "type" : "String",
     "editable" : true,
