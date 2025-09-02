@@ -10,12 +10,10 @@ import org.awaitility.Awaitility.await
 import org.camunda.community.rest.client.api.ProcessInstanceApiClient
 import org.junit.jupiter.api.Test
 import org.springframework.context.annotation.Import
-import org.springframework.test.context.ActiveProfiles
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
 @Import(ExternalTaskCompletionWithoutTransactionTest.WorkerWithoutTransactionalAnnotation::class)
-@ActiveProfiles("itest")
 class ExternalTaskCompletionWithoutTransactionTest : AbstractTransactionalBehaviorTest() {
 
   class WorkerWithoutTransactionalAnnotation(
