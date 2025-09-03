@@ -6,6 +6,7 @@ import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorke
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -48,8 +49,8 @@ class ProcessEngineWorkerAutoConfiguration {
    * Micrometer based metrics.
    */
   @Bean
-  @ConditionalOnBean(value = [MeterRegistry::class])
-  fun processEngineWorkerMetricsNoOp(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics {
+  @ConditionalOnClass(MeterRegistry::class)
+  fun processEngineWorkerMetricsMicrometer(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics {
     return ProcessEngineWorkerMetricsMicrometer(meterRegistry = meterRegistry)
   }
 
@@ -57,8 +58,8 @@ class ProcessEngineWorkerAutoConfiguration {
    * Empty metrics implementation skipping metrics delivery.
    */
   @Bean
-  @ConditionalOnMissingBean(value = [MeterRegistry::class])
-  fun processEngineWorkerMetricsMicrometer(): ProcessEngineWorkerMetrics {
+  @ConditionalOnMissingBean(ProcessEngineWorkerMetrics::class)
+  fun processEngineWorkerMetricsNoOp(): ProcessEngineWorkerMetrics {
     return ProcessEngineWorkerMetricsNoOp
   }
 
