@@ -49,7 +49,7 @@ class ProcessEngineWorkerAutoConfiguration {
    * Micrometer based metrics.
    */
   @Bean
-  @ConditionalOnClass(MeterRegistry::class)
+  @ConditionalOnBean(MeterRegistry::class)
   fun processEngineWorkerMetricsMicrometer(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics {
     return ProcessEngineWorkerMetricsMicrometer(meterRegistry = meterRegistry)
   }
