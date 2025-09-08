@@ -1,10 +1,12 @@
 package dev.bpmcrafters.processengine.worker.configuration
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import dev.bpmcrafters.processengine.worker.registrar.JacksonVariableConverter
-import dev.bpmcrafters.processengine.worker.registrar.ParameterResolver
-import dev.bpmcrafters.processengine.worker.registrar.ResultResolver
-import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
+import dev.bpmcrafters.processengine.worker.registrar.*
+import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsMicrometer
+import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
+import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -23,8 +25,7 @@ class ProcessEngineWorkerAutoConfiguration {
    */
   @Bean
   @ConditionalOnMissingBean
-  fun defaultJacksonVariableConverter(objectMapper: ObjectMapper): VariableConverter
-    = JacksonVariableConverter(objectMapper = objectMapper)
+  fun defaultJacksonVariableConverter(objectMapper: ObjectMapper): VariableConverter = JacksonVariableConverter(objectMapper = objectMapper)
 
   /**
    * Initializes parameter resolver.
@@ -43,4 +44,23 @@ class ProcessEngineWorkerAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   fun defaultResultResolver() = ResultResolver.builder().build()
+
+  /**
+   * Micrometer based metrics.
+   */
+  @Bean
+  @ConditionalOnBean(MeterRegistry::class)
+  fun processEngineWorkerMetricsMicrometer(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics {
+    return ProcessEngineWorkerMetricsMicrometer(meterRegistry = meterRegistry)
+  }
+
+  /**
+   * Empty metrics implementation skipping metrics delivery.
+   */
+  @Bean
+  @ConditionalOnMissingBean(ProcessEngineWorkerMetrics::class)
+  fun processEngineWorkerMetricsNoOp(): ProcessEngineWorkerMetrics {
+    return ProcessEngineWorkerMetricsNoOp
+  }
+
 }

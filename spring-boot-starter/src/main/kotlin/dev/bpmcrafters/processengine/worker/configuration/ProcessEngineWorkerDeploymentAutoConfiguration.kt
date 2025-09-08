@@ -4,6 +4,7 @@ import dev.bpmcrafters.processengine.worker.process.AutoDeploymentOnStartup
 import dev.bpmcrafters.processengine.worker.process.ProcessDeployment
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -16,6 +17,7 @@ import org.springframework.core.io.support.ResourcePatternResolver
  */
 @AutoConfiguration
 @EnableConfigurationProperties(ProcessEngineWorkerDeploymentProperties::class)
+@ConditionalOnBean(DeploymentApi::class)
 class ProcessEngineWorkerDeploymentAutoConfiguration {
 
   /**

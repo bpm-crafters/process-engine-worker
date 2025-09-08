@@ -11,16 +11,16 @@
 
   <groupId>dev.bpm-crafters.process-engine-worker</groupId>
   <artifactId>process-engine-worker-root</artifactId>
-  <version>0.6.0</version>
+  <version>0.6.1</version>
   <name>${project.artifactId}</name>
   <description>Process Engine Worker</description>
   <url>https://github.com/bpm-crafters/process-engine-worker/</url>
   <packaging>pom</packaging>
 
   <properties>
-    <spring-boot.version>3.5.4</spring-boot.version>
+    <spring-boot.version>3.5.5</spring-boot.version>
     <process-engine-api.version>1.3</process-engine-api.version>
-    <process-engine-adapters-c7.version>2025.08.1</process-engine-adapters-c7.version>
+    <process-engine-adapters-c7.version>2025.08.3</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2025.05.2</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.0.0</mockito.version>

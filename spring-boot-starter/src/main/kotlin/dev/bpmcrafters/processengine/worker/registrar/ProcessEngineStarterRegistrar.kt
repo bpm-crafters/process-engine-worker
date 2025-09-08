@@ -41,7 +41,9 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy
   private val resultResolver: ResultResolver,
   @param:Lazy
-  private val transactionalTemplate: TransactionTemplate
+  private val transactionalTemplate: TransactionTemplate,
+  @param:Lazy
+  private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -88,7 +90,7 @@ class ProcessEngineStarterRegistrar(
           completion = completion,
           isTransactional = isTransactional,
           payloadReturnType = payloadReturnType,
-          method = method
+          method = method,
         ) { taskInformation, payload ->
           val args: Array<Any?> = parameterResolver.createInvocationArguments(
             method = method,
@@ -113,6 +115,7 @@ class ProcessEngineStarterRegistrar(
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
    * @param method process engine worker method.
+   * @param processEngineWorkerMetrics metrics to report progress.
    * @param actionWithResult worker always returning the result.
    */
   private fun subscribe(
@@ -131,6 +134,7 @@ class ProcessEngineStarterRegistrar(
     payloadDescription = payloadDescription,
     action = { taskInformation, payload ->
       try {
+        processEngineWorkerMetrics.taskReceived(topic)
         // depending on transactional annotations, execute either in a new transaction or direct
         if (isTransactional) {
           val completeBeforeCommit = completeBeforeCommit(completion)
@@ -139,22 +143,25 @@ class ProcessEngineStarterRegistrar(
             if (autoCompleteTask && completeBeforeCommit) {
               logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} before commit" }
               completeTask(taskInformation, payloadReturnType, method, result)
+              processEngineWorkerMetrics.taskCompleted(topic)
             }
             result
           }
           if (autoCompleteTask && !completeBeforeCommit) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
             completeTask(taskInformation, payloadReturnType, method, result)
+            processEngineWorkerMetrics.taskCompleted(topic)
           }
         } else {
           val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
           if (autoCompleteTask) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} (there is and was no transaction)" }
             completeTask(taskInformation, payloadReturnType, method, result)
+            processEngineWorkerMetrics.taskCompleted(topic)
           }
         }
       } catch (e: Exception) {
-        handleAndReportException(taskInformation, e)
+        handleAndReportException(taskInformation, e, topic)
       }
     },
     termination = {
@@ -193,7 +200,7 @@ class ProcessEngineStarterRegistrar(
   /*
    * Encapsulate error detection and reporting.
    */
-  private fun handleAndReportException(taskInformation: TaskInformation, e: Exception) {
+  private fun handleAndReportException(taskInformation: TaskInformation, e: Exception, topic: String) {
     val cause = exceptionResolver.getCause(e)
     if (cause is BpmnErrorOccurred) {
       try {
@@ -205,6 +212,7 @@ class ProcessEngineStarterRegistrar(
             payloadSupplier = { cause.payload }
           )
         ).get()
+        processEngineWorkerMetrics.taskCompletedByError(topic)
         logger.trace { "PROCESS-ENGINE-WORKER-012: external task worker thrown an BPMN Error ${cause.errorCode}" }
       } catch (ee: ExecutionException) {
         cause.addSuppressed(exceptionResolver.getCause(ee))
@@ -219,6 +227,7 @@ class ProcessEngineStarterRegistrar(
             errorDetails = cause.stackTraceToString()
           )
         ).get()
+        processEngineWorkerMetrics.taskFailed(topic)
       } catch (ee: ExecutionException) {
         cause.addSuppressed(exceptionResolver.getCause(ee))
       } finally {
