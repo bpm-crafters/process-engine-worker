@@ -1,6 +1,7 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
+import dev.bpmcrafters.processengine.worker.FailJobException
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.BEFORE_COMMIT
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAULT
@@ -220,11 +221,17 @@ class ProcessEngineStarterRegistrar(
       }
     } else {
       try {
+        val retryCount = if (cause is FailJobException) cause.retryCount
+          else taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.apply { this - 1 }
+        val retryBackoff = if (cause is FailJobException) cause.retryBackoff
+          else null
         taskCompletionApi.failTask(
           FailTaskCmd(
             taskId = taskInformation.taskId,
             reason = cause.message ?: "Exception during execution of external task worker",
-            errorDetails = cause.stackTraceToString()
+            errorDetails = cause.stackTraceToString(),
+            retryCount = retryCount,
+            retryBackoff = retryBackoff
           )
         ).get()
         processEngineWorkerMetrics.taskFailed(topic)
