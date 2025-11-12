@@ -36,7 +36,7 @@ abstract class AbstractTransactionalBehaviorTest {
 
     @Container
     @JvmStatic
-    val camundaContainer = Camunda7RunTestContainer("run-7.23.0")
+    val camundaContainer = Camunda7RunTestContainer("run-7.24.0")
 
     @Container
     @JvmStatic
@@ -88,20 +88,20 @@ abstract class AbstractTransactionalBehaviorTest {
   protected fun processInstanceIsRunning(processInstanceId: String): Boolean {
     return processInstanceApiClient.getProcessInstancesCount(
       processInstanceId,
-      null, null,
-      null,
-      null, null, null, null,
-      null,
-      null, null, null, null,
-      true,
-      false,
-      false,
-      null, null,null, null,
-      null, null, null,
-      null,
-      null,
-      true,
-      null, null, null
+      null, null, // business key
+      null, // case instance
+      null, null, null, null, // process definition
+      null, // deployment
+      null, null, null, null, // super/sub process and case
+      true, // active
+      false, // suspended
+      false, // with incident
+      null, null,null, null, // incident
+      null, null, null, // tenant
+      null, // activity id in
+      null, null, // root process instance
+      true, // leaf
+      null, null, null // variables
     )?.body?.count == 1L
   }
 

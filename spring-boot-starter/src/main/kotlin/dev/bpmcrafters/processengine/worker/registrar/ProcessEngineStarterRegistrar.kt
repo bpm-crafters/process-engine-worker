@@ -10,6 +10,7 @@ import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerPro
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
+import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
@@ -25,9 +26,8 @@ private val logger = KotlinLogging.logger {}
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
  * @since 0.0.3
  */
-@Configuration
+@AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
 @ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
-@AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   private val processEngineWorkerProperties: ProcessEngineWorkerProperties,
   @param:Lazy
