@@ -27,12 +27,12 @@ camunda:
     auth:
       username: demo
       password: demo
-    zeebe:
-      base-url: http://localhost:26500
+    worker:
+      defaults:
+        enabled: true
     tasklist:
-      base-url: http://localhost:8080/tasklist
-    identity:
-      enabled: false
+      base-url: http://localhost:8081/tasklist
+    rest-address: http://localhost:8081
 
 logging:
   level:
