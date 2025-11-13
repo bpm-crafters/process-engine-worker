@@ -20,7 +20,6 @@ dev:
 
 camunda:
   client: # needed to disable zeebe
-    mode: simple
     zeebe:
       enabled: false
     tasklist:
@@ -29,6 +28,9 @@ camunda:
       enabled: false
     identity:
       enabled: false
+    worker:
+      defaults:
+        enabled: false
   bpm:
     admin-user:
       id: admin

@@ -1,6 +1,7 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
+import dev.bpmcrafters.processengine.worker.FailJobException
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.BEFORE_COMMIT
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAULT
@@ -10,6 +11,7 @@ import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerPro
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
+import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Configuration
@@ -25,9 +27,8 @@ private val logger = KotlinLogging.logger {}
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
  * @since 0.0.3
  */
-@Configuration
+@AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
 @ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
-@AutoConfigureAfter(ProcessEngineWorkerAutoConfiguration::class)
 class ProcessEngineStarterRegistrar(
   private val processEngineWorkerProperties: ProcessEngineWorkerProperties,
   @param:Lazy
@@ -220,11 +221,17 @@ class ProcessEngineStarterRegistrar(
       }
     } else {
       try {
+        val retryCount = if (cause is FailJobException) cause.retryCount
+          else taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.apply { this - 1 }
+        val retryBackoff = if (cause is FailJobException) cause.retryBackoff
+          else null
         taskCompletionApi.failTask(
           FailTaskCmd(
             taskId = taskInformation.taskId,
             reason = cause.message ?: "Exception during execution of external task worker",
-            errorDetails = cause.stackTraceToString()
+            errorDetails = cause.stackTraceToString(),
+            retryCount = retryCount,
+            retryBackoff = retryBackoff
           )
         ).get()
         processEngineWorkerMetrics.taskFailed(topic)
