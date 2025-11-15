@@ -1,0 +1,67 @@
+{
+  "$schema" : "https://unpkg.com/@camunda/element-templates-json-schema@0.1.0/resources/schema.json",
+  "name" : "Example Worker",
+  "id" : "example-worker",
+  "appliesTo" : [ "bpmn:ServiceTask" ],
+  "properties" : [ {
+    "value" : "external",
+    "label" : "Implementation Type",
+    "type" : "String",
+    "editable" : false,
+    "binding" : {
+      "type" : "property",
+      "name" : "camunda:type"
+    }
+  }, {
+    "value" : "example-worker",
+    "label" : "Topic",
+    "type" : "String",
+    "editable" : false,
+    "binding" : {
+      "type" : "property",
+      "name" : "camunda:topic"
+    }
+  }, {
+    "value" : false,
+    "label" : "Async Before",
+    "type" : "Boolean",
+    "editable" : true,
+    "binding" : {
+      "type" : "property",
+      "name" : "camunda:asyncBefore"
+    }
+  }, {
+    "value" : true,
+    "label" : "Async After",
+    "type" : "Boolean",
+    "editable" : true,
+    "binding" : {
+      "type" : "property",
+      "name" : "camunda:asyncAfter"
+    }
+  }, {
+    "value" : "${}",
+    "label" : "Input: Example Input",
+    "type" : "String",
+    "editable" : true,
+    "binding" : {
+      "type" : "camunda:inputParameter",
+      "name" : "exampleInput"
+    },
+    "constraints" : {
+      "notEmpty" : false
+    }
+  }, {
+    "value" : "exampleInput",
+    "label" : "Output: Example Input",
+    "type" : "String",
+    "editable" : true,
+    "binding" : {
+      "type" : "camunda:outputParameter",
+      "source" : "${exampleInput}"
+    },
+    "constraints" : {
+      "notEmpty" : false
+    }
+  } ]
+}
