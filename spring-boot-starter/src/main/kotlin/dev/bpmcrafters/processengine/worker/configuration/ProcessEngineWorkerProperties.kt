@@ -1,17 +1,25 @@
 package dev.bpmcrafters.processengine.worker.configuration
 
-import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
+import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.validation.annotation.Validated
 
 /**
  * Configuration properties allowing simple switch off/on of auto-registration.
  */
-@ConfigurationProperties(prefix = PREFIX)
+@Validated
+@ConfigurationProperties(prefix = DEFAULT_PREFIX)
 data class ProcessEngineWorkerProperties(
-  val registerProcessWorkers: Boolean = true,
-  val completeTasksBeforeCommit: Boolean = false,
+  /**
+   * Determines whether the workers are automatically registered.
+   */
+  var registerProcessWorkers: Boolean = true,
+  /**
+   * Determines whether tasks are completed before transaction commit.
+   */
+  var completeTasksBeforeCommit: Boolean = false,
 ) {
   companion object {
-    const val PREFIX = "dev.bpm-crafters.process-api.worker"
+    const val DEFAULT_PREFIX = "dev.bpm-crafters.process-api.worker"
   }
 }
