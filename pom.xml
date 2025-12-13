@@ -46,11 +46,6 @@
         <artifactId>mockito-kotlin</artifactId>
         <version>${mockito.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.tngtech.archunit</groupId>
-        <artifactId>archunit-junit5</artifactId>
-        <version>${archunit.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -222,12 +217,21 @@
     </developer>
     <developer>
       <id>__</id>
-      <name>Thomas Hinrichs</name>
+      <name>Thomas Heinrichs</name>
       <roles>
         <role>Developer</role>
       </roles>
       <organization>Miragon</organization>
       <organizationUrl>https://miragon.com</organizationUrl>
+    </developer>
+    <developer>
+      <id>__</id>
+      <name>Marco Schäck</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <organization>Miragon</organization>
+      <organizationUrl>https://miragon.io</organizationUrl>
     </developer>
   </developers>
 </project>

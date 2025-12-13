@@ -7,19 +7,16 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.BEFOR
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAULT
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
-import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.PREFIX
+import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
 import java.lang.reflect.Method
 import java.util.concurrent.ExecutionException
-
 
 private val logger = KotlinLogging.logger {}
 
@@ -28,7 +25,7 @@ private val logger = KotlinLogging.logger {}
  * @since 0.0.3
  */
 @AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
-@ConditionalOnProperty(prefix = PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = DEFAULT_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class ProcessEngineStarterRegistrar(
   private val processEngineWorkerProperties: ProcessEngineWorkerProperties,
   @param:Lazy

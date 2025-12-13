@@ -3,10 +3,10 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and 
+for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and
 API and allows to build universal workers.
 
-First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to you `pom.xml`:
+First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
 ```xml
 <dependency>
@@ -72,8 +72,21 @@ is a checked exception, in order to comply with Spring behavior of not rolling b
 
 The worker method can be marked transactional by adding Spring or Jakarta EE transactional annotations to the method or to the worker class.
 If the annotation `@org.springframework.transaction.annotation.Transactional` with propagation `REQUIRES`, `REQUIRES_NEW`, `SUPPORTS` and `MANDATORY`
-is used, the library will execute the worker method and the completion of the external task via API in the same transaction. This will lead to 
+is used, the library will execute the worker method and the completion of the external task via API in the same transaction. This will lead to
 a transaction rollback, if the external task can't be completed (e.g. due to a network error).
+
+## Configuration
+
+You can configure the Process Engine Worker by adding the following properties to your `application.properties` or `application.yml`:
+
+```yaml
+dev:
+  bpm-crafters:
+    process-api:
+      worker:
+        registerProcessWorkers: true # Enable or disable automatic worker registration
+        completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
+```
 
 
 
