@@ -6,7 +6,6 @@ import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorke
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -25,11 +24,15 @@ class ProcessEngineWorkerAutoConfiguration {
    */
   @Bean
   @ConditionalOnMissingBean
-  fun defaultJacksonVariableConverter(objectMapper: ObjectMapper): VariableConverter = JacksonVariableConverter(objectMapper = objectMapper)
+  fun defaultJacksonVariableConverter(
+    objectMapper: ObjectMapper,
+  ): VariableConverter = JacksonVariableConverter(
+    objectMapper = objectMapper
+  )
 
   /**
    * Initializes parameter resolver.
-   * If you want to add your own parameter resolver, just create your own parameter resolver and expose it as bean. You might want
+   * If you want to add your own parameter resolver, create your own parameter resolver and expose it as bean. You might want
    * to register your own strategies using the [ParameterResolver.ParameterResolverBuilder#addStrategy] method.
    */
   @Bean
@@ -38,15 +41,15 @@ class ProcessEngineWorkerAutoConfiguration {
 
   /**
    * Initializes result resolver.
-   * If you want to add your own result resolver, just create you own result resolver and expose it as a bean. You might want
-   * to register you own strategy using [ResultResolver.ResultResolverBuilder#addStrategy] method.
+   * If you want to add your own result resolver, create your own result resolver and expose it as a bean.
+   * You might want to register your own strategy using the [ResultResolver.ResultResolverBuilder#addStrategy] method.
    */
   @Bean
   @ConditionalOnMissingBean
   fun defaultResultResolver() = ResultResolver.builder().build()
 
   /**
-   * Micrometer based metrics.
+   * Micrometer-based metrics.
    */
   @Bean
   @ConditionalOnBean(MeterRegistry::class)
