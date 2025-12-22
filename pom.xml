@@ -18,7 +18,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <spring-boot.version>3.5.7</spring-boot.version>
+    <spring-boot.version>4.0.1</spring-boot.version>
     <process-engine-api.version>1.4</process-engine-api.version>
     <process-engine-adapters-c7.version>2025.11.1</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2025.11.1</process-engine-adapters-c8.version>
