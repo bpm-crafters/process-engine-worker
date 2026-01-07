@@ -43,7 +43,7 @@ internal class ProcessEngineRegistrarRetryTest {
   fun `no value if nothing is provided`() {
     val task = TaskInformation(UUID.randomUUID().toString(), mapOf())
     val retry = testSubject.calculateRetry(task, IllegalArgumentException("Wrong"))
-    assertTha t(retry.retryCount).isNull()
+    assertThat(retry.retryCount).isNull()
     assertThat(retry.retryBackoff).isNull()
   }
 }
