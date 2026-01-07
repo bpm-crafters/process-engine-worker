@@ -46,11 +46,6 @@
         <artifactId>mockito-kotlin</artifactId>
         <version>${mockito.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.tngtech.archunit</groupId>
-        <artifactId>archunit-junit5</artifactId>
-        <version>${archunit.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -194,7 +189,7 @@
       <organizationUrl>https://holisticon.de</organizationUrl>
     </developer>
     <developer>
-      <id>__</id>
+      <id>stephanpelikan</id>
       <name>Stephan Pelikan</name>
       <roles>
         <role>Developer</role>
@@ -212,7 +207,7 @@
       <organizationUrl>https://phactum.at</organizationUrl>
     </developer>
     <developer>
-      <id>__</id>
+      <id>dominikhorn93</id>
       <name>Dominik Horn</name>
       <roles>
         <role>Developer</role>
@@ -221,13 +216,22 @@
       <organizationUrl>https://miragon.com</organizationUrl>
     </developer>
     <developer>
-      <id>__</id>
-      <name>Thomas Hinrichs</name>
+      <id>Hafflgav</id>
+      <name>Thomas Heinrichs</name>
       <roles>
         <role>Developer</role>
       </roles>
       <organization>Miragon</organization>
       <organizationUrl>https://miragon.com</organizationUrl>
+    </developer>
+    <developer>
+      <id>emaarco</id>
+      <name>Marco Schäck</name>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <organization>Miragon</organization>
+      <organizationUrl>https://miragon.io</organizationUrl>
     </developer>
   </developers>
 </project>
