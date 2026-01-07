@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
 import java.lang.reflect.Method
+import java.time.Duration
 import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
@@ -218,17 +219,14 @@ class ProcessEngineStarterRegistrar(
       }
     } else {
       try {
-        val retryCount = if (cause is FailJobException) cause.retryCount
-          else taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.apply { this - 1 }
-        val retryBackoff = if (cause is FailJobException) cause.retryBackoff
-          else null
+        var retry = calculateRetry(taskInformation = taskInformation, cause = cause)
         taskCompletionApi.failTask(
           FailTaskCmd(
             taskId = taskInformation.taskId,
             reason = cause.message ?: "Exception during execution of external task worker",
             errorDetails = cause.stackTraceToString(),
-            retryCount = retryCount,
-            retryBackoff = retryBackoff
+            retryCount = retry.retryCount,
+            retryBackoff = retry.retryBackoff
           )
         ).get()
         processEngineWorkerMetrics.taskFailed(topic)
@@ -240,7 +238,24 @@ class ProcessEngineStarterRegistrar(
     }
   }
 
-  private fun completeBeforeCommit(complete: Completion): Boolean =
+  internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
+    val retryCount = if (cause is FailJobException) {
+      cause.retryCount
+    } else {
+      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
+    }
+    val retryBackoff = if (cause is FailJobException) {
+      cause.retryBackoff
+    } else {
+      null
+    }
+    return FailureRetry(
+      retryCount = retryCount,
+      retryBackoff = retryBackoff
+    )
+  }
+
+  internal fun completeBeforeCommit(complete: Completion): Boolean =
     if (complete == DEFAULT) {
       processEngineWorkerProperties.completeTasksBeforeCommit
     } else {
@@ -251,4 +266,13 @@ class ProcessEngineStarterRegistrar(
    * Task handler as a function.
    */
   fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any>) -> Any?
+
+  /**
+   * Failure retry information.
+   */
+  data class FailureRetry(
+    val retryCount: Int?,
+    val retryBackoff: Duration?
+  )
+
 }
