@@ -43,7 +43,7 @@ jobs:
 
       # Build
       - name: Build with Maven
-        run: ./mvnw clean verify -U -B -ntp -T4
+        run: ./mvnw clean install -U -B -ntp -T4
 
       # itest
       - name: Run itest
