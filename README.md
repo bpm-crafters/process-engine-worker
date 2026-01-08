@@ -171,7 +171,10 @@ ZEEBE_CLIENT_ID=..
 ZEEBE_CLIENT_SECRET=...
 ```
 
-After starting application, you can either use Open API endpoints or just run the 
+After starting application, you can either use Open API endpoints or just run the
 HTTP client tests using your IntelliJ, located in the example directory.
 
-Don't forget to first deploy the process! Either manually via operate / modeler, or with the HTTP client script: c8-deploy-process.http
+Don't forget to first deploy the process! 
+Either manually via operate / modeler, or with the HTTP client script: 
+c8-deploy-process.http
+

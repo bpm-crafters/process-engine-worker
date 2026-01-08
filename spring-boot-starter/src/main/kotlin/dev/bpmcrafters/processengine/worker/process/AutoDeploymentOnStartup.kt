@@ -4,7 +4,7 @@ import org.springframework.boot.context.event.ApplicationStartedEvent
 import org.springframework.context.ApplicationListener
 
 /**
- * Trigger to deploy resources on start-up of application.
+ * Trigger to deploy resources (for instance, processes) on start-up of the application.
  * @since 0.5.0
  */
 class AutoDeploymentOnStartup (

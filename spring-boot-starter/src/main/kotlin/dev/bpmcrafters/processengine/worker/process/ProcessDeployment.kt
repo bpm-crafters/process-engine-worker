@@ -20,7 +20,7 @@ private val logger = KotlinLogging.logger {}
 open class ProcessDeployment(
   private val resourcePatternResolver: ResourcePatternResolver,
   private val deploymentApi: DeploymentApi,
-  private val processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
+  private val deploymentProperties: ProcessEngineWorkerDeploymentProperties
 ) {
 
   /**
@@ -29,8 +29,8 @@ open class ProcessDeployment(
   open fun deployResources(): DeploymentInformation? {
     val namedResources = buildList<Resource> {
       try {
-        addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.bpmnResourcePattern))
-        addAll(resourcePatternResolver.getResources(processEngineWorkerDeploymentProperties.dmnResourcePattern))
+        addAll(resourcePatternResolver.getResources(deploymentProperties.bpmnResourcePattern))
+        addAll(resourcePatternResolver.getResources(deploymentProperties.dmnResourcePattern))
       } catch (e: IOException) {
         logger.warn(e) { "PROCESS-ENGINE-WORKER-051: Failed to load resources for deployment." }
       }
@@ -42,7 +42,7 @@ open class ProcessDeployment(
 
     return deploymentApi.deploy(
       DeployBundleCommand(resources = namedResources)
-    ).get(processEngineWorkerDeploymentProperties.deploymentTimeoutInSeconds, TimeUnit.SECONDS)
+    ).get(deploymentProperties.deploymentTimeoutInSeconds, TimeUnit.SECONDS)
       .also { deploymentResult ->
         logger.info { "PROCESS-ENGINE-WORKER-050: Deployed ${namedResources.size} resources with key ${deploymentResult.deploymentKey}." }
       }

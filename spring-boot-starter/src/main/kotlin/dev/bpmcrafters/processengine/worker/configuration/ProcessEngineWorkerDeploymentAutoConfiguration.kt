@@ -32,20 +32,23 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
   ) = ProcessDeployment(
     resourcePatternResolver = resourcePatternResolver,
     deploymentApi = deploymentApi,
-    processEngineWorkerDeploymentProperties = processEngineWorkerDeploymentProperties
+    deploymentProperties = processEngineWorkerDeploymentProperties
   )
 
   /**
    * Configures a trigger for auto-deployment triggered by application start event.
    */
   @ConditionalOnProperty(
-    prefix = ProcessEngineWorkerDeploymentProperties.PREFIX,
+    prefix = ProcessEngineWorkerDeploymentProperties.DEFAULT_PREFIX,
     name = ["enabled"],
     havingValue = "true",
     matchIfMissing = false
   )
   @Bean
-  fun autoDeploymentOnStartup(processDeployment: ProcessDeployment) =
-    AutoDeploymentOnStartup(processDeployment = processDeployment)
+  fun autoDeploymentOnStartup(
+    processDeployment: ProcessDeployment
+  ) = AutoDeploymentOnStartup(
+    processDeployment = processDeployment
+  )
 
 }
