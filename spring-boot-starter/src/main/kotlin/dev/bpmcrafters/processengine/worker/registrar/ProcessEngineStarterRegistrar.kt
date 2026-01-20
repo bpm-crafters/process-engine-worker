@@ -173,7 +173,7 @@ class ProcessEngineStarterRegistrar(
    */
   private fun workerAndApiInvocation(
     taskInformation: TaskInformation,
-    payload: Map<String, Any>,
+    payload: Map<String, Any?>,
     actionWithResult: TaskHandlerWithResult,
   ): Any? {
     logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
@@ -265,7 +265,7 @@ class ProcessEngineStarterRegistrar(
   /**
    * Task handler as a function.
    */
-  fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any>) -> Any?
+  fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
   /**
    * Failure retry information.
