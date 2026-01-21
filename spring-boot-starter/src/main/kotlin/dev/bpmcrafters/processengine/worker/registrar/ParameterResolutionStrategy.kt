@@ -18,7 +18,7 @@ interface ParameterResolutionStrategy : Predicate<Parameter>, Function<Parameter
   data class Wrapper(
     val parameter: Parameter,
     val taskInformation: TaskInformation,
-    val payload: Map<String, Any>,
+    val payload: Map<String, Any?>,
     val variableConverter: VariableConverter,
     val taskCompletionApi: ServiceTaskCompletionApi
   )

@@ -91,7 +91,7 @@ open class ParameterResolver private constructor(
   open fun createInvocationArguments(
     method: Method,
     taskInformation: TaskInformation,
-    payload: Map<String, Any>,
+    payload: Map<String, Any?>,
     variableConverter: VariableConverter,
     taskCompletionApi: ServiceTaskCompletionApi
   ): Array<Any?> {
