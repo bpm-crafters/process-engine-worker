@@ -38,6 +38,7 @@ public class UserTaskPool implements UserTaskOutPort {
         TaskType.USER,
         null,
         null,
+        null,  // lockDurationInSeconds
         (taskInformation, payload) -> {
           if (!tasks.containsKey(taskInformation)) {
             log.info("EXAMPLE: <USER TASKS> Received user task {} ({}:{})",

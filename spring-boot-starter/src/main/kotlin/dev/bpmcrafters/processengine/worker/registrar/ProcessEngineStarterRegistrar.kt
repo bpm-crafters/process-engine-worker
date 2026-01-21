@@ -77,6 +77,7 @@ class ProcessEngineStarterRegistrar(
       }
 
       val completion = method.getCompletion()
+      val lockDuration = method.getLockDuration()
 
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()
@@ -85,6 +86,7 @@ class ProcessEngineStarterRegistrar(
         subscribe(
           topic = topic,
           payloadDescription = variableNames,
+          lockDuration = lockDuration,
           autoCompleteTask = autoCompleteTask,
           completion = completion,
           isTransactional = isTransactional,
@@ -110,6 +112,7 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic.
    * @param payloadDescription description of the variables to be passed.
+   * @param lockDuration optional lock duration in seconds for this worker.
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
@@ -120,6 +123,7 @@ class ProcessEngineStarterRegistrar(
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
+    lockDuration: Long? = null,
     autoCompleteTask: Boolean,
     completion: Completion,
     isTransactional: Boolean,
@@ -131,6 +135,7 @@ class ProcessEngineStarterRegistrar(
     taskType = TaskType.EXTERNAL,
     taskDescriptionKey = topic,
     payloadDescription = payloadDescription,
+    lockDurationInSeconds = lockDuration,
     action = { taskInformation, payload ->
       try {
         processEngineWorkerMetrics.taskReceived(topic)
