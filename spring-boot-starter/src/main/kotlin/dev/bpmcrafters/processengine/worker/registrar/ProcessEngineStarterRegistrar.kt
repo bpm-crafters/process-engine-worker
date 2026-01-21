@@ -54,7 +54,7 @@ class ProcessEngineStarterRegistrar(
       logger.debug { "PROCESS-ENGINE-WORKER-001: Detected ${annotatedProcessEngineWorkers.size} annotated workers on $beanName." }
       logger.trace { "PROCESS-ENGINE-WORKER-001: Detected annotated workers on $beanName are: ${annotatedProcessEngineWorkers.map { it.name }}." }
     }
-    annotatedProcessEngineWorkers.map { method ->
+    annotatedProcessEngineWorkers.forEach { method ->
 
       val topic = method.getTopic()
       // detects among all result resolver if the specified payload may be converted to payload return type
@@ -77,7 +77,7 @@ class ProcessEngineStarterRegistrar(
       }
 
       val completion = method.getCompletion()
-      val lockDuration = method.getLockDuration()
+      val customLockDuration = method.getLockDuration()
 
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()
@@ -86,7 +86,7 @@ class ProcessEngineStarterRegistrar(
         subscribe(
           topic = topic,
           payloadDescription = variableNames,
-          lockDuration = lockDuration,
+          lockDuration = customLockDuration,
           autoCompleteTask = autoCompleteTask,
           completion = completion,
           isTransactional = isTransactional,
