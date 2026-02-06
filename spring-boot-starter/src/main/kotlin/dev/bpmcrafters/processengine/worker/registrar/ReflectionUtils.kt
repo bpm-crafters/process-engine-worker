@@ -163,6 +163,20 @@ fun Method.getCompletion(): Completion {
 }
 
 /**
+ * Returns the lock duration from annotation, or null if not set.
+ * @return lock duration in seconds, or null if the default should be used.
+ * @since 0.8.0
+ */
+fun Method.getLockDuration(): Long? {
+  val lockDuration = this.getAnnotation(ProcessEngineWorker::class.java).lockDuration
+  return if (lockDuration == ProcessEngineWorker.DEFAULT_UNSET_LOCK_DURATION) {
+    null
+  } else {
+    lockDuration
+  }
+}
+
+/**
  * Checks if the method of the worker is transactional.
  * @return true, if the method should be executed transactional and be atomic with completion of the worker.
  */

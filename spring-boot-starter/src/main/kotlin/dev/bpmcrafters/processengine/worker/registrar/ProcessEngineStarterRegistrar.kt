@@ -8,6 +8,7 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAU
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
+import dev.bpmcrafters.processengineapi.CommonRestrictions
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
@@ -54,7 +55,7 @@ class ProcessEngineStarterRegistrar(
       logger.debug { "PROCESS-ENGINE-WORKER-001: Detected ${annotatedProcessEngineWorkers.size} annotated workers on $beanName." }
       logger.trace { "PROCESS-ENGINE-WORKER-001: Detected annotated workers on $beanName are: ${annotatedProcessEngineWorkers.map { it.name }}." }
     }
-    annotatedProcessEngineWorkers.map { method ->
+    annotatedProcessEngineWorkers.forEach { method ->
 
       val topic = method.getTopic()
       // detects among all result resolver if the specified payload may be converted to payload return type
@@ -77,6 +78,12 @@ class ProcessEngineStarterRegistrar(
       }
 
       val completion = method.getCompletion()
+      val customLockDuration = method.getLockDuration()
+      val restrictions = if (customLockDuration == null) {
+        mapOf()
+      } else {
+        mapOf("workerLockDurationInMilliseconds" to customLockDuration.toString()) // FIXME replace with constant introduced in Process Engine API 1.6
+      }
 
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()
@@ -85,6 +92,7 @@ class ProcessEngineStarterRegistrar(
         subscribe(
           topic = topic,
           payloadDescription = variableNames,
+          restrictions = restrictions,
           autoCompleteTask = autoCompleteTask,
           completion = completion,
           isTransactional = isTransactional,
@@ -110,6 +118,7 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic.
    * @param payloadDescription description of the variables to be passed.
+   * @param lockDuration optional lock duration in seconds for this worker.
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
@@ -120,6 +129,7 @@ class ProcessEngineStarterRegistrar(
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
+    restrictions: Map<String, String> = mapOf(),
     autoCompleteTask: Boolean,
     completion: Completion,
     isTransactional: Boolean,
@@ -127,7 +137,7 @@ class ProcessEngineStarterRegistrar(
     method: Method,
     actionWithResult: TaskHandlerWithResult
   ): SubscribeForTaskCmd = SubscribeForTaskCmd(
-    restrictions = mapOf(),
+    restrictions = restrictions,
     taskType = TaskType.EXTERNAL,
     taskDescriptionKey = topic,
     payloadDescription = payloadDescription,

@@ -32,13 +32,23 @@ annotation class ProcessEngineWorker(
    *
    * @see autoComplete
    */
-  val completion: Completion = Completion.DEFAULT
+  val completion: Completion = Completion.DEFAULT,
+  /**
+   * Optional lock duration in seconds for this worker.
+   * If not specified (default: -1), the adapter's global configuration will be used.
+   * @since 0.8.0
+   */
+  val lockDuration: Long = DEFAULT_UNSET_LOCK_DURATION
 ) {
   companion object {
     /**
      * Null value for the topic.
      */
     const val DEFAULT_UNSET_TOPIC = "__unset"
+    /**
+     * Sentinel value indicating lock duration is not specified.
+     */
+    const val DEFAULT_UNSET_LOCK_DURATION = -1L
   }
 
   /**
