@@ -36,7 +36,7 @@ annotation class ProcessEngineWorker(
   /**
    * Optional lock duration in seconds for this worker.
    * If not specified (default: -1), the adapter's global configuration will be used.
-   * @since 0.9.0
+   * @since 0.8.0
    */
   val lockDuration: Long = DEFAULT_UNSET_LOCK_DURATION
 ) {
