@@ -24,9 +24,9 @@
     <process-engine-adapters-c8.version>2025.11.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.2.1</mockito.version>
-    <assertj.version>3.27.6</assertj.version>
+    <assertj.version>3.27.7</assertj.version>
     <camunda-bpm-spring-boot-starter-external-task-client.version>7.24.0</camunda-bpm-spring-boot-starter-external-task-client.version>
-    <camunda-platform-7-rest-client-spring-boot-starter-feign.version>7.24.0</camunda-platform-7-rest-client-spring-boot-starter-feign.version>
+    <camunda-platform-7-rest-client-spring-boot-starter-feign.version>7.24.1</camunda-platform-7-rest-client-spring-boot-starter-feign.version>
   </properties>
 
   <modules>

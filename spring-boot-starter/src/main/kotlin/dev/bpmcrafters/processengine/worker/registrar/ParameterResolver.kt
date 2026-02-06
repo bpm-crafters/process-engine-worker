@@ -14,7 +14,7 @@ open class ParameterResolver private constructor(
 ) {
   companion object {
 
-    fun Map<String, Any>.toVariableList(): String {
+    fun Map<String, Any?>.toVariableList(): String {
       return if (this.isEmpty()) {
         "no process variables"
       } else {
