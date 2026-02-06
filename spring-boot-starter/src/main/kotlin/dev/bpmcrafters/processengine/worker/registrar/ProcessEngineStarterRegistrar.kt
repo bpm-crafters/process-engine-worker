@@ -82,7 +82,7 @@ class ProcessEngineStarterRegistrar(
       val restrictions = if (customLockDuration == null) {
         mapOf()
       } else {
-        mapOf(CommonRestrictions.WORKER_LOCK_DURATION_IN_MILLISECONDS to customLockDuration.toString())
+        mapOf("workerLockDurationInMilliseconds" to customLockDuration.toString()) // FIXME replace with constant introduced in Process Engine API 1.6
       }
 
       // check if the method or class is marked to run in transaction
