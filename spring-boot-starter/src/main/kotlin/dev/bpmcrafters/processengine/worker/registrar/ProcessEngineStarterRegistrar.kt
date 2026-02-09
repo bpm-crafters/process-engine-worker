@@ -118,7 +118,7 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic.
    * @param payloadDescription description of the variables to be passed.
-   * @param lockDuration optional lock duration in seconds for this worker.
+   * @param restrictions map of restrictions like customLockDuration for the worker
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
