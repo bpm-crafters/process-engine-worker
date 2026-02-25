@@ -8,14 +8,8 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAU
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
-import dev.bpmcrafters.processengineapi.task.CompleteTaskByErrorCmd
-import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
-import dev.bpmcrafters.processengineapi.task.FailTaskCmd
-import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
-import dev.bpmcrafters.processengineapi.task.SubscribeForTaskCmd
-import dev.bpmcrafters.processengineapi.task.TaskInformation
-import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
-import dev.bpmcrafters.processengineapi.task.TaskType
+import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -49,7 +43,9 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy
   private val transactionalTemplate: TransactionTemplate,
   @param:Lazy
-  private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics
+  private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics,
+  @param:Lazy
+  private val idempotencyRegistry: IdempotencyRegistry
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -192,10 +188,14 @@ class ProcessEngineStarterRegistrar(
     payload: Map<String, Any?>,
     actionWithResult: TaskHandlerWithResult,
   ): Any? {
-    logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
-    val result = actionWithResult.invoke(taskInformation, payload)
-    logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
-    return result
+    return if (idempotencyRegistry.hasTaskInformation(taskInformation).get()) {
+      idempotencyRegistry.getResult(taskInformation).get()
+    } else {
+      logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
+      val result = actionWithResult.invoke(taskInformation, payload)
+      logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
+      idempotencyRegistry.register(taskInformation, result).get()
+    }
   }
 
   private fun completeTask(taskInformation: TaskInformation, payloadReturnType: Boolean, method: Method, result: Any?) {
@@ -235,7 +235,7 @@ class ProcessEngineStarterRegistrar(
       }
     } else {
       try {
-        var retry = calculateRetry(taskInformation = taskInformation, cause = cause)
+        val retry = calculateRetry(taskInformation = taskInformation, cause = cause)
         taskCompletionApi.failTask(
           FailTaskCmd(
             taskId = taskInformation.taskId,

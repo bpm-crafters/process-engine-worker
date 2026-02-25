@@ -18,6 +18,7 @@ internal class ProcessEngineRegistrarRetryTest {
     mock(),
     mock(),
     mock(),
+    mock(),
     mock()
   )
 

@@ -18,6 +18,10 @@ data class ProcessEngineWorkerProperties(
    * Determines whether tasks are completed before transaction commit.
    */
   var completeTasksBeforeCommit: Boolean = false,
+  /**
+   * Switches idempotency support.
+   */
+  var enableIdempotencyRegistry: Boolean = false,
 ) {
   companion object {
     const val DEFAULT_PREFIX = "dev.bpm-crafters.process-api.worker"
