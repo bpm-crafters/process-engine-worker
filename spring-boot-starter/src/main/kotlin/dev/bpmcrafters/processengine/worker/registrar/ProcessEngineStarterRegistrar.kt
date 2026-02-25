@@ -188,13 +188,13 @@ class ProcessEngineStarterRegistrar(
     payload: Map<String, Any?>,
     actionWithResult: TaskHandlerWithResult,
   ): Any? {
-    return if (idempotencyRegistry.hasTaskInformation(taskInformation).get()) {
-      idempotencyRegistry.getResult(taskInformation).get()
+    return if (idempotencyRegistry.hasTaskInformation(taskInformation)) {
+      idempotencyRegistry.getResult(taskInformation)
     } else {
       logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
       val result = actionWithResult.invoke(taskInformation, payload)
       logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
-      idempotencyRegistry.register(taskInformation, result).get()
+      idempotencyRegistry.register(taskInformation, result)
     }
   }
 

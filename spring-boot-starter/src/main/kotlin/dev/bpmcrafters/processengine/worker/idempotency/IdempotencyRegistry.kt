@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker.idempotency
 
 import dev.bpmcrafters.processengineapi.task.TaskInformation
-import java.util.concurrent.CompletableFuture
 
 /**
  * Idempotency registry used to avoid duplicate worker invocations.
@@ -9,9 +8,25 @@ import java.util.concurrent.CompletableFuture
  */
 interface IdempotencyRegistry {
 
-  fun register(taskInformation: TaskInformation, invocationResult: Any?): CompletableFuture<Any?>
+  /**
+   * Registers invocation of a task information and invocation result.
+   * @param taskInformation task information holding the task attributes.
+   * @param invocationResult result of worker invocation.
+   * @return future of invocation, after registration.
+   */
+  fun register(taskInformation: TaskInformation, invocationResult: Any?): Any?
 
-  fun hasTaskInformation(taskInformation: TaskInformation): CompletableFuture<Boolean>
+  /**
+   * Checks if the invocation is registered.
+   * @param taskInformation information of the task.
+   * @return true, if already registered.
+   */
+  fun hasTaskInformation(taskInformation: TaskInformation): Boolean
 
-  fun getResult(taskInformation: TaskInformation): CompletableFuture<Any?>
+  /**
+   * Retrieves result of invocation.
+   * @param taskInformation task information.
+   * @return result.
+   */
+  fun getResult(taskInformation: TaskInformation): Any?
 }
