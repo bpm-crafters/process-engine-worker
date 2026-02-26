@@ -8,8 +8,14 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAU
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
-import dev.bpmcrafters.processengineapi.CommonRestrictions
-import dev.bpmcrafters.processengineapi.task.*
+import dev.bpmcrafters.processengineapi.task.CompleteTaskByErrorCmd
+import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
+import dev.bpmcrafters.processengineapi.task.FailTaskCmd
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.SubscribeForTaskCmd
+import dev.bpmcrafters.processengineapi.task.TaskInformation
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
+import dev.bpmcrafters.processengineapi.task.TaskType
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -118,7 +124,7 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic.
    * @param payloadDescription description of the variables to be passed.
-   * @param lockDuration optional lock duration in seconds for this worker.
+   * @param restrictions map of restrictions like customLockDuration for the worker
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
