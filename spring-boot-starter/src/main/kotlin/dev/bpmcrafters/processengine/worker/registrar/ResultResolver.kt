@@ -64,7 +64,7 @@ open class ResultResolver(
    */
   data class ResultResolutionStrategy(
     val resultMatcher: Predicate<Method>, // pass the entire method to the macher
-    val resultConverter: (value: Any?) -> Map<String, Any>
+    val resultConverter: (value: Any?) -> Map<String, Any?>
   )
 
   /**
@@ -82,7 +82,7 @@ open class ResultResolver(
    * @param result result.
    * @return process payload map.
    */
-  open fun resolve(method: Method, result: Any?): Map<String, Any> = strategies
+  open fun resolve(method: Method, result: Any?): Map<String, Any?> = strategies
     .first { it.resultMatcher.test(method) }
     .resultConverter
     .invoke(result)

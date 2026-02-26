@@ -33,7 +33,7 @@ class ProcessEngineIdempotencyTest {
     }
   }
   private val metrics = mock<ProcessEngineWorkerMetrics>()
-  private val idempotencyRegistry = InMemoryIdempotencyRegistry(enableIdempotencyRegistry = true)
+  private val idempotencyRegistry = InMemoryIdempotencyRegistry(enabled = true)
 
   private val registrar = ProcessEngineStarterRegistrar(
     properties,
@@ -65,22 +65,24 @@ class ProcessEngineIdempotencyTest {
       "workerAndApiInvocation",
       TaskInformation::class.java,
       Map::class.java,
-      ProcessEngineStarterRegistrar.TaskHandlerWithResult::class.java
+      ProcessEngineStarterRegistrar.TaskHandlerWithResult::class.java,
+      Boolean::class.javaPrimitiveType,
+      java.lang.reflect.Method::class.java
     )
     method.isAccessible = true
 
     // When - first call processes and stores result
-    val result1 = method.invoke(registrar, taskInfo, payload, actionWithResult) as String?
+    val result1 = method.invoke(registrar, taskInfo, payload, actionWithResult, false, Any::class.java.methods[0]) as Map<String, Any?>?
 
     // Then - worker invoked once
     assertThat(invocationCount).isEqualTo(1)
-    assertThat(result1).isEqualTo("result-1")
+    assertThat(result1).isEmpty()
 
     // When - second call with same TaskInformation
-    val result2 = method.invoke(registrar, taskInfo, payload, actionWithResult) as String?
+    val result2 = method.invoke(registrar, taskInfo, payload, actionWithResult, false, Any::class.java.methods[0]) as Map<String, Any?>?
 
     // Then - worker not invoked again, cached result returned
     assertThat(invocationCount).isEqualTo(1)
-    assertThat(result2).isEqualTo("result-1")
+    assertThat(result2).isEmpty()
   }
 }

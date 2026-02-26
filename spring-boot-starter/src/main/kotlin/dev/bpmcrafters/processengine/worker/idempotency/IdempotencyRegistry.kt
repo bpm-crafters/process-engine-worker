@@ -14,7 +14,7 @@ interface IdempotencyRegistry {
    * @param invocationResult result of worker invocation.
    * @return future of invocation, after registration.
    */
-  fun register(taskInformation: TaskInformation, invocationResult: Any?): Any?
+  fun register(taskInformation: TaskInformation, invocationResult: Map<String, Any?>): Map<String, Any?>
 
   /**
    * Checks if the invocation is registered.
@@ -26,7 +26,7 @@ interface IdempotencyRegistry {
   /**
    * Retrieves result of invocation.
    * @param taskInformation task information.
-   * @return result.
+   * @return result payload.
    */
-  fun getResult(taskInformation: TaskInformation): Any?
+  fun getResult(taskInformation: TaskInformation): Map<String, Any?>
 }

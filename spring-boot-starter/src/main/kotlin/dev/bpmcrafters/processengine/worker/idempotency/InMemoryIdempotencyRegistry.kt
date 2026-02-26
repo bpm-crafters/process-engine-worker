@@ -5,37 +5,29 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-Memory local implementation of the registry.
+ * @param enabled controls if the registry is enabled.
  */
 class InMemoryIdempotencyRegistry(
-  private val enableIdempotencyRegistry: Boolean
+  private val enabled: Boolean
 ) : IdempotencyRegistry {
 
-  companion object {
-    private val NULL_SENTINEL = Any()
-  }
-
-  private val invocations = ConcurrentHashMap<String, Any>()
+  private val invocations = ConcurrentHashMap<String, Map<String, Any?>>()
 
   override fun register(
     taskInformation: TaskInformation,
-    invocationResult: Any?
-  ): Any? {
-    invocations[taskInformation.taskId] = invocationResult ?: NULL_SENTINEL
+    invocationResult: Map<String, Any?>
+  ): Map<String, Any?> {
+    invocations[taskInformation.taskId] = invocationResult
     return invocationResult
   }
 
   override fun hasTaskInformation(taskInformation: TaskInformation): Boolean {
-    return enableIdempotencyRegistry
+    return enabled
       && invocations.containsKey(taskInformation.taskId)
   }
 
-  override fun getResult(taskInformation: TaskInformation): Any? {
-    val value = invocations[taskInformation.taskId]
-    return if (value === NULL_SENTINEL) {
-      null
-    } else {
-      value
-    }
+  override fun getResult(taskInformation: TaskInformation): Map<String, Any?> {
+    return invocations.getValue(taskInformation.taskId)
   }
 
 

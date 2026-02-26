@@ -13,7 +13,7 @@ class InMemoryIdempotencyRegistryTest {
   fun `should not find task information if disabled by property`() {
     val disabledRegistry = InMemoryIdempotencyRegistry(false)
     val taskInformation = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
-    disabledRegistry.register(taskInformation, "result")
+    disabledRegistry.register(taskInformation, mapOf("key" to "result"))
     assertThat(disabledRegistry.hasTaskInformation(taskInformation)).isFalse()
   }
 
@@ -23,10 +23,10 @@ class InMemoryIdempotencyRegistryTest {
 
     assertThat(registry.hasTaskInformation(taskInformation)).isFalse()
 
-    registry.register(taskInformation, "result")
+    registry.register(taskInformation, mapOf("key" to "result"))
 
     assertThat(registry.hasTaskInformation(taskInformation)).isTrue()
-    assertThat(registry.getResult(taskInformation)).isEqualTo("result")
+    assertThat(registry.getResult(taskInformation)).isEqualTo(mapOf("key" to "result"))
   }
 
   @Test
@@ -36,13 +36,13 @@ class InMemoryIdempotencyRegistryTest {
   }
 
   @Test
-  fun `should handle null result`() {
+  fun `should handle empty result map`() {
     val taskInformation = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
 
-    registry.register(taskInformation, null)
+    registry.register(taskInformation, emptyMap())
 
     assertThat(registry.hasTaskInformation(taskInformation)).isTrue()
-    assertThat(registry.getResult(taskInformation)).isNull()
+    assertThat(registry.getResult(taskInformation)).isEmpty()
   }
 
   @Test
@@ -51,10 +51,10 @@ class InMemoryIdempotencyRegistryTest {
     val taskInformation1 = TaskInformation(taskId = taskId, meta = mapOf("foo" to "bar"))
     val taskInformation2 = TaskInformation(taskId = taskId, meta = mapOf("other" to "meta"))
 
-    registry.register(taskInformation1, "result")
+    registry.register(taskInformation1, mapOf("key" to "result"))
 
     // The default comparator only compares taskId
     assertThat(registry.hasTaskInformation(taskInformation2)).isTrue()
-    assertThat(registry.getResult(taskInformation2)).isEqualTo("result")
+    assertThat(registry.getResult(taskInformation2)).isEqualTo(mapOf("key" to "result"))
   }
 }
