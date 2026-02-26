@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 
 class ProcessEngineIdempotencyTest {
 
-  private val properties = ProcessEngineWorkerProperties(enableIdempotencyRegistry = true)
+  private val properties = ProcessEngineWorkerProperties()
   private val taskSubscriptionApi = mock<TaskSubscriptionApi>()
   private val taskCompletionApi = mock<ServiceTaskCompletionApi> {
     on { completeTask(any()) } doReturn CompletableFuture.completedFuture(null)
@@ -33,7 +33,7 @@ class ProcessEngineIdempotencyTest {
     }
   }
   private val metrics = mock<ProcessEngineWorkerMetrics>()
-  private val idempotencyRegistry = InMemoryIdempotencyRegistry(enabled = true)
+  private val idempotencyRegistry = InMemoryIdempotencyRegistry()
 
   private val registrar = ProcessEngineStarterRegistrar(
     properties,

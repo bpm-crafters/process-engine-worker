@@ -73,7 +73,6 @@ class ProcessEngineWorkerAutoConfiguration {
    */
   @Bean
   @ConditionalOnMissingBean(IdempotencyRegistry::class)
-  fun idempotencyRegistryFallback(processEngineWorkerProperties: ProcessEngineWorkerProperties): IdempotencyRegistry =
-    InMemoryIdempotencyRegistry(processEngineWorkerProperties.enableIdempotencyRegistry)
+  fun idempotencyRegistryFallback(): IdempotencyRegistry = InMemoryIdempotencyRegistry()
 
 }

@@ -191,21 +191,20 @@ class ProcessEngineStarterRegistrar(
     payloadReturnType: Boolean,
     method: Method
   ): Map<String, Any?> {
-    return if (idempotencyRegistry.hasTaskInformation(taskInformation)) {
-      idempotencyRegistry.getResult(taskInformation)
-    } else {
+    var result = idempotencyRegistry.getTaskResult(taskInformation)
+    if (result == null) {
       logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
-      val result = actionWithResult.invoke(taskInformation, payload)
+      val typedResult = actionWithResult.invoke(taskInformation, payload)
       logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
       // convert
-      val resultPayload: Map<String, Any?> = if (payloadReturnType) {
-        resultResolver.resolve(method = method, result = result)
+      result = if (payloadReturnType) {
+        resultResolver.resolve(method = method, result = typedResult)
       } else {
         mapOf()
       }
       idempotencyRegistry.register(taskInformation, payload)
-      resultPayload
     }
+    return result
   }
 
   /*

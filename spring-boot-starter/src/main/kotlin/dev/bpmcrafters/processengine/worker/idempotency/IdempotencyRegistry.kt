@@ -9,24 +9,17 @@ import dev.bpmcrafters.processengineapi.task.TaskInformation
 interface IdempotencyRegistry {
 
   /**
-   * Registers invocation of a task information and invocation result.
-   * @param taskInformation task information holding the task attributes.
-   * @param invocationResult result of worker invocation.
-   * @return future of invocation, after registration.
+   * Registers the result of a task invocation.
+   * @param taskInformation the to register the result for.
+   * @param result the result of worker invocation.
    */
-  fun register(taskInformation: TaskInformation, invocationResult: Map<String, Any?>): Map<String, Any?>
+  fun register(taskInformation: TaskInformation, result: Map<String, Any?>)
 
   /**
-   * Checks if the invocation is registered.
-   * @param taskInformation information of the task.
-   * @return true, if already registered.
+   * Gets the result of a task invocation.
+   * @param taskInformation the task to get the result for.
+   * @return the result payload of a previous worker invocation if it exists.
    */
-  fun hasTaskInformation(taskInformation: TaskInformation): Boolean
+  fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>?
 
-  /**
-   * Retrieves result of invocation.
-   * @param taskInformation task information.
-   * @return result payload.
-   */
-  fun getResult(taskInformation: TaskInformation): Map<String, Any?>
 }

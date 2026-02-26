@@ -1,34 +1,32 @@
 package dev.bpmcrafters.processengine.worker.idempotency
 
 import dev.bpmcrafters.processengineapi.task.TaskInformation
+import jakarta.transaction.TransactionSynchronizationRegistry
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * In-Memory local implementation of the registry.
- * @param enabled controls if the registry is enabled.
+ * In-memory local implementation of the registry.
  */
-class InMemoryIdempotencyRegistry(
-  private val enabled: Boolean
-) : IdempotencyRegistry {
+class InMemoryIdempotencyRegistry : IdempotencyRegistry {
 
-  private val invocations = ConcurrentHashMap<String, Map<String, Any?>>()
+  private val results = ConcurrentHashMap<String, Map<String, Any?>>()
 
-  override fun register(
-    taskInformation: TaskInformation,
-    invocationResult: Map<String, Any?>
-  ): Map<String, Any?> {
-    invocations[taskInformation.taskId] = invocationResult
-    return invocationResult
+  override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) {
+    if (TransactionSynchronizationManager.isActualTransactionActive()) {
+      TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+
+        override fun afterCommit() {
+          results[taskInformation.taskId] = result
+        }
+
+      })
+    } else {
+      results[taskInformation.taskId] = result
+    }
   }
 
-  override fun hasTaskInformation(taskInformation: TaskInformation): Boolean {
-    return enabled
-      && invocations.containsKey(taskInformation.taskId)
-  }
-
-  override fun getResult(taskInformation: TaskInformation): Map<String, Any?> {
-    return invocations.getValue(taskInformation.taskId)
-  }
-
+  override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = results[taskInformation.taskId]
 
 }
