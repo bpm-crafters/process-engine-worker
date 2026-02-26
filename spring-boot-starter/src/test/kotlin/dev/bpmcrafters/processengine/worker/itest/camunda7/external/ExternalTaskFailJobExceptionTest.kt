@@ -63,7 +63,7 @@ class ExternalTaskFailJobExceptionTest : AbstractTransactionalBehaviorTest() {
     await().atMost(30, SECONDS).untilAsserted {
       val task = getExternalTasks(pi)[0]
       assertThat(task.errorMessage).isEqualTo("Simulating a technical error for task ${task.id}")
-      assertThat(task.retries).isEqualTo(3)
+      assertThat(task.retries!!).isEqualTo(3)
     }
     assertThat(entityExistsForName(name)).isFalse
   }
