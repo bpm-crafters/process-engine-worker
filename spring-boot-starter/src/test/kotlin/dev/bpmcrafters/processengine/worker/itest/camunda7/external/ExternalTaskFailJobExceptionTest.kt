@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 @TestPropertySource(properties = [
   "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=true"
 ])
-class ExternalTaskFailJobExceptionTest : AbstractTransactionalBehaviorTest() {
+class ExternalTaskFailJobExceptionTest : AbstractBehaviorTest() {
 
   class WorkerWithFailJobException(
     myEntityService: MyEntityService,

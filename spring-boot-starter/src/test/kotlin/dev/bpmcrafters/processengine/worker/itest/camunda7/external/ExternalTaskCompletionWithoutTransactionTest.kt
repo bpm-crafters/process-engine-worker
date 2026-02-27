@@ -14,7 +14,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
 @Import(ExternalTaskCompletionWithoutTransactionTest.WorkerWithoutTransactionalAnnotation::class)
-class ExternalTaskCompletionWithoutTransactionTest : AbstractTransactionalBehaviorTest() {
+class ExternalTaskCompletionWithoutTransactionTest : AbstractBehaviorTest() {
 
   class WorkerWithoutTransactionalAnnotation(
     myEntityService: MyEntityService,

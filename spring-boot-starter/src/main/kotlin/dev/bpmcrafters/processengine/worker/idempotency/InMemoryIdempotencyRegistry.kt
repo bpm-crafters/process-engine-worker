@@ -8,6 +8,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-memory local implementation of the registry.
+ *
+ * Usage is discouraged because it can only take into account a single process instance.
+ * I.e., don't use it in a clustered environment.
  */
 class InMemoryIdempotencyRegistry : IdempotencyRegistry {
 

@@ -12,10 +12,10 @@ import java.util.concurrent.TimeUnit.SECONDS
 @TestPropertySource(properties = [
   "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
 ])
-class ExternalTaskCompletionAfterCommitTest : AbstractTransactionalBehaviorTest() {
+class ExternalTaskCompletionAfterCommitTest : AbstractBehaviorTest() {
 
   @Test
-  fun `successful worker completes task after of transaction has been committed`() {
+  fun `successful worker completes task after transaction has been committed`() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()

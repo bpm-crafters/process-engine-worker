@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 @TestPropertySource(properties = [
   "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=true"
 ])
-class ExternalTaskCompletionBeforeCommitTest : AbstractTransactionalBehaviorTest() {
+class ExternalTaskCompletionBeforeCommitTest : AbstractBehaviorTest() {
 
   @Test
   fun `happy path create two verified valid entity`() {

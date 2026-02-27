@@ -13,11 +13,13 @@ import dev.bpmcrafters.processengineapi.process.StartProcessByDefinitionCmd
 import org.assertj.core.api.Assertions.assertThat
 import org.camunda.community.rest.client.api.ExternalTaskApiClient
 import org.camunda.community.rest.client.api.HistoryApiClient
+import org.camunda.community.rest.client.api.IncidentApiClient
 import org.camunda.community.rest.client.api.ProcessInstanceApiClient
 import org.camunda.community.rest.client.model.ExternalTaskDto
 import org.camunda.community.rest.client.model.ExternalTaskQueryDto
 import org.camunda.community.rest.client.model.HistoricActivityInstanceDto
 import org.camunda.community.rest.client.model.HistoricActivityInstanceQueryDto
+import org.camunda.community.rest.client.model.IncidentDto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,7 +33,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(classes = [TestApplication::class])
 @Testcontainers
 @ActiveProfiles("itest")
-abstract class AbstractTransactionalBehaviorTest {
+abstract class AbstractBehaviorTest {
   companion object {
 
     @Container
@@ -59,6 +61,8 @@ abstract class AbstractTransactionalBehaviorTest {
   private lateinit var startProcessApi: StartProcessApi
   @Autowired
   private lateinit var externalTaskApiClient: ExternalTaskApiClient
+  @Autowired
+  private lateinit var incidentApiClient: IncidentApiClient
   @Autowired
   private lateinit var historyApiClient: HistoryApiClient
   @Autowired
@@ -110,6 +114,34 @@ abstract class AbstractTransactionalBehaviorTest {
       .queryExternalTasks(0, Int.MAX_VALUE, ExternalTaskQueryDto().apply { this.processInstanceId = processInstanceId })
       .body as List<ExternalTaskDto>
   }
+
+  protected fun unlockExternalTask(taskId: String) {
+    externalTaskApiClient.unlock(taskId)
+  }
+
+  protected fun getIncidents(processInstanceId: String) = incidentApiClient.getIncidents(
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    processInstanceId,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ).body as List<IncidentDto>
 
   protected fun getHistoricActivityInstances(processInstanceId: String, activityId: String): List<HistoricActivityInstanceDto> {
     return historyApiClient.queryHistoricActivityInstances(
