@@ -31,9 +31,8 @@
 
   <modules>
     <module>idempotency-registry-jpa</module>
-    <module>integration-test-boilerplate</module>
+    <module>integration-tests</module>
     <module>spring-boot-starter</module>
-    <module>spring-boot-starter-integration-test</module>
   </modules>
 
   <dependencyManagement>

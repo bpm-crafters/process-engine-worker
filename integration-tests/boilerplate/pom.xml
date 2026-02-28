@@ -3,12 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
-    <artifactId>process-engine-worker-root</artifactId>
+    <artifactId>process-engine-worker-integration-tests</artifactId>
     <version>0.7.2-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-worker-integration-test-boilerplate</artifactId>
+  <artifactId>process-engine-worker-integration-tests-boilerplate</artifactId>
   <name>${project.artifactId}</name>
 
   <dependencyManagement>

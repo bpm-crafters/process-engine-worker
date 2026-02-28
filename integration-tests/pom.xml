@@ -8,19 +8,26 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>process-engine-worker-spring-boot-starter-integration-test</artifactId>
+  <artifactId>process-engine-worker-integration-tests</artifactId>
   <name>${project.artifactId}</name>
+  <packaging>pom</packaging>
 
-  <dependencies>
+  <modules>
+    <module>boilerplate</module>
+    <module>idempotency-registry-jpa</module>
+    <module>spring-boot-starter</module>
+  </modules>
 
-    <!-- Testing -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>process-engine-worker-integration-test-boilerplate</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>process-engine-worker-integration-tests-boilerplate</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>

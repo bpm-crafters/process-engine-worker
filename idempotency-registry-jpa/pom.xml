@@ -33,14 +33,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
-
-    <!-- Testing -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>process-engine-worker-integration-test-boilerplate</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

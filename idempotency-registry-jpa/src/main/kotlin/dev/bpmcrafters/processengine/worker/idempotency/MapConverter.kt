@@ -24,6 +24,7 @@ class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
     if (dbData == null) {
       return null
     }
+    @Suppress("UNCHECKED_CAST")
     return ObjectInputStream(ByteArrayInputStream(dbData)).readObject() as Map<String, Any?>
   }
 
