@@ -2,5 +2,8 @@ package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
 import org.springframework.context.annotation.Import
 
-@Import(ExternalTaskCompletionWithoutTransactionTest.WorkerWithoutTransactionalAnnotation::class)
+@Import(
+  InMemoryIdempotencyRegistryConfiguration::class,
+  WorkerWithoutTransactionalAnnotation::class
+)
 class IdempotencyWithoutTransactionTest : AbstractIdempotencyTest()

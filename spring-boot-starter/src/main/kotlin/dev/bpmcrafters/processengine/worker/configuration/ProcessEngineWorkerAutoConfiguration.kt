@@ -70,7 +70,7 @@ class ProcessEngineWorkerAutoConfiguration {
   }
 
   /**
-   * Fallback to no-op idempotency registry.
+   * Fallback to a no-op idempotency registry.
    */
   @Bean
   @ConditionalOnMissingBean(IdempotencyRegistry::class)

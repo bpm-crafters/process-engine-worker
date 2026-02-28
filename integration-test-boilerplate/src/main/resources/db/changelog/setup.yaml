@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: setup
+      author: Dunno
+      changes:
+        - createTable:
+            tableName: task_log_entry_
+            columns:
+              - column:
+                  name: task_id_
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: task_log_entry_pk_
+              - column:
+                  name: process_instance_id_
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at_
+                  type: timestamp without time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: result_
+                  type: bytea
+                  constraints:
+                    nullable: false

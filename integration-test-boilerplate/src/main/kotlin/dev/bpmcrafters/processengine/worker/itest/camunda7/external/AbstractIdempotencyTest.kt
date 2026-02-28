@@ -1,6 +1,7 @@
 package dev.bpmcrafters.processengine.worker.itest.camunda7.external
 
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility.await
@@ -13,7 +14,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
-@Import(InMemoryIdempotencyRegistryConfiguration::class)
 @TestPropertySource(properties = [
   "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
 ])
@@ -41,6 +41,7 @@ abstract class AbstractIdempotencyTest : AbstractBehaviorTest() {
     }
     doCallRealMethod().`when`(serviceTaskCompletionApi).completeTask(any())
     unlockExternalTask(getExternalTasks(processInstanceId).first().id!!)
+    print(idempotencyRegistry)
     await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(processInstanceId)).isFalse
     }
