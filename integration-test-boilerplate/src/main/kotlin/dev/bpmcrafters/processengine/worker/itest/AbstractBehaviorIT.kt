@@ -1,16 +1,12 @@
-package dev.bpmcrafters.processengine.worker.itest.camunda7.external
+package dev.bpmcrafters.processengine.worker.itest
 
-import dev.bpmcrafters.processengine.worker.TestHelper
-import dev.bpmcrafters.processengine.worker.TestHelper.Camunda7RunTestContainer
-import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntity
-import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.MyEntityService
-import dev.bpmcrafters.processengine.worker.itest.camunda7.external.application.TestApplication
 import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
 import dev.bpmcrafters.processengineapi.deploy.NamedResource
 import dev.bpmcrafters.processengineapi.process.StartProcessApi
 import dev.bpmcrafters.processengineapi.process.StartProcessByDefinitionCmd
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
+import org.camunda.bpm.client.ExternalTaskClient
 import org.camunda.community.rest.client.api.ExternalTaskApiClient
 import org.camunda.community.rest.client.api.HistoryApiClient
 import org.camunda.community.rest.client.api.IncidentApiClient
@@ -33,12 +29,12 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(classes = [TestApplication::class])
 @Testcontainers
 @ActiveProfiles("itest")
-abstract class AbstractBehaviorTest {
+abstract class AbstractBehaviorIT {
   companion object {
 
     @Container
     @JvmStatic
-    val camundaContainer = Camunda7RunTestContainer("run-7.24.0")
+    val camundaContainer = TestHelper.Camunda7RunTestContainer("run-7.24.0")
 
     @Container
     @JvmStatic
@@ -70,17 +66,17 @@ abstract class AbstractBehaviorTest {
   @Autowired
   private lateinit var myEntityService: MyEntityService
   @Autowired
-  private lateinit var camundaTaskClient: org.camunda.bpm.client.ExternalTaskClient
+  private lateinit var camundaTaskClient: ExternalTaskClient
 
   @BeforeEach
   fun setUp() {
     camundaTaskClient.start()
     deploymentApi.deploy(
       DeployBundleCommand(
-        listOf(NamedResource.fromClasspath("bpmn/example-process.bpmn"))
+        listOf(NamedResource.Companion.fromClasspath("bpmn/example-process.bpmn"))
       )
     ).get().let { deployment ->
-      assertThat(deployment).isNotNull
+      Assertions.assertThat(deployment).isNotNull
     }
   }
 

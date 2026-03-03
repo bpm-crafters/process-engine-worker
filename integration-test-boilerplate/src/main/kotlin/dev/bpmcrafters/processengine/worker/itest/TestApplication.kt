@@ -1,4 +1,4 @@
-package dev.bpmcrafters.processengine.worker.itest.camunda7.external.application
+package dev.bpmcrafters.processengine.worker.itest
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat
 @SpringBootApplication
 @EntityScan(
   "dev.bpmcrafters.processengine.worker.idempotency",
-  "dev.bpmcrafters.processengine.worker.itest.camunda7.external.application"
+  "dev.bpmcrafters.processengine.worker.itest"
 )
 class TestApplication {
 

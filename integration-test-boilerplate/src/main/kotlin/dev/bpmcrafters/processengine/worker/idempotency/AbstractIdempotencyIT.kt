@@ -1,25 +1,27 @@
-package dev.bpmcrafters.processengine.worker.itest.camunda7.external
+package dev.bpmcrafters.processengine.worker.idempotency
 
-import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
-import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry
+import dev.bpmcrafters.processengine.worker.itest.AbstractBehaviorIT
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
-import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.Awaitility.await
+import org.assertj.core.api.Assertions
+import org.awaitility.Awaitility
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doCallRealMethod
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-import java.util.*
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @TestPropertySource(properties = [
   "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
 ])
 @MockitoSpyBean(types = [IdempotencyRegistry::class])
 @MockitoSpyBean(name = "c7remote-service-task-completion-api", types = [ServiceTaskCompletionApi::class])
-abstract class AbstractIdempotencyTest : AbstractBehaviorTest() {
+abstract class AbstractIdempotencyIT : AbstractBehaviorIT() {
 
   @Autowired
   private lateinit var idempotencyRegistry: IdempotencyRegistry
@@ -34,16 +36,16 @@ abstract class AbstractIdempotencyTest : AbstractBehaviorTest() {
       .`when`(serviceTaskCompletionApi)
       .completeTask(any())
     val processInstanceId = startProcess(name, verified = true)
-    assertThat(processInstanceIsRunning(processInstanceId)).isTrue()
-    await().atMost(30, SECONDS).untilAsserted {
+    Assertions.assertThat(processInstanceIsRunning(processInstanceId)).isTrue()
+    Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted {
       val entity = findEntityByName(name)
-      assertThat(entity).isNotNull
+      Assertions.assertThat(entity).isNotNull
     }
     doCallRealMethod().`when`(serviceTaskCompletionApi).completeTask(any())
     unlockExternalTask(getExternalTasks(processInstanceId).first().id!!)
     print(idempotencyRegistry)
-    await().atMost(30, SECONDS).untilAsserted {
-      assertThat(processInstanceIsRunning(processInstanceId)).isFalse
+    Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+      Assertions.assertThat(processInstanceIsRunning(processInstanceId)).isFalse
     }
     val inOrder = inOrder(idempotencyRegistry)
     inOrder.verify(idempotencyRegistry).getTaskResult(any())

@@ -1,4 +1,4 @@
-package dev.bpmcrafters.processengine.worker.itest.camunda7.external.application
+package dev.bpmcrafters.processengine.worker.itest
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

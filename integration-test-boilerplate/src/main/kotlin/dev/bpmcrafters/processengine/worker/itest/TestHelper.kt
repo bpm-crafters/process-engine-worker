@@ -1,4 +1,4 @@
-package dev.bpmcrafters.processengine.worker
+package dev.bpmcrafters.processengine.worker.itest
 
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.PostgreSQLContainer

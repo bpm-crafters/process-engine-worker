@@ -1,4 +1,4 @@
-package dev.bpmcrafters.processengine.worker.itest.camunda7.external.application
+package dev.bpmcrafters.processengine.worker.itest
 
 import dev.bpmcrafters.processengineapi.CommonRestrictions
 import dev.bpmcrafters.processengineapi.task.TaskInformation
