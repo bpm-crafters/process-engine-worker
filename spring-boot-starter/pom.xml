@@ -4,7 +4,8 @@
   <parent>
     <groupId>dev.bpm-crafters.process-engine-worker</groupId>
     <artifactId>process-engine-worker-root</artifactId>
-    <version>0.7.1</version>
+    <version>0.8.0</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
@@ -77,58 +78,6 @@
       <artifactId>spring-boot-configuration-processor</artifactId>
       <optional>true</optional>
     </dependency>
-
-    <!-- Testing -->
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility-kotlin</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- C7 remote -->
-    <dependency>
-      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
-      <artifactId>process-engine-adapter-camunda-platform-c7-remote-spring-boot-starter</artifactId>
-      <version>${process-engine-adapters-c7.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.camunda.bpm.springboot</groupId>
-      <artifactId>camunda-bpm-spring-boot-starter-external-task-client</artifactId>
-      <version>${camunda-bpm-spring-boot-starter-external-task-client.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.camunda.community.rest</groupId>
-      <artifactId>camunda-platform-7-rest-client-spring-boot-starter-feign</artifactId>
-      <version>${camunda-platform-7-rest-client-spring-boot-starter-feign.version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -143,9 +92,6 @@
               <goal>kapt</goal>
             </goals>
             <configuration>
-              <sourceDirs>
-                <sourceDir>src/main/kotlin</sourceDir>
-              </sourceDirs>
               <annotationProcessorPaths>
                 <annotationProcessorPath>
                   <groupId>org.springframework.boot</groupId>

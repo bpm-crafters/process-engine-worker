@@ -8,6 +8,15 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAU
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
+import dev.bpmcrafters.processengineapi.task.CompleteTaskByErrorCmd
+import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
+import dev.bpmcrafters.processengineapi.task.FailTaskCmd
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.SubscribeForTaskCmd
+import dev.bpmcrafters.processengineapi.task.TaskInformation
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
+import dev.bpmcrafters.processengineapi.task.TaskType
+import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
@@ -42,7 +51,9 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy
   private val transactionalTemplate: TransactionTemplate,
   @param:Lazy
-  private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics
+  private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics,
+  @param:Lazy
+  private val idempotencyRegistry: IdempotencyRegistry
 ) : BeanPostProcessor {
 
   private val exceptionResolver = ExceptionResolver()
@@ -54,7 +65,7 @@ class ProcessEngineStarterRegistrar(
       logger.debug { "PROCESS-ENGINE-WORKER-001: Detected ${annotatedProcessEngineWorkers.size} annotated workers on $beanName." }
       logger.trace { "PROCESS-ENGINE-WORKER-001: Detected annotated workers on $beanName are: ${annotatedProcessEngineWorkers.map { it.name }}." }
     }
-    annotatedProcessEngineWorkers.map { method ->
+    annotatedProcessEngineWorkers.forEach { method ->
 
       val topic = method.getTopic()
       // detects among all result resolver if the specified payload may be converted to payload return type
@@ -77,6 +88,12 @@ class ProcessEngineStarterRegistrar(
       }
 
       val completion = method.getCompletion()
+      val customLockDuration = method.getLockDuration()
+      val restrictions = if (customLockDuration == null) {
+        mapOf()
+      } else {
+        mapOf("workerLockDurationInMilliseconds" to customLockDuration.toString()) // FIXME replace with constant introduced in Process Engine API 1.6
+      }
 
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()
@@ -85,6 +102,7 @@ class ProcessEngineStarterRegistrar(
         subscribe(
           topic = topic,
           payloadDescription = variableNames,
+          restrictions = restrictions,
           autoCompleteTask = autoCompleteTask,
           completion = completion,
           isTransactional = isTransactional,
@@ -110,6 +128,7 @@ class ProcessEngineStarterRegistrar(
    * Executes the subscription.
    * @param topic subscription topic.
    * @param payloadDescription description of the variables to be passed.
+   * @param restrictions map of restrictions like customLockDuration for the worker
    * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
@@ -120,6 +139,7 @@ class ProcessEngineStarterRegistrar(
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
+    restrictions: Map<String, String> = mapOf(),
     autoCompleteTask: Boolean,
     completion: Completion,
     isTransactional: Boolean,
@@ -127,7 +147,7 @@ class ProcessEngineStarterRegistrar(
     method: Method,
     actionWithResult: TaskHandlerWithResult
   ): SubscribeForTaskCmd = SubscribeForTaskCmd(
-    restrictions = mapOf(),
+    restrictions = restrictions,
     taskType = TaskType.EXTERNAL,
     taskDescriptionKey = topic,
     payloadDescription = payloadDescription,
@@ -137,25 +157,25 @@ class ProcessEngineStarterRegistrar(
         // depending on transactional annotations, execute either in a new transaction or direct
         if (isTransactional) {
           val completeBeforeCommit = completeBeforeCommit(completion)
-          val result = transactionalTemplate.execute {
-            val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
+          val txResult = transactionalTemplate.execute {
+            val result = workerAndApiInvocation(taskInformation, payload, actionWithResult, payloadReturnType, method)
             if (autoCompleteTask && completeBeforeCommit) {
               logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} before commit" }
-              completeTask(taskInformation, payloadReturnType, method, result)
+              completeTask(taskInformation, result)
               processEngineWorkerMetrics.taskCompleted(topic)
             }
             result
           }
           if (autoCompleteTask && !completeBeforeCommit) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
-            completeTask(taskInformation, payloadReturnType, method, result)
+            completeTask(taskInformation, requireNotNull(txResult))
             processEngineWorkerMetrics.taskCompleted(topic)
           }
         } else {
-          val result = workerAndApiInvocation(taskInformation, payload, actionWithResult)
+          val resultPayload = workerAndApiInvocation(taskInformation, payload, actionWithResult, payloadReturnType, method)
           if (autoCompleteTask) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} (there is and was no transaction)" }
-            completeTask(taskInformation, payloadReturnType, method, result)
+            completeTask(taskInformation, resultPayload)
             processEngineWorkerMetrics.taskCompleted(topic)
           }
         }
@@ -170,28 +190,40 @@ class ProcessEngineStarterRegistrar(
 
   /*
    * Encapsulates as a function to call it directly or inside of transaction.
+   * Includes idempotency protection and returns the result right away, if already invoked.
    */
   private fun workerAndApiInvocation(
     taskInformation: TaskInformation,
-    payload: Map<String, Any>,
+    payload: Map<String, Any?>,
     actionWithResult: TaskHandlerWithResult,
-  ): Any? {
-    logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
-    val result = actionWithResult.invoke(taskInformation, payload)
-    logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
+    payloadReturnType: Boolean,
+    method: Method
+  ): Map<String, Any?> {
+    var result = idempotencyRegistry.getTaskResult(taskInformation)
+    if (result == null) {
+      logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
+      val typedResult = actionWithResult.invoke(taskInformation, payload)
+      logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
+      // convert
+      result = if (payloadReturnType) {
+        resultResolver.resolve(method = method, result = typedResult)
+      } else {
+        mapOf()
+      }
+      idempotencyRegistry.register(taskInformation, payload)
+    }
     return result
   }
 
-  private fun completeTask(taskInformation: TaskInformation, payloadReturnType: Boolean, method: Method, result: Any?) {
+  /*
+   * Completes the task.
+   */
+  private fun completeTask(taskInformation: TaskInformation, payload: Map<String, Any?>) {
     taskCompletionApi.completeTask(
       CompleteTaskCmd(
         taskId = taskInformation.taskId
       ) {
-        if (payloadReturnType) {
-          resultResolver.resolve(method = method, result = result)
-        } else {
-          mapOf()
-        }
+        payload
       }
     ).get()
   }
@@ -219,7 +251,7 @@ class ProcessEngineStarterRegistrar(
       }
     } else {
       try {
-        var retry = calculateRetry(taskInformation = taskInformation, cause = cause)
+        val retry = calculateRetry(taskInformation = taskInformation, cause = cause)
         taskCompletionApi.failTask(
           FailTaskCmd(
             taskId = taskInformation.taskId,
@@ -265,7 +297,7 @@ class ProcessEngineStarterRegistrar(
   /**
    * Task handler as a function.
    */
-  fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any>) -> Any?
+  fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
   /**
    * Failure retry information.
