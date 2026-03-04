@@ -29,7 +29,21 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>*ITest.class</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>*ITest.class</include>
+          </includes>
+        </configuration>
         <executions>
           <execution>
             <id>integration-tests</id>
@@ -37,11 +51,6 @@
             <goals>
               <goal>integration-test</goal>
             </goals>
-            <configuration>
-              <includes>
-                <include>*ITest.class</include>
-              </includes>
-            </configuration>
           </execution>
         </executions>
       </plugin>
