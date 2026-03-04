@@ -47,6 +47,7 @@ class ProcessEngineIdempotencyTest {
     idempotencyRegistry
   )
 
+  @Suppress("UNCHECKED_CAST")
   @Test
   fun `should not invoke annotated method again for same task`() {
     // Given a worker method and a counting action

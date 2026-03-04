@@ -168,7 +168,7 @@ class ProcessEngineStarterRegistrar(
           }
           if (autoCompleteTask && !completeBeforeCommit) {
             logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
-            completeTask(taskInformation, txResult)
+            completeTask(taskInformation, requireNotNull(txResult))
             processEngineWorkerMetrics.taskCompleted(topic)
           }
         } else {

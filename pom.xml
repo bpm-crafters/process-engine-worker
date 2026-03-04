@@ -105,6 +105,11 @@
     </profile>
 
     <profile>
+      <activation>
+        <property>
+          <name>!skipITests</name>
+        </property>
+      </activation>
       <id>itest</id>
       <modules>
         <module>itest</module>
