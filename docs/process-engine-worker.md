@@ -37,6 +37,15 @@ public class MySmartWorker {
 }
 ```
 
+The `@ProcessEngineWorker` annotation supports the following properties:
+
+| Property       | Type       | Default    | Description                                                                                                                                                                                                                                                                                                                                            |
+|----------------|------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `topic`        | `String`   | `""`       | Topic name to subscribe this worker for. Alias for `value`.                                                                                                                                                                                                                                                                                            |
+| `autoComplete` | `boolean`  | `true`     | Flag indicating if the task should be automatically completed after the worker execution. If the return type is `Map<String, Any>`, it will overrule this setting and auto-complete with the returned payload.                                                                                                                                       |
+| `completion`   | `enum`     | `DEFAULT`  | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                                                                                                                                                         |
+| `lockDuration` | `long`     | `-1`       | Optional lock duration in seconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                                                                                                                                                                            |
+
 ## Method parameter resolution
 
 Parameter resolution of the method annotated with `ProcessEngineWorker` is based on a set of strategies

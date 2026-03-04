@@ -112,7 +112,7 @@ open class ParameterResolver private constructor(
             ) { it.javaClass.simpleName }
           }"
       }
-      matchingStrategies.first().apply(
+      matchingStrategies.single().apply(
         ParameterResolutionStrategy.Wrapper(
           parameter,
           taskInformation,
