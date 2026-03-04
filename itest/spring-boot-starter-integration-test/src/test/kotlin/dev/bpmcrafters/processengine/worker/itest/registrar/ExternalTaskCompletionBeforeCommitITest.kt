@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
 
 @Import(WorkerWithTransactionalAnnotation::class)
 @TestPropertySource(
@@ -25,7 +26,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -35,7 +36,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse
     }
     assertThat(entityExistsForName(name2)).isTrue()
@@ -48,7 +49,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -57,7 +58,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isTrue()
     }
   }
@@ -69,7 +70,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -79,7 +80,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity, but fails in completion
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse
     }
 

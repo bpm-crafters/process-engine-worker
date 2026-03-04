@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.time.Duration.Companion.seconds
 
 @Import(WorkerWithFailJobException::class)
 @TestPropertySource(
@@ -23,7 +25,7 @@ class ExternalTaskFailJobExceptionITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true, simulateRandomTechnicalError = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       val task = getExternalTasks(pi)[0]
       assertThat(task.errorMessage).isEqualTo("Simulating a technical error for task ${task.id}")
       assertThat(task.retries!!).isEqualTo(3)

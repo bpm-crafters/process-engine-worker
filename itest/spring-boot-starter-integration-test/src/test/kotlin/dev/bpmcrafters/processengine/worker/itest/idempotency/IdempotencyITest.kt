@@ -67,7 +67,6 @@ abstract class IdempotencyITest : FixtureITestBase() {
     InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithoutTransactionalAnnotation::class
   )
-  @DirtiesContext
   class InMemoryIdempotencyWithoutTransactionITest : IdempotencyITest()
 
   @Nested
@@ -75,12 +74,10 @@ abstract class IdempotencyITest : FixtureITestBase() {
     InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithTransactionalAnnotation::class
   )
-  @DirtiesContext
   class InMemoryIdempotencyWithTransactionITest : IdempotencyITest()
 
   @Nested
   @Import(WorkerWithTransactionalAnnotation::class)
-  @DirtiesContext
   class JpaIdempotencyWithTransactionITest : IdempotencyITest()
 
 }

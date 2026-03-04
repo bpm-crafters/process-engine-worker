@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
 
 
 @Import(WorkerWithTransactionalAnnotation::class)
@@ -24,7 +25,7 @@ class ExternalTaskCompletionAfterCommitITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
       val entity = findEntityByName(name)
       assertThat(entity).isNotNull
@@ -38,7 +39,7 @@ class ExternalTaskCompletionAfterCommitITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true, simulateRandomTechnicalError = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    await().atMost(30, SECONDS).untilAsserted {
       val task = getExternalTasks(pi)[0]
       assertThat(task.errorMessage).isEqualTo("Simulating a technical error for task ${task.id}")
     }
