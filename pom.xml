@@ -21,7 +21,7 @@
     <spring-boot.version>3.5.11</spring-boot.version>
     <process-engine-api.version>1.5</process-engine-api.version>
     <process-engine-adapters-c7.version>2026.02.1</process-engine-adapters-c7.version>
-    <process-engine-adapters-c8.version>2025.11.1</process-engine-adapters-c8.version>
+    <process-engine-adapters-c8.version>2026.02.2</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.2.3</mockito.version>
     <assertj.version>3.27.7</assertj.version>
