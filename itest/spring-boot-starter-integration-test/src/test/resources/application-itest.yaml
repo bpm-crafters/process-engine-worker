@@ -3,8 +3,6 @@ spring:
     name: ITest
   main:
     banner-mode: off
-  liquibase:
-    enabled: false
   jpa:
     open-in-view: true
     database: postgresql
