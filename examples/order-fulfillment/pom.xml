@@ -22,6 +22,13 @@
         <type>pom</type>
       </dependency>
       <dependency>
+        <groupId>org.camunda.bpm</groupId>
+        <artifactId>camunda-bom</artifactId>
+        <version>7.24.0</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
         <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
         <artifactId>process-engine-adapter-camunda-platform-c7-bom</artifactId>
         <version>${process-engine-adapters-c7.version}</version>
@@ -32,13 +39,6 @@
         <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
         <artifactId>process-engine-adapter-camunda-platform-c8-bom</artifactId>
         <version>${process-engine-adapters-c8.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-      <dependency>
-        <groupId>org.camunda.bpm</groupId>
-        <artifactId>camunda-bom</artifactId>
-        <version>7.24.0</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -99,7 +99,7 @@
     <dependency>
       <groupId>io.holunda</groupId>
       <artifactId>camunda-platform-7-autologin</artifactId>
-      <version>2026.02.1</version>
+      <version>${c7.version}</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
@@ -113,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-tasklist-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
   </dependencies>
 
