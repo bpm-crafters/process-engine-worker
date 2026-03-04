@@ -1,6 +1,8 @@
 package dev.bpmcrafters.processengine.worker.configuration
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.registrar.*
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsMicrometer
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
@@ -65,5 +67,12 @@ class ProcessEngineWorkerAutoConfiguration {
   fun processEngineWorkerMetricsNoOp(): ProcessEngineWorkerMetrics {
     return ProcessEngineWorkerMetricsNoOp
   }
+
+  /**
+   * Fallback to a no-op idempotency registry.
+   */
+  @Bean
+  @ConditionalOnMissingBean(IdempotencyRegistry::class)
+  fun defaultIdempotencyRegistry(): IdempotencyRegistry = NoOpIdempotencyRegistry()
 
 }

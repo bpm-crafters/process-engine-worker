@@ -30,8 +30,8 @@
   </properties>
 
   <modules>
+    <module>spring-boot-idempotency-registry-jpa</module>
     <module>spring-boot-starter</module>
-    <!-- more modules see below -->
   </modules>
 
   <dependencyManagement>
@@ -103,6 +103,18 @@
         <module>examples</module>
       </modules>
     </profile>
+
+    <profile>
+      <activation>
+        <property>
+          <name>!skipITests</name>
+        </property>
+      </activation>
+      <id>itest</id>
+      <modules>
+        <module>itest</module>
+      </modules>
+    </profile>
   </profiles>
 
   <build>
@@ -125,6 +137,7 @@
           <compilerPlugins>
             <plugin>spring</plugin>
             <plugin>no-arg</plugin>
+            <plugin>jpa</plugin>
             <plugin>all-open</plugin>
           </compilerPlugins>
         </configuration>
