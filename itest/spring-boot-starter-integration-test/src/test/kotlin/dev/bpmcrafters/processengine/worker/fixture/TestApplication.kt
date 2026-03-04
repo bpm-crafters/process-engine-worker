@@ -7,17 +7,16 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.context.annotation.Bean
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import java.text.SimpleDateFormat
 
 @SpringBootApplication
-@EntityScan(
-  "dev.bpmcrafters.processengine.worker.idempotency",
-  "dev.bpmcrafters.processengine.worker.fixture"
-)
+@EntityScan(basePackageClasses = [MyEntity::class])
+@EnableJpaRepositories(basePackageClasses = [MyEntityRepository::class])
 class TestApplication {
 
   @Bean
-  fun objectMapper(): ObjectMapper = jacksonObjectMapper().apply{
+  fun objectMapper(): ObjectMapper = jacksonObjectMapper().apply {
     registerModule(Jdk8Module())
     registerModule(JavaTimeModule())
     dateFormat = SimpleDateFormat("yyyy-MM-dd'T'hh:MM:ss.SSSz")

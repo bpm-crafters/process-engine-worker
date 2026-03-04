@@ -137,6 +137,7 @@
           <compilerPlugins>
             <plugin>spring</plugin>
             <plugin>no-arg</plugin>
+            <plugin>jpa</plugin>
             <plugin>all-open</plugin>
           </compilerPlugins>
         </configuration>

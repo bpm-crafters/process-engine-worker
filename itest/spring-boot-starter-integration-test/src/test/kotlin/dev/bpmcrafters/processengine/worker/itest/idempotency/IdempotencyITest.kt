@@ -15,12 +15,12 @@ import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@SpringBootTest(classes = [TestApplication::class])
 @TestPropertySource(
   properties = [
     "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
@@ -67,6 +67,7 @@ abstract class IdempotencyITest : FixtureITestBase() {
     InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithoutTransactionalAnnotation::class
   )
+  @DirtiesContext
   class InMemoryIdempotencyWithoutTransactionITest : IdempotencyITest()
 
   @Nested
@@ -74,9 +75,12 @@ abstract class IdempotencyITest : FixtureITestBase() {
     InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithTransactionalAnnotation::class
   )
+  @DirtiesContext
   class InMemoryIdempotencyWithTransactionITest : IdempotencyITest()
 
+  @Nested
   @Import(WorkerWithTransactionalAnnotation::class)
+  @DirtiesContext
   class JpaIdempotencyWithTransactionITest : IdempotencyITest()
 
 }

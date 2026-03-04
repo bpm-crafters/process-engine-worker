@@ -8,7 +8,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 @Converter(autoApply = false)
-class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
+internal class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
 
   override fun convertToDatabaseColumn(attribute: Map<String, Any?>?): ByteArray? {
     if (attribute == null) {
@@ -27,5 +27,4 @@ class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
     @Suppress("UNCHECKED_CAST")
     return ObjectInputStream(ByteArrayInputStream(dbData)).readObject() as Map<String, Any?>
   }
-
 }
