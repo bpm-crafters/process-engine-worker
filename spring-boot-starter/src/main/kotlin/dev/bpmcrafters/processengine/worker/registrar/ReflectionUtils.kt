@@ -164,7 +164,7 @@ fun Method.getCompletion(): Completion {
 
 /**
  * Returns the lock duration from annotation, or null if not set.
- * @return lock duration in seconds, or null if the default should be used.
+ * @return lock duration in milliseconds, or null if the default should be used.
  * @since 0.8.0
  */
 fun Method.getLockDuration(): Long? {
