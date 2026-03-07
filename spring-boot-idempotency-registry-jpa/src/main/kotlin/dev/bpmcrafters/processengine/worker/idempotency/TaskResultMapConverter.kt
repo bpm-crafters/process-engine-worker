@@ -7,11 +7,16 @@ import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
+/**
+ * This converter converts a result map to a byte array (and back) using Java serialization.
+ *
+ * It is important to not that empty results are converted to `null` to save space.
+ */
 @Converter(autoApply = false)
-internal class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
+internal class TaskResultMapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
 
   override fun convertToDatabaseColumn(attribute: Map<String, Any?>?): ByteArray? {
-    if (attribute == null) {
+    if (attribute.isNullOrEmpty()) {
       return null
     }
     ByteArrayOutputStream().use {
@@ -20,11 +25,12 @@ internal class MapConverter : AttributeConverter<Map<String, Any?>, ByteArray> {
     }
   }
 
-  override fun convertToEntityAttribute(dbData: ByteArray?): Map<String, Any?>? {
+  override fun convertToEntityAttribute(dbData: ByteArray?): Map<String, Any?> {
     if (dbData == null) {
-      return null
+      return mapOf()
     }
     @Suppress("UNCHECKED_CAST")
     return ObjectInputStream(ByteArrayInputStream(dbData)).readObject() as Map<String, Any?>
   }
+
 }

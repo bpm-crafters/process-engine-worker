@@ -17,7 +17,6 @@ import dev.bpmcrafters.processengineapi.task.TaskInformation
 import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
 import dev.bpmcrafters.processengineapi.task.TaskType
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
-import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -219,13 +218,12 @@ class ProcessEngineStarterRegistrar(
    * Completes the task.
    */
   private fun completeTask(taskInformation: TaskInformation, payload: Map<String, Any?>) {
-    taskCompletionApi.completeTask(
-      CompleteTaskCmd(
-        taskId = taskInformation.taskId
-      ) {
-        payload
-      }
-    ).get()
+    taskCompletionApi.completeTask(CompleteTaskCmd(taskInformation.taskId) { payload }).get()
+    if (processEngineWorkerProperties.removeTaskResultOnCompletion) {
+      logger.debug { "Removing task result" }
+      logger.debug { "PROCESS-ENGINE-WORKER-018: Removing result of task ${taskInformation.taskId}" }
+      idempotencyRegistry.removeTaskResult(taskInformation.taskId)
+    }
   }
 
   /*

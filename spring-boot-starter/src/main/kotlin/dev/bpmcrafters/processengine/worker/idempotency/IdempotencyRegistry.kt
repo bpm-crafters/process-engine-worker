@@ -22,4 +22,22 @@ interface IdempotencyRegistry {
    */
   fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>?
 
+  /**
+   * Deletes the result of a single task.
+   *
+   * If enabled, this method is automatically called when a task completion call returns successfully.
+   *
+   * @param taskId the ID of the task to remove the result for.
+   */
+  fun removeTaskResult(taskId: String)
+
+  /**
+   * Removes all task results of a process instance.
+   *
+   * This method should be called when a process instance has completed to ensure that every result has been removed.
+   *
+   * @param processInstanceId the ID of the process instance to remove task results for.
+   */
+  fun removeAllTaskResults(processInstanceId: String)
+
 }
