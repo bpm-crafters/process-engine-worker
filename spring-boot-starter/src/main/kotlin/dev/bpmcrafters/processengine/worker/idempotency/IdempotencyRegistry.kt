@@ -22,4 +22,13 @@ interface IdempotencyRegistry {
    */
   fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>?
 
+  /**
+   * Purges all task results for a process instance by its ID.
+   *
+   * This method should be called when a process instance has completed.
+   *
+   * @param processInstanceId the ID of the process instance to purge results for.
+   */
+  fun purgeTaskResults(processInstanceId: String)
+
 }
