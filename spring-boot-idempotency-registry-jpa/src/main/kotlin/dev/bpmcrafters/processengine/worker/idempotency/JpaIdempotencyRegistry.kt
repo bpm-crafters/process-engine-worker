@@ -29,4 +29,8 @@ class JpaIdempotencyRegistry(
     .findByIdOrNull(taskInformation.taskId)
     ?.result
 
+  override fun purgeTaskResults(processInstanceId: String) {
+    taskLogEntryRepository.deleteByProcessInstanceId(processInstanceId)
+  }
+
 }

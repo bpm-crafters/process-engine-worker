@@ -2,6 +2,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry
+import dev.bpmcrafters.processengineapi.CommonRestrictions.PROCESS_INSTANCE_ID
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
@@ -52,8 +53,9 @@ class ProcessEngineIdempotencyTest {
   fun `should not invoke annotated method again for same task`() {
     // Given a worker method and a counting action
     var invocationCount = 0
+    val processInstanceId = UUID.randomUUID().toString()
     val taskId = UUID.randomUUID().toString()
-    val taskInfo = TaskInformation(taskId = taskId, meta = mapOf())
+    val taskInfo = TaskInformation(taskId = taskId, meta = mapOf(PROCESS_INSTANCE_ID to processInstanceId))
     val payload = mapOf<String, Any?>()
 
     val actionWithResult = ProcessEngineStarterRegistrar.TaskHandlerWithResult { _, _ ->

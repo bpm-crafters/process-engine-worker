@@ -1,5 +1,7 @@
 package dev.bpmcrafters.processengine.worker.idempotency
 
+import dev.bpmcrafters.processengineapi.CommonRestrictions
+import dev.bpmcrafters.processengineapi.CommonRestrictions.PROCESS_INSTANCE_ID
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -11,13 +13,16 @@ class InMemoryIdempotencyRegistryTest {
 
   @Test
   fun `should register result`() {
-    val taskId = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
-    assertThat(registry.getTaskResult(taskId)).isNull()
+    val taskInformation = TaskInformation(
+      taskId = UUID.randomUUID().toString(),
+      meta = mapOf(PROCESS_INSTANCE_ID to UUID.randomUUID().toString())
+    )
+    assertThat(registry.getTaskResult(taskInformation)).isNull()
 
     val result = mapOf("A" to "the B")
-    registry.register(taskId, result)
+    registry.register(taskInformation, result)
 
-    assertThat(registry.getTaskResult(taskId)).isSameAs(result)
+    assertThat(registry.getTaskResult(taskInformation)).isSameAs(result)
   }
 
 }
