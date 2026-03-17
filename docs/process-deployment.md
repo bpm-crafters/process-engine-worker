@@ -30,3 +30,4 @@ dev:
           dmnResourcePattern: "classpath*:/**/*.dmn"
 ```
 
+> **Warning:** Disabling the engine's own autodeployment also disables the autodeployment provided by the Process Engine Worker. In that setup, the Process Engine Worker deployment feature will not deploy resources on startup either. To use the Process Engine Worker's autodeployment feature, make sure to not explicitly disable the engine's process deployment features.
