@@ -93,6 +93,12 @@ databaseChangeLog:
                   type: blob # or bytea for PostgreSQL
                   constraints:
                     nullable: false
+        - createIndex:
+            indexName: idx_task_log_entry_process_instance_id_
+            tableName: task_log_entry_
+            columns:
+              - column:
+                  name: process_instance_id_
 ```
 
 > **Note:** The `result_` column type should be suitable for storing binary data (e.g., `blob` for most databases, `bytea` for PostgreSQL).

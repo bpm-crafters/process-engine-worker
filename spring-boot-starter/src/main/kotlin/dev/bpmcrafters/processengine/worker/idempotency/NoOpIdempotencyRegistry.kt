@@ -8,4 +8,8 @@ class NoOpIdempotencyRegistry : IdempotencyRegistry {
 
   override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = null
 
+  override fun removeTaskResult(taskId: String) {}
+
+  override fun removeAllTaskResults(processInstanceId: String) {}
+
 }
