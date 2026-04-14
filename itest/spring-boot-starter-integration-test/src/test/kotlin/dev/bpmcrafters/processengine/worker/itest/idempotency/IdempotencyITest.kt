@@ -1,29 +1,31 @@
 package dev.bpmcrafters.processengine.worker.itest.idempotency
 
 import dev.bpmcrafters.processengine.worker.fixture.InMemoryIdempotencyRegistryConfiguration
-import dev.bpmcrafters.processengine.worker.fixture.TestApplication
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithTransactionalAnnotation
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithoutTransactionalAnnotation
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.itest.FixtureITestBase
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
-import org.assertj.core.api.Assertions
-import org.awaitility.Awaitility
+import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Import
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.util.*
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 @TestPropertySource(
   properties = [
-    "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"
+    "dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false",
+    "dev.bpm-crafters.process-api.worker.remove-task-result-on-completion=true"
   ]
 )
 @MockitoSpyBean(types = [IdempotencyRegistry::class])
@@ -36,6 +38,9 @@ abstract class IdempotencyITest : FixtureITestBase() {
   @Autowired
   private lateinit var serviceTaskCompletionApi: ServiceTaskCompletionApi
 
+  @Value($$"${dev.bpm-crafters.process-api.worker.remove-task-result-on-completion}")
+  private var removeTaskResult: Boolean = false
+
   @Test
   fun `fetching the same task does not execute business logic again`() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
@@ -43,22 +48,27 @@ abstract class IdempotencyITest : FixtureITestBase() {
       .`when`(serviceTaskCompletionApi)
       .completeTask(any())
     val processInstanceId = startProcess(name, verified = true)
-    Assertions.assertThat(processInstanceIsRunning(processInstanceId)).isTrue()
-    Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted {
+    assertThat(processInstanceIsRunning(processInstanceId)).isTrue()
+    await atMost 30.seconds.toJavaDuration() untilAsserted {
       val entity = findEntityByName(name)
-      Assertions.assertThat(entity).isNotNull
+      assertThat(entity).isNotNull
     }
     doCallRealMethod().`when`(serviceTaskCompletionApi).completeTask(any())
     unlockExternalTask(getExternalTasks(processInstanceId).first().id!!)
     print(idempotencyRegistry)
-    Awaitility.await().atMost(30, TimeUnit.SECONDS).untilAsserted {
-      Assertions.assertThat(processInstanceIsRunning(processInstanceId)).isFalse
+    await atMost 30.seconds.toJavaDuration() untilAsserted {
+      assertThat(processInstanceIsRunning(processInstanceId)).isFalse
     }
     val inOrder = inOrder(idempotencyRegistry)
     inOrder.verify(idempotencyRegistry).getTaskResult(any())
     inOrder.verify(idempotencyRegistry).register(any(), any())
     inOrder.verify(idempotencyRegistry).getTaskResult(any())
     inOrder.verify(idempotencyRegistry, never()).register(any(), any())
+    if (removeTaskResult) {
+      inOrder.verify(idempotencyRegistry).removeTaskResult(any())
+    } else {
+      inOrder.verify(idempotencyRegistry, never()).removeTaskResult(any())
+    }
   }
 
 
@@ -69,6 +79,9 @@ abstract class IdempotencyITest : FixtureITestBase() {
   )
   class InMemoryIdempotencyWithoutTransactionITest : IdempotencyITest()
 
+  @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
+  class InMemoryIdempotencyWithoutTransactionNotRemovingTaskResultITest : InMemoryIdempotencyWithoutTransactionITest()
+
   @Nested
   @Import(
     InMemoryIdempotencyRegistryConfiguration::class,
@@ -76,9 +89,21 @@ abstract class IdempotencyITest : FixtureITestBase() {
   )
   class InMemoryIdempotencyWithTransactionITest : IdempotencyITest()
 
+  @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
+  class InMemoryIdempotencyWithTransactionNotRemovingTaskResultITest : InMemoryIdempotencyWithTransactionITest()
+
+  @Nested
+  @Import(WorkerWithoutTransactionalAnnotation::class)
+  class JpaIdempotencyWithoutTransactionITest : IdempotencyITest()
+
+  @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
+  class JpaIdempotencyWithoutTransactionNotRemovingTaskResultITest : JpaIdempotencyWithoutTransactionITest()
+
   @Nested
   @Import(WorkerWithTransactionalAnnotation::class)
   class JpaIdempotencyWithTransactionITest : IdempotencyITest()
 
-}
+  @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
+  class JpaIdempotencyWithTransactionNotRemovingTaskResulITest : JpaIdempotencyWithTransactionITest()
 
+}

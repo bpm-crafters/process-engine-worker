@@ -13,10 +13,10 @@ class TaskLogEntry(
   val processInstanceId: String,
   @Column(name = "created_at_", nullable = false)
   val createdAt: Instant,
-  @Column(name = "result_", nullable = false)
+  @Column(name = "result_")
   @Lob
-  @Convert(converter = MapConverter::class)
-  val result: Map<String, Any?>
+  @Convert(converter = TaskResultMapConverter::class)
+  val result: Map<String, Any?>?
 ) {
 
   override fun toString(): String {

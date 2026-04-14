@@ -34,7 +34,7 @@ annotation class ProcessEngineWorker(
    */
   val completion: Completion = Completion.DEFAULT,
   /**
-   * Optional lock duration in seconds for this worker.
+   * Optional lock duration in milliseconds for this worker.
    * If not specified (default: -1), the adapter's global configuration will be used.
    * @since 0.8.0
    */
