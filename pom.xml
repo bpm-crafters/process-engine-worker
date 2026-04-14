@@ -20,7 +20,7 @@
   <properties>
     <spring-boot.version>3.5.13</spring-boot.version>
     <process-engine-api.version>1.5</process-engine-api.version>
-    <process-engine-adapters-c7.version>2026.02.1</process-engine-adapters-c7.version>
+    <process-engine-adapters-c7.version>2026.04.2</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2026.04.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.3.0</mockito.version>
