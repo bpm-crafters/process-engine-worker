@@ -220,7 +220,6 @@ class ProcessEngineStarterRegistrar(
   private fun completeTask(taskInformation: TaskInformation, payload: Map<String, Any?>) {
     taskCompletionApi.completeTask(CompleteTaskCmd(taskInformation.taskId) { payload }).get()
     if (processEngineWorkerProperties.removeTaskResultOnCompletion) {
-      logger.debug { "Removing task result" }
       logger.debug { "PROCESS-ENGINE-WORKER-018: Removing result of task ${taskInformation.taskId}" }
       idempotencyRegistry.removeTaskResult(taskInformation.taskId)
     }

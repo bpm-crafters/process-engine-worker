@@ -8,15 +8,14 @@ import java.time.Instant
 class TaskLogEntry(
   @Id
   @Column(name = "task_id_", nullable = false, length = 100)
-  val taskId: String,
+  var taskId: String,
   @Column(name = "process_instance_id_", nullable = false, length = 100)
-  val processInstanceId: String,
+  var processInstanceId: String,
   @Column(name = "created_at_", nullable = false)
-  val createdAt: Instant,
+  var createdAt: Instant,
   @Column(name = "result_")
-  @Lob
   @Convert(converter = TaskResultMapConverter::class)
-  val result: Map<String, Any?>?
+  var result: Map<String, Any?>
 ) {
 
   override fun toString(): String {

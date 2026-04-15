@@ -16,11 +16,11 @@ When a worker is triggered, the process engine worker:
 
 There are three available implementations of the `IdempotencyRegistry`:
 
-| Implementation | Description | Recommended Use |
-| --- | --- | --- |
-| `NoOpIdempotencyRegistry` | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
-| `InMemoryIdempotencyRegistry` | Stores results in a local `ConcurrentHashMap`. | Testing or non-clustered environments. |
-| `JpaIdempotencyRegistry` | Stores results in a database using JPA. | Production, clustered environments. |
+| Implementation                | Description                                       | Recommended Use                                   |
+|-------------------------------|---------------------------------------------------|---------------------------------------------------|
+| `NoOpIdempotencyRegistry`     | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
+| `InMemoryIdempotencyRegistry` | Stores results in a local `ConcurrentHashMap`.    | Testing or non-clustered environments.            |
+| `JpaIdempotencyRegistry`      | Stores results in a database using JPA.           | Production, clustered environments.               |
 
 ## Setup Procedures
 
@@ -58,7 +58,58 @@ Add the following dependency to your `pom.xml`:
 
 The `JpaIdempotencyAutoConfiguration` will automatically register the `JpaIdempotencyRegistry` if an `EntityManager` is present and no other `IdempotencyRegistry` bean is defined.
 
-#### 2. Database Schema (Liquibase)
+#### 2. Configure JPA
+
+Add the `dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntryRepository` with the following annotation
+```java
+@EnableJpaRepositories(basePackages = {
+    "your.package(s)",
+    "dev.bpmcrafters.processengine.worker.idempotency"
+})
+```
+
+You can add the entity `dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntry` either via annotation
+```java
+@EntityScan(basePackages = {
+    "your.package(s)",
+    "dev.bpmcrafters.processengine.worker.idempotency"
+})
+```
+or via `META-INF/orm.xml`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings
+  xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd"
+  version="3.2"
+>
+  <entity class="dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntry">
+    <table schema="your_schema" name="task_log_entry"/>
+    <attributes>
+      <basic name="taskId">
+        <column name="task_id" column-definition="varchar2(100)"/>
+      </basic>
+      <basic name="processInstanceId">
+        <column name="process_instance_id" column-definition="varchar2(100)"/>
+      </basic>
+      <basic name="createdAt">
+        <column name="created_at"/>
+      </basic>
+      <basic name="result">
+        <column name="result"/>
+      </basic>
+    </attributes>
+  </entity>
+</entity-mappings>
+```
+Using the `orm.xml` could be useful. E.g., when you
+* are using Hibernate's schema validation and the default types mismatch.
+* want to relocate the entity into a different schema.
+* want to rename the table.
+* want to rename columns.
+
+#### 3. Database Schema (Liquibase)
 
 The JPA registry requires a table named `task_log_entry_`. You can use the following Liquibase changeSet to create it:
 
@@ -91,8 +142,6 @@ databaseChangeLog:
               - column:
                   name: result_
                   type: blob # or bytea for PostgreSQL
-                  constraints:
-                    nullable: false
         - createIndex:
             indexName: idx_task_log_entry_process_instance_id_
             tableName: task_log_entry_

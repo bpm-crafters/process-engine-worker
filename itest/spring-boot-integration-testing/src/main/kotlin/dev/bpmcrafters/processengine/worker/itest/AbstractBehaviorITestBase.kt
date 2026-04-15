@@ -127,6 +127,13 @@ abstract class AbstractBehaviorITestBase {
     null
   ).body as List<IncidentDto>
 
+  protected fun setExternalTaskRetries(externalTaskId: String, retries: Int) {
+    externalTaskApiClient.setExternalTaskRetries(SetRetriesForExternalTasksDto().apply {
+      externalTaskIds = listOf(externalTaskId)
+      this.retries = retries
+    })
+  }
+
   protected fun getHistoricActivityInstances(processInstanceId: String, activityId: String): List<HistoricActivityInstanceDto> {
     return historyApiClient.queryHistoricActivityInstances(
       0,
