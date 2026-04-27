@@ -26,7 +26,7 @@
     <mockito.version>6.3.0</mockito.version>
     <assertj.version>3.27.7</assertj.version>
     <camunda-bpm-spring-boot-starter-external-task-client.version>7.24.0</camunda-bpm-spring-boot-starter-external-task-client.version>
-    <c7.version>2026.04.1</c7.version>
+    <c7.version>2026.04.2</c7.version>
   </properties>
 
   <modules>
