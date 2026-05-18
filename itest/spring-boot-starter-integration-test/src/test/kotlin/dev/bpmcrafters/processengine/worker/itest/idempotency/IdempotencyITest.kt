@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker.itest.idempotency
 
 import dev.bpmcrafters.processengine.worker.fixture.InMemoryIdempotencyRegistryConfiguration
-import dev.bpmcrafters.processengine.worker.fixture.MyEntity
 import dev.bpmcrafters.processengine.worker.fixture.MyEntityRepository
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithTransactionalAnnotation
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithoutTransactionalAnnotation
@@ -9,6 +8,7 @@ import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntry
 import dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntryRepository
 import dev.bpmcrafters.processengine.worker.itest.FixtureITestBase
+import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -40,6 +40,9 @@ import kotlin.time.toJavaDuration
 abstract class IdempotencyITest : FixtureITestBase() {
 
   @Autowired
+  private lateinit var myEntityRepository: MyEntityRepository
+
+  @Autowired
   private lateinit var idempotencyRegistry: IdempotencyRegistry
 
   @Autowired
@@ -67,7 +70,14 @@ abstract class IdempotencyITest : FixtureITestBase() {
     }
     val inOrder = inOrder(idempotencyRegistry)
     inOrder.verify(idempotencyRegistry).getTaskResult(any())
-    inOrder.verify(idempotencyRegistry).register(any(), any())
+    val resultCaptor = argumentCaptor<Map<String, Any>>()
+    inOrder.verify(idempotencyRegistry).register(
+      any(),
+      resultCaptor.capture()
+    )
+    val result = resultCaptor.singleValue
+    assertThat(result).containsOnlyKeys("id")
+    assertThat(myEntityRepository.findById(result["id"] as String)).isNotNull()
     inOrder.verify(idempotencyRegistry).getTaskResult(any())
     inOrder.verify(idempotencyRegistry, never()).register(any(), any())
     if (removeTaskResult) {
@@ -75,6 +85,9 @@ abstract class IdempotencyITest : FixtureITestBase() {
     } else {
       inOrder.verify(idempotencyRegistry, never()).removeTaskResult(any())
     }
+    val completeTaskCmdCaptor = argumentCaptor<CompleteTaskCmd>()
+    verify(serviceTaskCompletionApi, times(2)).completeTask(completeTaskCmdCaptor.capture())
+    assertThat(completeTaskCmdCaptor.secondValue.get()).isEqualTo(result)
   }
 
 
