@@ -11,22 +11,22 @@
 
   <groupId>dev.bpm-crafters.process-engine-worker</groupId>
   <artifactId>process-engine-worker-root</artifactId>
-  <version>0.8.2</version>
+  <version>0.8.3</version>
   <name>${project.artifactId}</name>
   <description>Process Engine Worker</description>
   <url>https://github.com/bpm-crafters/process-engine-worker/</url>
   <packaging>pom</packaging>
 
   <properties>
-    <spring-boot.version>3.5.13</spring-boot.version>
+    <spring-boot.version>3.5.14</spring-boot.version>
     <process-engine-api.version>1.5</process-engine-api.version>
     <process-engine-adapters-c7.version>2026.04.2</process-engine-adapters-c7.version>
-    <process-engine-adapters-c8.version>2026.04.1</process-engine-adapters-c8.version>
+    <process-engine-adapters-c8.version>2026.05.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.3.0</mockito.version>
     <assertj.version>3.27.7</assertj.version>
     <camunda-bpm-spring-boot-starter-external-task-client.version>7.24.0</camunda-bpm-spring-boot-starter-external-task-client.version>
-    <c7.version>2026.04.1</c7.version>
+    <c7.version>2026.04.2</c7.version>
   </properties>
 
   <modules>

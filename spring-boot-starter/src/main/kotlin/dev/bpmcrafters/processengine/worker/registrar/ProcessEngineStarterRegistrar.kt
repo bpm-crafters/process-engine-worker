@@ -132,7 +132,6 @@ class ProcessEngineStarterRegistrar(
    * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
    * @param method process engine worker method.
-   * @param processEngineWorkerMetrics metrics to report progress.
    * @param actionWithResult worker always returning the result.
    */
   private fun subscribe(
@@ -209,7 +208,7 @@ class ProcessEngineStarterRegistrar(
       } else {
         mapOf()
       }
-      idempotencyRegistry.register(taskInformation, payload)
+      idempotencyRegistry.register(taskInformation, result)
     }
     return result
   }
