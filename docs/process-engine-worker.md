@@ -9,6 +9,7 @@ API and allows to build universal workers.
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
 ```xml
+
 <dependency>
   <groupId>dev.bpm-crafters.process-engine-worker</groupId>
   <artifactId>process-engine-worker-spring-boot-starter</artifactId>
@@ -19,6 +20,7 @@ First of all add the Process Engine Worker dependency to your projects classpath
 Now create a simple Spring component and annotate a method with a special annotation `@ProcessEngineWorker`:
 
 ```java
+
 @Component
 @RequiredArgsConstructor
 public class MySmartWorker {
@@ -31,7 +33,7 @@ public class MySmartWorker {
   ) {
     // execute some business code
     var fetched = fetchGoodsInPort.fetchGoods(order);
-    
+
     return Map.of("shipped", fetched);
   }
 }
@@ -39,31 +41,32 @@ public class MySmartWorker {
 
 The `@ProcessEngineWorker` annotation supports the following properties:
 
-| Property       | Type       | Default    | Description                                                                                                                                                                                                                                                                                                                                            |
-|----------------|------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `topic`        | `String`   | `""`       | Topic name to subscribe this worker for. Alias for `value`.                                                                                                                                                                                                                                                                                            |
-| `autoComplete` | `boolean`  | `true`     | Flag indicating if the task should be automatically completed after the worker execution. If the return type is `Map<String, Any>`, it will overrule this setting and auto-complete with the returned payload.                                                                                                                                       |
-| `completion`   | `enum`     | `DEFAULT`  | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                                                                                                                                                         |
-| `lockDuration` | `long`     | `-1`       | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                                                                                                                                                                            |
+| Property       | Type      | Default     | Description                                                                                                                                                                                                    |
+|----------------|-----------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `topic`        | `String`  | `"__unset"` | Topic name to subscribe this worker for. Alias for `value`.                                                                                                                                                    |
+| `autoComplete` | `boolean` | `true`      | Flag indicating if the task should be automatically completed after the worker execution. If the return type is `Map<String, Any>`, it will overrule this setting and auto-complete with the returned payload. |
+| `completion`   | `enum`    | `DEFAULT`   | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                 |
+| `lockDuration` | `long`    | `-1`        | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                               |
+| `tenantId`     | `String`  | `""`        | Optional tenant id to be used for current worker during the registration. Any non-blank value will be considered. If the value is empty, the value from the property will be used.                             |
 
 ## Method parameter resolution
 
 Parameter resolution of the method annotated with `ProcessEngineWorker` is based on a set of strategies
 registered by the `ParameterResolver` bean. Currently, the following parameters are resolved:
 
-| Type                                   | Purpose                                                                   |
-|----------------------------------------|---------------------------------------------------------------------------|
-| TaskInformation                        | Helper abstracting all information about the external task.               |
-| ExternTaskCompletionApi                | API for completing the external task manually                             |
-| VariableConverter                      | Special utility to read the process variable map and deliver typed value  | 
-| Map<String, Object>                    | Payload object containing all variables.                                  |
-| Type annotated with @Variable("name")  | Marker for a process variable.                                            |
+| Type                                  | Purpose                                                                  |
+|---------------------------------------|--------------------------------------------------------------------------|
+| TaskInformation                       | Helper abstracting all information about the external task.              |
+| ExternTaskCompletionApi               | API for completing the external task manually                            |
+| VariableConverter                     | Special utility to read the process variable map and deliver typed value | 
+| Map<String, Object>                   | Payload object containing all variables.                                 |
+| Type annotated with @Variable("name") | Marker for a process variable.                                           |
 
 Usually, the requested variable is mandatory and the parameter resolver reports an error, if the requested variable is not
 available in the process payload. If you want to inject the variable only if it exists in the payload you have two options.
 Either you set the parameter `@Variable(name = "...", mandatory = false)` or you use `Optional<T>` instead of `T` as a variable
 type. If you are using Kotlin and don't like `Optional`, make sure to declare variable type as nullable (`T?` instead of `T`) and
-set the mandatory flag to `false`. 
+set the mandatory flag to `false`.
 
 ## Method return type
 
@@ -95,6 +98,7 @@ dev:
       worker:
         registerProcessWorkers: true # Enable or disable automatic worker registration
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
+        tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
 
 

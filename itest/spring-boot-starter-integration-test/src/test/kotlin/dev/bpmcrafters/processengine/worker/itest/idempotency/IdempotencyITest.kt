@@ -1,6 +1,5 @@
 package dev.bpmcrafters.processengine.worker.itest.idempotency
 
-import dev.bpmcrafters.processengine.worker.fixture.InMemoryIdempotencyRegistryConfiguration
 import dev.bpmcrafters.processengine.worker.fixture.MyEntityRepository
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithTransactionalAnnotation
 import dev.bpmcrafters.processengine.worker.fixture.worker.WorkerWithoutTransactionalAnnotation
@@ -22,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.context.annotation.Import
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.util.*
@@ -93,39 +93,42 @@ abstract class IdempotencyITest : FixtureITestBase() {
 
   @Nested
   @Import(
-    InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithoutTransactionalAnnotation::class
   )
   class InMemoryIdempotencyWithoutTransactionITest : IdempotencyITest()
 
+  @Nested
   @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
   class InMemoryIdempotencyWithoutTransactionNotRemovingTaskResultITest : InMemoryIdempotencyWithoutTransactionITest()
 
   @Nested
   @Import(
-    InMemoryIdempotencyRegistryConfiguration::class,
     WorkerWithTransactionalAnnotation::class
   )
   class InMemoryIdempotencyWithTransactionITest : IdempotencyITest()
 
+  @Nested
   @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
   class InMemoryIdempotencyWithTransactionNotRemovingTaskResultITest : InMemoryIdempotencyWithTransactionITest()
 
-  @Nested
-  @Import(WorkerWithoutTransactionalAnnotation::class)
+  @ActiveProfiles("jpa-idempotency")
   @EntityScan(basePackageClasses = [TaskLogEntry::class])
   @EnableJpaRepositories(basePackageClasses = [TaskLogEntryRepository::class])
-  class JpaIdempotencyWithoutTransactionITest : IdempotencyITest()
+  abstract class JpaIdempotencyITest : IdempotencyITest()
 
+  @Nested
+  @Import(WorkerWithoutTransactionalAnnotation::class)
+  class JpaIdempotencyWithoutTransactionITest : JpaIdempotencyITest()
+
+  @Nested
   @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
   class JpaIdempotencyWithoutTransactionNotRemovingTaskResultITest : JpaIdempotencyWithoutTransactionITest()
 
   @Nested
   @Import(WorkerWithTransactionalAnnotation::class)
-  @EntityScan(basePackageClasses = [TaskLogEntry::class])
-  @EnableJpaRepositories(basePackageClasses = [TaskLogEntryRepository::class])
-  class JpaIdempotencyWithTransactionITest : IdempotencyITest()
+  class JpaIdempotencyWithTransactionITest : JpaIdempotencyITest()
 
+  @Nested
   @TestPropertySource(properties = ["dev.bpm-crafters.process-api.worker.complete-tasks-before-commit=false"])
   class JpaIdempotencyWithTransactionNotRemovingTaskResulITest : JpaIdempotencyWithTransactionITest()
 
