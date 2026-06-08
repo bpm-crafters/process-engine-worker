@@ -63,13 +63,52 @@ class ReflectionUtilsTest {
 
     inner class LockDurationTestWorker {
       @ProcessEngineWorker(topic = "withLock", lockDuration = 30)
-      fun workerWithLockDuration() {}
+      fun workerWithLockDuration() {
+      }
 
       @ProcessEngineWorker(topic = "withoutLock")
-      fun workerWithoutLockDuration() {}
+      fun workerWithoutLockDuration() {
+      }
 
       @ProcessEngineWorker(topic = "explicitDefault", lockDuration = -1)
-      fun workerWithExplicitDefault() {}
+      fun workerWithExplicitDefault() {
+      }
+    }
+  }
+
+  @Nested
+  inner class TenantIdTest {
+
+    @Test
+    fun `getTenantId should return value when specified`() {
+      val method = TenantWorker::class.java.getDeclaredMethod("workerWithTenantId")
+      assertThat(method.getTenantId()).isEqualTo("tenant")
+    }
+
+    @Test
+    fun `getTenantId should return null when not specified`() {
+      val method = TenantWorker::class.java.getDeclaredMethod("worker")
+      assertThat(method.getTenantId()).isNull()
+    }
+
+    @Test
+    fun `getTenantId should return null when specified empty string`() {
+      val method = TenantWorker::class.java.getDeclaredMethod("withEmptyTenantId")
+      assertThat(method.getTenantId()).isNull()
+    }
+
+    inner class TenantWorker {
+      @ProcessEngineWorker(topic = "withTenant", tenantId = "tenant")
+      fun workerWithTenantId() {
+      }
+
+      @ProcessEngineWorker(topic = "withoutTenant")
+      fun worker() {
+      }
+
+      @ProcessEngineWorker(topic = "withEmptyTenantId", tenantId = "")
+      fun withEmptyTenantId() {
+      }
     }
   }
 }

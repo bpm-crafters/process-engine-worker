@@ -177,6 +177,20 @@ fun Method.getLockDuration(): Long? {
 }
 
 /**
+ * Returns the tenant id, configured on the annotation or null if it is not set.
+ * @return tenant id, or null if the default should be used.
+ * @since 0.8.4
+ */
+fun Method.getTenantId(): String? {
+  val tenantId = this.getAnnotation(ProcessEngineWorker::class.java).tenantId
+  return if (tenantId == ProcessEngineWorker.DEFAULT_UNSET_TENANT_ID || tenantId.isBlank()) {
+    null
+  } else {
+    tenantId
+  }
+}
+
+/**
  * Checks if the method of the worker is transactional.
  * @return true, if the method should be executed transactional and be atomic with completion of the worker.
  */
