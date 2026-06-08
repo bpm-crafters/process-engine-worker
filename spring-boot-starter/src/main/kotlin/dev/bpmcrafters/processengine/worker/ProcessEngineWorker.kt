@@ -12,12 +12,12 @@ annotation class ProcessEngineWorker(
   /**
    * Topic name to subscribe this worker for.
    */
-  @get: AliasFor(attribute = "value")
+  @get:AliasFor(attribute = "value")
   val topic: String = DEFAULT_UNSET_TOPIC,
   /**
    * Topic name to subscribe this worker for.
    */
-  @get: AliasFor(attribute = "topic")
+  @get:AliasFor(attribute = "topic")
   val value: String = DEFAULT_UNSET_TOPIC,
   /**
    * Flag, indicating if the task should be automatically completed after the execution of the worker.
@@ -38,17 +38,23 @@ annotation class ProcessEngineWorker(
    * If not specified (default: -1), the adapter's global configuration will be used.
    * @since 0.8.0
    */
-  val lockDuration: Long = DEFAULT_UNSET_LOCK_DURATION
+  val lockDuration: Long = DEFAULT_UNSET_LOCK_DURATION,
+  /**
+   * Tenant ID to subscribe this worker for. Defaults to empty string representing no tenant.
+   */
+  val tenantId: String = "",
 ) {
   companion object {
     /**
      * Null value for the topic.
      */
     const val DEFAULT_UNSET_TOPIC = "__unset"
+
     /**
      * Sentinel value indicating lock duration is not specified.
      */
     const val DEFAULT_UNSET_LOCK_DURATION = -1L
+
   }
 
   /**
@@ -59,12 +65,14 @@ annotation class ProcessEngineWorker(
      * Use default configured via property.
      */
     DEFAULT,
+
     /**
      * Execute external task completion before the transaction is committed.
      */
     BEFORE_COMMIT,
+
     /**
-     * Execute external task completion after transaction is committed.
+     * Execute external task completion after the transaction is committed.
      */
     AFTER_COMMIT,
   }

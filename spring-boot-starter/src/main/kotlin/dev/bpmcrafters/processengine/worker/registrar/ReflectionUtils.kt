@@ -152,14 +152,14 @@ fun Method.getTopic(): String {
  * Returns the auto-completion flag from annotation.
  */
 fun Method.getAutoComplete(): Boolean {
-  return this.getAnnotation(ProcessEngineWorker::class.java).autoComplete
+  return AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.autoComplete
 }
 
 /**
  * Returns the auto-completion flag from annotation.
  */
 fun Method.getCompletion(): Completion {
-  return this.getAnnotation(ProcessEngineWorker::class.java).completion
+  return AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.completion
 }
 
 /**
@@ -168,11 +168,23 @@ fun Method.getCompletion(): Completion {
  * @since 0.8.0
  */
 fun Method.getLockDuration(): Long? {
-  val lockDuration = this.getAnnotation(ProcessEngineWorker::class.java).lockDuration
+  val lockDuration = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.lockDuration
   return if (lockDuration == ProcessEngineWorker.DEFAULT_UNSET_LOCK_DURATION) {
     null
   } else {
     lockDuration
+  }
+}
+
+/**
+ * Returns the tenant id, configured on the annotation or null if it is not set.
+ * @return tenant id, or null if the default should be used.
+ * @since 0.8.4
+ */
+fun Method.getTenantId(): String? {
+  val tenantId = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.tenantId
+  return tenantId.ifBlank {
+    null
   }
 }
 

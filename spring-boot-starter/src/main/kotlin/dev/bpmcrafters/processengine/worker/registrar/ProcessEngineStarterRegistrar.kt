@@ -8,15 +8,9 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAU
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
-import dev.bpmcrafters.processengineapi.task.CompleteTaskByErrorCmd
-import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
-import dev.bpmcrafters.processengineapi.task.FailTaskCmd
-import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
-import dev.bpmcrafters.processengineapi.task.SubscribeForTaskCmd
-import dev.bpmcrafters.processengineapi.task.TaskInformation
-import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
-import dev.bpmcrafters.processengineapi.task.TaskType
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengineapi.CommonRestrictions
+import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -88,11 +82,16 @@ class ProcessEngineStarterRegistrar(
 
       val completion = method.getCompletion()
       val customLockDuration = method.getLockDuration()
-      val restrictions = if (customLockDuration == null) {
-        mapOf()
-      } else {
-        mapOf("workerLockDurationInMilliseconds" to customLockDuration.toString()) // FIXME replace with constant introduced in Process Engine API 1.6
-      }
+      val tenantId = method.getTenantId() ?: processEngineWorkerProperties.tenantId
+
+      val restrictions: Map<String, String> = mutableMapOf<String, String>().apply {
+        if (customLockDuration != null) {
+          this[CommonRestrictions.WORKER_LOCK_DURATION_IN_MILLISECONDS] = customLockDuration.toString()
+        }
+        if (tenantId != null) {
+          this[CommonRestrictions.TENANT_ID] = tenantId
+        }
+      }.toMap()
 
       // check if the method or class is marked to run in transaction
       val isTransactional = method.isTransactional()

@@ -4,9 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.context.annotation.Profile
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import java.text.SimpleDateFormat
 
@@ -21,4 +25,10 @@ class TestApplication {
     registerModule(JavaTimeModule())
     dateFormat = SimpleDateFormat("yyyy-MM-dd'T'hh:MM:ss.SSSz")
   }
+
+  @Bean
+  @Primary
+  @Profile("!jpa-idempotency")
+  fun inMemIdempotencyRegistry(): IdempotencyRegistry = InMemoryIdempotencyRegistry()
+
 }

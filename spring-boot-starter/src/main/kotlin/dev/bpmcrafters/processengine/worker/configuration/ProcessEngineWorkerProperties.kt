@@ -26,6 +26,10 @@ data class ProcessEngineWorkerProperties(
    * if the completion of a task was successful but the removal of a task result was not.
    */
   var removeTaskResultOnCompletion: Boolean = true,
+  /**
+   * Default tenant id to use for all workers.
+   */
+  var tenantId: String? = null,
 ) {
   companion object {
     const val DEFAULT_PREFIX = "dev.bpm-crafters.process-api.worker"
