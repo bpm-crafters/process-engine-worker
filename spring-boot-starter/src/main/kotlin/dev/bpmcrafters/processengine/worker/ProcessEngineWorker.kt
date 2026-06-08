@@ -40,7 +40,7 @@ annotation class ProcessEngineWorker(
    */
   val lockDuration: Long = DEFAULT_UNSET_LOCK_DURATION,
   /**
-   * Tenant ID to subscribe this worker for. Defaults to "__unset" representing no tenant.
+   * Tenant ID to subscribe this worker for. Defaults to empty string representing no tenant.
    */
   val tenantId: String = "",
 ) {
