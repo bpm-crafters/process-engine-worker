@@ -42,7 +42,7 @@ annotation class ProcessEngineWorker(
   /**
    * Tenant ID to subscribe this worker for. Defaults to "__unset" representing no tenant.
    */
-  val tenantId: String = DEFAULT_UNSET_TENANT_ID,
+  val tenantId: String = "",
 ) {
   companion object {
     /**
@@ -51,14 +51,10 @@ annotation class ProcessEngineWorker(
     const val DEFAULT_UNSET_TOPIC = "__unset"
 
     /**
-     * Null value for the tenant.
-     */
-    const val DEFAULT_UNSET_TENANT_ID = "__unset"
-
-    /**
      * Sentinel value indicating lock duration is not specified.
      */
     const val DEFAULT_UNSET_LOCK_DURATION = -1L
+
   }
 
   /**
