@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import java.lang.reflect.Method
 import kotlin.test.Test
 
 internal class TxAnnotationDetectionTest {
@@ -12,53 +13,53 @@ internal class TxAnnotationDetectionTest {
   @Test
   fun `detect spring tx annotations`() {
     // class level
-    SpringTxAnnotatedClazz::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazz::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedClazzRequiresNew::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzRequiresNew::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedClazzSupports::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzSupports::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedClazzMandatory::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzMandatory::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedClazzNever::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzNever::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    SpringTxAnnotatedClazzNotSupported::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzNotSupported::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    SpringTxAnnotatedClazzNested::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedClazzNested::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
 
     // method level
-    SpringTxAnnotatedMethod::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethod::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedMethodRequiresNew::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodRequiresNew::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedMethodSupports::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodSupports::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedMethodMandatory::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodMandatory::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    SpringTxAnnotatedMethodNever::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodNever::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    SpringTxAnnotatedMethodNotSupported::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodNotSupported::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    SpringTxAnnotatedMethodNested::class.java.declaredMethods.first().let { method ->
+    SpringTxAnnotatedMethodNested::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
 
     // none
-    PlainComponent::class.java.declaredMethods.first().let { method ->
+    PlainComponent::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
   }
@@ -66,47 +67,47 @@ internal class TxAnnotationDetectionTest {
   @Test
   fun `detects jakarta tx annotations`() {
     // class level
-    JakartaTxAnnotatedClazz::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazz::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedClazzRequiresNew::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazzRequiresNew::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedClazzSupports::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazzSupports::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedClazzMandatory::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazzMandatory::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedClazzNever::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazzNever::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    JakartaTxAnnotatedClazzNotSupported::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedClazzNotSupported::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
 
     // method level
-    JakartaTxAnnotatedMethod::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethod::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedMethodRequiresNew::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethodRequiresNew::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedMethodSupports::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethodSupports::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedMethodMandatory::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethodMandatory::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isTrue()
     }
-    JakartaTxAnnotatedMethodNever::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethodNever::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
-    JakartaTxAnnotatedMethodNotSupported::class.java.declaredMethods.first().let { method ->
+    JakartaTxAnnotatedMethodNotSupported::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
 
     // none
-    PlainComponent::class.java.declaredMethods.first().let { method ->
+    PlainComponent::class.java.executeMethod().let { method ->
       assertThat(method.isTransactional()).isFalse()
     }
 
@@ -302,3 +303,5 @@ internal class TxAnnotationDetectionTest {
     fun execute() {}
   }
 }
+
+private fun Class<*>.executeMethod(): Method = getDeclaredMethod("execute")
