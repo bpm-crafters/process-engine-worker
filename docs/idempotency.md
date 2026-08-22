@@ -16,17 +16,52 @@ When a worker is triggered, the process engine worker:
 
 There are three available implementations of the `IdempotencyRegistry`:
 
-| Implementation                | Description                                       | Recommended Use                                   |
-|-------------------------------|---------------------------------------------------|---------------------------------------------------|
-| `NoOpIdempotencyRegistry`     | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
-| `InMemoryIdempotencyRegistry` | Stores results in a local `ConcurrentHashMap`.    | Testing or non-clustered environments.            |
-| `JpaIdempotencyRegistry`      | Stores results in a database using JPA.           | Production, clustered environments.               |
+| Implementation                                                | Description                                       | Recommended Use                                   |
+|---------------------------------------------------------------|---------------------------------------------------|---------------------------------------------------|
+| `NoOpIdempotencyRegistry`                                     | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
+| `InMemoryIdempotencyRegistry`                                 | Stores results in a local `ConcurrentHashMap`.    | Testing or non-clustered environments.            |
+| `JpaIdempotencyRegistry` / `EntityManagerJpaIdempotencyRegistry` | Stores results in a database using JPA.        | Production, clustered environments.               |
 
-## Setup Procedures
+The interface, the no-op and the in-memory registry are part of `process-engine-worker-core` and therefore available in all
+frameworks. The JPA based registries share the module `process-engine-worker-idempotency-registry-jpa`, which contains the
+`TaskLogEntry` entity (table `task_log_entry_`), the `TaskResultMapConverter` and the framework-free
+`EntityManagerJpaIdempotencyRegistry`. Spring Boot adds a Spring Data based `JpaIdempotencyRegistry` on top of it
+(`process-engine-worker-spring-boot-idempotency-registry-jpa`), Quarkus uses the `EntityManagerJpaIdempotencyRegistry` directly.
+Both use the same database schema.
+
+If the worker is transactional, results are registered only after the transaction has been committed (in-memory registry) or
+inside the worker's transaction (JPA registries), so a rolled-back worker never leaves a result behind. Results are removed after a
+successful completion if `dev.bpm-crafters.process-api.worker.remove-task-result-on-completion` is `true` (default).
+
+### Result serialization
+
+The JPA registries store the result map in the `result_` column as binary data. The serialization is pluggable via
+`TaskResultMapSerializer.DEFAULT`:
+
+| Serializer                       | Description                                                                                              |
+|----------------------------------|----------------------------------------------------------------------------------------------------------|
+| `JavaTaskResultMapSerializer`    | Default. Java serialization, all values of the result map must be `Serializable`. Compatible with previous versions. |
+| `JacksonTaskResultMapSerializer` | JSON serialization using a Jackson `ObjectMapper`. Values are read back as plain JSON-compatible values (maps, lists, strings, numbers, booleans), not as the original classes. Suitable for native images. |
+
+`TaskResultMapSerializer.DEFAULT` is a JVM-wide setting shared by all persistence units and application contexts in the same
+process. To switch the serializer, set it once on startup before the first entity is persisted:
+
+```java
+TaskResultMapSerializer.setDEFAULT(new JacksonTaskResultMapSerializer(objectMapper));
+```
+
+or in Kotlin:
+
+```kotlin
+TaskResultMapSerializer.DEFAULT = JacksonTaskResultMapSerializer(objectMapper)
+```
+
+## Spring Boot
 
 ### In-Memory Registry
 
-To use the in-memory registry, you need to provide a bean of type `IdempotencyRegistry` in your Spring configuration:
+To use the in-memory registry, you need to provide a bean of type `IdempotencyRegistry` in your Spring configuration. The starter
+installs the Spring transaction synchronization on the registry, so results are registered after commit:
 
 ```kotlin
 @Configuration
@@ -57,6 +92,7 @@ Add the following dependency to your `pom.xml`:
 ```
 
 The `JpaIdempotencyAutoConfiguration` will automatically register the `JpaIdempotencyRegistry` if an `EntityManager` is present and no other `IdempotencyRegistry` bean is defined.
+The module depends on the shared `process-engine-worker-idempotency-registry-jpa` module providing the entity.
 
 #### 2. Configure JPA
 
@@ -151,3 +187,95 @@ databaseChangeLog:
 ```
 
 > **Note:** The `result_` column type should be suitable for storing binary data (e.g., `blob` for most databases, `bytea` for PostgreSQL).
+
+The same changeSet (or an equivalent Flyway migration) is used for Quarkus, since both frameworks share the entity.
+
+## Quarkus
+
+### In-Memory Registry
+
+Provide the registry via a CDI producer. It replaces the `@DefaultBean` no-op registry of the extension. If `quarkus-narayana-jta`
+is present, the extension installs the JTA after-commit hook on the registry automatically, so results of transactional workers are
+registered only after a successful commit:
+
+```java
+@Singleton
+public class IdempotencyConfiguration {
+
+  @Produces
+  @ApplicationScoped
+  public IdempotencyRegistry idempotencyRegistry() {
+    return new InMemoryIdempotencyRegistry();
+  }
+}
+```
+
+> **Warning:** The `InMemoryIdempotencyRegistry` is not suitable for clustered environments as the state is not shared between nodes.
+
+### JPA-based Registry
+
+#### 1. Add Dependencies
+
+Add the shared JPA module together with Hibernate ORM, JTA and a JDBC driver to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-idempotency-registry-jpa</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-hibernate-orm</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-narayana-jta</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jdbc-postgresql</artifactId> <!-- or any other driver -->
+</dependency>
+```
+
+As soon as Hibernate ORM (enabled, i.e. `quarkus.hibernate-orm.enabled` not set to `false`) and the module are present, the worker
+extension produces an `EntityManagerJpaIdempotencyRegistry` bound to the `EntityManager` of the default persistence unit and the JTA
+`TransactionalExecutor` instead of the no-op registry. The produced registry is a `@DefaultBean`, so an own `IdempotencyRegistry`
+bean (e.g. via `@Produces`) still takes precedence. Using the JPA registry without `quarkus-narayana-jta` fails the build, and
+the registry requires the default persistence unit (a default datasource): if only named persistence units are configured, the
+application fails at startup with `PROCESS-ENGINE-WORKER-036` — provide an own `IdempotencyRegistry` bean in that case.
+
+#### 2. Configure JPA
+
+No `@EntityScan` equivalent is needed: the extension adds the entity `dev.bpmcrafters.processengine.worker.idempotency.TaskLogEntry`
+and its converter to the default persistence unit at build time. Registry reads and writes join the transaction of a transactional
+worker or run in their own transaction otherwise.
+
+To relocate the entity into a different schema or rename the table or columns, use a `META-INF/orm.xml` as shown in the Spring Boot
+section above and reference it via `quarkus.hibernate-orm.mapping-files`.
+
+#### 3. Database Schema
+
+Create the `task_log_entry_` table using the Liquibase changeSet above (`quarkus-liquibase`), an equivalent Flyway migration
+(`quarkus-flyway`) or, for development only, let Hibernate generate it:
+
+```properties
+quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+```
+
+#### 4. Native images
+
+Java serialization is not available for arbitrary classes in native images. Switch the result serializer to Jackson on startup:
+
+```java
+@Singleton
+public class IdempotencySerializerConfiguration {
+
+  void onStart(@Observes StartupEvent event, ObjectMapper objectMapper) {
+    TaskResultMapSerializer.setDEFAULT(new JacksonTaskResultMapSerializer(objectMapper));
+  }
+}
+```
+
+> **Note:** Results stored with the Java serializer can not be read with the Jackson serializer and vice versa. Switch the serializer
+> only on an empty `task_log_entry_` table.

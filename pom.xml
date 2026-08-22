@@ -22,6 +22,18 @@
     <process-engine-api.version>1.7</process-engine-api.version>
     <process-engine-adapters-c7.version>2026.07.1</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2026.07.1</process-engine-adapters-c8.version>
+    <!-- versions for framework-independent modules (kept in sync with the spring-boot-dependencies BOM) -->
+    <spring-framework.version>6.2.19</spring-framework.version>
+    <jackson.version>2.21.4</jackson.version>
+    <micrometer.version>1.15.12</micrometer.version>
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
+    <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
+    <hibernate.version>6.6.53.Final</hibernate.version>
+    <h2.version>2.3.232</h2.version>
+    <slf4j.version>2.0.18</slf4j.version>
+    <!-- QUARKUS -->
+    <quarkus.version>3.38.1</quarkus.version>
+    <jandex-maven-plugin.version>3.2.7</jandex-maven-plugin.version>
     <!-- TEST -->
     <mockito.version>6.3.0</mockito.version>
     <assertj.version>3.27.7</assertj.version>
@@ -30,8 +42,11 @@
   </properties>
 
   <modules>
-    <module>spring-boot-idempotency-registry-jpa</module>
+    <module>core</module>
+    <module>idempotency-registry-jpa</module>
     <module>spring-boot-starter</module>
+    <module>spring-boot-idempotency-registry-jpa</module>
+    <module>quarkus</module>
   </modules>
 
   <dependencyManagement>
@@ -45,6 +60,26 @@
         <groupId>org.mockito.kotlin</groupId>
         <artifactId>mockito-kotlin</artifactId>
         <version>${mockito.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-api</groupId>
+        <artifactId>process-engine-api</artifactId>
+        <version>${process-engine-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-api</groupId>
+        <artifactId>process-engine-api-impl</artifactId>
+        <version>${process-engine-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+        <artifactId>process-engine-worker-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+        <artifactId>process-engine-worker-idempotency-registry-jpa</artifactId>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
