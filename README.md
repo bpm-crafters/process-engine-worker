@@ -157,8 +157,14 @@ To run it, you have several options:
 
 ### Running locally using self-managed Camunda 8
 
-1. Start `docker-compose.yaml` (this will start containerized Zeebe locally)
+1. Start `docker-compose.yaml` (this starts the consolidated Camunda 8 orchestration
+   container — Zeebe + Operate + Tasklist — plus Elasticsearch): `docker compose up -d`
+   from the `examples/order-fulfillment` directory.
 2. Start `FulfillmentProcessApplication` activating Spring profile `c8sm`.
+
+The Operate / Tasklist UI is available at http://localhost:8088 (login `demo` / `demo`).
+The application's own REST API / OpenAPI UI runs on http://localhost:8080 — this is why
+the orchestration container is published on `8088` rather than `8080`.
 
 ### Running using Camunda SaaS
 
