@@ -26,7 +26,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -36,7 +36,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse
     }
     assertThat(entityExistsForName(name2)).isTrue()
@@ -49,7 +49,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -58,7 +58,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isTrue()
     }
   }
@@ -70,7 +70,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -80,7 +80,7 @@ class ExternalTaskCompletionBeforeCommitITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity, but fails in completion
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse
     }
 

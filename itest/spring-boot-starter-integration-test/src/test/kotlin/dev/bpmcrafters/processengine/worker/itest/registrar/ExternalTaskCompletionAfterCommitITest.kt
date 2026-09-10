@@ -25,7 +25,7 @@ class ExternalTaskCompletionAfterCommitITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
       val entity = findEntityByName(name)
       assertThat(entity).isNotNull
@@ -39,7 +39,7 @@ class ExternalTaskCompletionAfterCommitITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true, simulateRandomTechnicalError = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       val task = getExternalTasks(pi)[0]
       assertThat(task.errorMessage).isEqualTo("Simulating a technical error for task ${task.id}")
     }

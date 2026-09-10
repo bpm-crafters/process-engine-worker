@@ -12,7 +12,9 @@ import org.springframework.validation.annotation.Validated
 data class ProcessEngineWorkerProperties(
   /**
    * Determines whether the workers are automatically registered.
+   * This property is not evaluated. Use `dev.bpm-crafters.process-api.worker.enabled` to switch the registration off.
    */
+  @Deprecated("Not evaluated, use the property 'enabled' instead.")
   var registerProcessWorkers: Boolean = true,
   /**
    * Determines whether tasks are completed before transaction commit.
@@ -32,6 +34,15 @@ data class ProcessEngineWorkerProperties(
   var tenantId: String? = null,
 ) {
   companion object {
-    const val DEFAULT_PREFIX = "dev.bpm-crafters.process-api.worker"
+    const val DEFAULT_PREFIX = ProcessEngineWorkerConfiguration.DEFAULT_PREFIX
   }
+
+  /**
+   * Maps the properties to the framework-independent configuration.
+   */
+  fun toConfiguration(): ProcessEngineWorkerConfiguration = ProcessEngineWorkerConfiguration(
+    completeTasksBeforeCommit = completeTasksBeforeCommit,
+    removeTaskResultOnCompletion = removeTaskResultOnCompletion,
+    tenantId = tenantId
+  )
 }

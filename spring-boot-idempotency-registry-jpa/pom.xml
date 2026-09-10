@@ -26,6 +26,11 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>process-engine-worker-idempotency-registry-jpa</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>process-engine-worker-spring-boot-starter</artifactId>
       <version>${project.version}</version>
     </dependency>

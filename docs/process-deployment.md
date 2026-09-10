@@ -3,7 +3,10 @@ title: Process Deployment
 ---
 
 Process Deployment supports deployments of process resources like BPMN and DMN files to the Process Engine.
-It is built on top of the Process Engine API and provides a simple way to deploy process resources automatically on spring boot startup.
+It is built on top of the Process Engine API and provides a simple way to deploy process resources automatically on Spring Boot startup.
+
+> **Note:** Process Deployment is currently available for Spring Boot only (as part of `process-engine-worker-spring-boot-starter`).
+> Support for the [Quarkus extension](./quarkus.md) is planned as a follow-up.
 
 Add the Process Engine Worker dependency to your projects classpath and you are ready to go. In Maven add the following to your `pom.xml`:
 

@@ -1,30 +1,30 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
-import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
-import dev.bpmcrafters.processengine.worker.FailJobException
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion
-import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.BEFORE_COMMIT
-import dev.bpmcrafters.processengine.worker.ProcessEngineWorker.Completion.DEFAULT
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
-import dev.bpmcrafters.processengineapi.CommonRestrictions
-import dev.bpmcrafters.processengineapi.task.*
+import dev.bpmcrafters.processengine.worker.transaction.AfterCommitHookAware
+import dev.bpmcrafters.processengine.worker.transaction.SpringAfterCommitHook
+import dev.bpmcrafters.processengine.worker.transaction.SpringTransactionalExecutor
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.TaskInformation
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.aop.framework.Advised
+import org.springframework.aop.support.AopUtils
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
-import java.lang.reflect.Method
-import java.time.Duration
-import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
 
 /**
  * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
+ * Acts as Spring [BeanPostProcessor] and delegates to the framework-independent [ProcessEngineWorkerRegistrar].
  * @since 0.0.3
  */
 @AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
@@ -49,257 +49,64 @@ class ProcessEngineStarterRegistrar(
   private val idempotencyRegistry: IdempotencyRegistry
 ) : BeanPostProcessor {
 
-  private val exceptionResolver = ExceptionResolver()
+  /*
+   * The core registrar is created lazily, the collaborators are lazy proxies and must not be touched before the first worker is registered.
+   */
+  private val registrar: ProcessEngineWorkerRegistrar by lazy {
+    // the registry is a lazy proxy, install the transaction synchronization on its target (covers registries not seen by this post processor)
+    installAfterCommitHook(idempotencyRegistry)
+    ProcessEngineWorkerRegistrar(
+      configuration = processEngineWorkerProperties.toConfiguration(),
+      taskSubscriptionApi = taskSubscriptionApi,
+      taskCompletionApi = taskCompletionApi,
+      variableConverter = variableConverter,
+      parameterResolver = parameterResolver,
+      resultResolver = resultResolver,
+      transactionalExecutor = SpringTransactionalExecutor(transactionalTemplate),
+      processEngineWorkerMetrics = processEngineWorkerMetrics,
+      idempotencyRegistry = idempotencyRegistry
+    )
+  }
 
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
-    val annotatedProcessEngineWorkers = bean.getAnnotatedWorkers()
-
-    if (annotatedProcessEngineWorkers.isNotEmpty()) {
-      logger.debug { "PROCESS-ENGINE-WORKER-001: Detected ${annotatedProcessEngineWorkers.size} annotated workers on $beanName." }
-      logger.trace { "PROCESS-ENGINE-WORKER-001: Detected annotated workers on $beanName are: ${annotatedProcessEngineWorkers.map { it.name }}." }
+    // install transaction synchronization on components requiring it (e.g. in-memory idempotency registry).
+    // this has to be done on the raw bean, since the injected registry is a lazy proxy.
+    if (bean is AfterCommitHookAware) {
+      logger.debug { "PROCESS-ENGINE-WORKER-003: Installing Spring transaction synchronization on $beanName." }
+      bean.afterCommitHook = SpringAfterCommitHook
     }
-    annotatedProcessEngineWorkers.forEach { method ->
-
-      val topic = method.getTopic()
-      // detects among all result resolver if the specified payload may be converted to payload return type
-      val payloadReturnType = resultResolver.payloadReturnType(method)
-      val autoCompleteTask = method.getAutoComplete()
-
-      // report misconfiguration because: the user selected to autocomplete, there is no result converter and the method has a non-void result.
-      // so probably this result is not converted as payload - and either there should be no result
-      // or there should be a matching converter strategy inside the result resolver
-      if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
-        logger.warn { "PROCESS-ENGINE-WORKER-002: Found an unambiguous process task worker defined in $beanName#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
-      }
-
-      val annotatedVariableParameters = method.parameters.filter { it.isVariable() }
-
-      val variableNames = if (annotatedVariableParameters.isNotEmpty()) {
-        annotatedVariableParameters.extractVariableNames() // explicit variable names
-      } else {
-        null // null means no limitation
-      }
-
-      val completion = method.getCompletion()
-      val customLockDuration = method.getLockDuration()
-      val tenantId = method.getTenantId() ?: processEngineWorkerProperties.tenantId
-
-      val restrictions: Map<String, String> = mutableMapOf<String, String>().apply {
-        if (customLockDuration != null) {
-          this[CommonRestrictions.WORKER_LOCK_DURATION_IN_MILLISECONDS] = customLockDuration.toString()
-        }
-        if (tenantId != null) {
-          this[CommonRestrictions.TENANT_ID] = tenantId
-        }
-      }.toMap()
-
-      // check if the method or class is marked to run in transaction
-      val isTransactional = method.isTransactional()
-
-      val subscription = taskSubscriptionApi.subscribeForTask(
-        subscribe(
-          topic = topic,
-          payloadDescription = variableNames,
-          restrictions = restrictions,
-          autoCompleteTask = autoCompleteTask,
-          completion = completion,
-          isTransactional = isTransactional,
-          payloadReturnType = payloadReturnType,
-          method = method,
-        ) { taskInformation, payload ->
-          val args: Array<Any?> = parameterResolver.createInvocationArguments(
-            method = method,
-            taskInformation = taskInformation,
-            payload = payload,
-            variableConverter = variableConverter,
-            taskCompletionApi = taskCompletionApi
-          )
-          method.invoke(bean, *args) // spread the array
-        }
-      )
-      subscription.get()
+    val targetClass = AopUtils.getTargetClass(bean)
+    if (targetClass.getAnnotatedWorkers().isNotEmpty()) {
+      registrar.registerWorkers(bean = bean, targetClass = targetClass, beanName = beanName)
     }
     return bean
   }
 
-  /**
-   * Executes the subscription.
-   * @param topic subscription topic.
-   * @param payloadDescription description of the variables to be passed.
-   * @param restrictions map of restrictions like customLockDuration for the worker
-   * @param autoCompleteTask flag indicating if the task should be completed after execution of the worker.
-   * @param isTransactional flag indicating if the task worker and task completion should run in a transaction.
-   * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
-   * @param method process engine worker method.
-   * @param actionWithResult worker always returning the result.
-   */
-  private fun subscribe(
-    topic: String,
-    payloadDescription: Set<String>? = emptySet(),
-    restrictions: Map<String, String> = mapOf(),
-    autoCompleteTask: Boolean,
-    completion: Completion,
-    isTransactional: Boolean,
-    payloadReturnType: Boolean,
-    method: Method,
-    actionWithResult: TaskHandlerWithResult
-  ): SubscribeForTaskCmd = SubscribeForTaskCmd(
-    restrictions = restrictions,
-    taskType = TaskType.EXTERNAL,
-    taskDescriptionKey = topic,
-    payloadDescription = payloadDescription,
-    action = { taskInformation, payload ->
-      try {
-        processEngineWorkerMetrics.taskReceived(topic)
-        // depending on transactional annotations, execute either in a new transaction or direct
-        if (isTransactional) {
-          val completeBeforeCommit = completeBeforeCommit(completion)
-          val txResult = transactionalTemplate.execute {
-            val result = workerAndApiInvocation(taskInformation, payload, actionWithResult, payloadReturnType, method)
-            if (autoCompleteTask && completeBeforeCommit) {
-              logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} before commit" }
-              completeTask(taskInformation, result)
-              processEngineWorkerMetrics.taskCompleted(topic)
-            }
-            result
-          }
-          if (autoCompleteTask && !completeBeforeCommit) {
-            logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} after commit" }
-            completeTask(taskInformation, requireNotNull(txResult))
-            processEngineWorkerMetrics.taskCompleted(topic)
-          }
-        } else {
-          val resultPayload = workerAndApiInvocation(taskInformation, payload, actionWithResult, payloadReturnType, method)
-          if (autoCompleteTask) {
-            logger.trace { "PROCESS-ENGINE-WORKER-016: auto completing task ${taskInformation.taskId} (there is and was no transaction)" }
-            completeTask(taskInformation, resultPayload)
-            processEngineWorkerMetrics.taskCompleted(topic)
-          }
-        }
-      } catch (e: Exception) {
-        handleAndReportException(taskInformation, e, topic)
-      }
-    },
-    termination = {
-      logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task ${it.taskId} from topic $topic" }
-    }
-  )
-
   /*
-   * Encapsulates as a function to call it directly or inside of transaction.
-   * Includes idempotency protection and returns the result right away, if already invoked.
+   * Unwraps Spring proxies (lazy resolution proxies, AOP proxies) and installs the after-commit hook on the target, if required.
    */
-  private fun workerAndApiInvocation(
-    taskInformation: TaskInformation,
-    payload: Map<String, Any?>,
-    actionWithResult: TaskHandlerWithResult,
-    payloadReturnType: Boolean,
-    method: Method
-  ): Map<String, Any?> {
-    var result = idempotencyRegistry.getTaskResult(taskInformation)
-    if (result == null) {
-      logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
-      val typedResult = actionWithResult.invoke(taskInformation, payload)
-      logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
-      // convert
-      result = if (payloadReturnType) {
-        resultResolver.resolve(method = method, result = typedResult)
-      } else {
-        mapOf()
-      }
-      idempotencyRegistry.register(taskInformation, result)
+  private fun installAfterCommitHook(registry: IdempotencyRegistry) {
+    var target: Any? = registry
+    while (target is Advised) {
+      target = target.targetSource.target
     }
-    return result
-  }
-
-  /*
-   * Completes the task.
-   */
-  private fun completeTask(taskInformation: TaskInformation, payload: Map<String, Any?>) {
-    taskCompletionApi.completeTask(CompleteTaskCmd(taskInformation.taskId) { payload }).get()
-    if (processEngineWorkerProperties.removeTaskResultOnCompletion) {
-      logger.debug { "PROCESS-ENGINE-WORKER-018: Removing result of task ${taskInformation.taskId}" }
-      idempotencyRegistry.removeTaskResult(taskInformation.taskId)
+    if (target is AfterCommitHookAware) {
+      logger.debug { "PROCESS-ENGINE-WORKER-003: Installing Spring transaction synchronization on ${target.javaClass.simpleName}." }
+      target.afterCommitHook = SpringAfterCommitHook
     }
   }
-
-  /*
-   * Encapsulate error detection and reporting.
-   */
-  private fun handleAndReportException(taskInformation: TaskInformation, e: Exception, topic: String) {
-    val cause = exceptionResolver.getCause(e)
-    if (cause is BpmnErrorOccurred) {
-      try {
-        taskCompletionApi.completeTaskByError(
-          CompleteTaskByErrorCmd(
-            taskId = taskInformation.taskId,
-            errorCode = cause.errorCode,
-            errorMessage = cause.message,
-            payloadSupplier = { cause.payload }
-          )
-        ).get()
-        processEngineWorkerMetrics.taskCompletedByError(topic)
-        logger.trace { "PROCESS-ENGINE-WORKER-012: external task worker thrown an BPMN Error ${cause.errorCode}" }
-      } catch (ee: ExecutionException) {
-        cause.addSuppressed(exceptionResolver.getCause(ee))
-        logger.error(cause) { "PROCESS-ENGINE-WORKER-011: Exception while reporting BPMN Error for external task worker" }
-      }
-    } else {
-      try {
-        val retry = calculateRetry(taskInformation = taskInformation, cause = cause)
-        taskCompletionApi.failTask(
-          FailTaskCmd(
-            taskId = taskInformation.taskId,
-            reason = cause.message ?: "Exception during execution of external task worker",
-            errorDetails = cause.stackTraceToString(),
-            retryCount = retry.retryCount,
-            retryBackoff = retry.retryBackoff
-          )
-        ).get()
-        processEngineWorkerMetrics.taskFailed(topic)
-      } catch (ee: ExecutionException) {
-        cause.addSuppressed(exceptionResolver.getCause(ee))
-      } finally {
-        logger.error(cause) { "PROCESS-ENGINE-WORKER-011: Exception during execution of external task worker" }
-      }
-    }
-  }
-
-  internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
-    val retryCount = if (cause is FailJobException) {
-      cause.retryCount
-    } else {
-      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
-    }
-    val retryBackoff = if (cause is FailJobException) {
-      cause.retryBackoff
-    } else {
-      null
-    }
-    return FailureRetry(
-      retryCount = retryCount,
-      retryBackoff = retryBackoff
-    )
-  }
-
-  internal fun completeBeforeCommit(complete: Completion): Boolean =
-    if (complete == DEFAULT) {
-      processEngineWorkerProperties.completeTasksBeforeCommit
-    } else {
-      complete == BEFORE_COMMIT
-    }
 
   /**
-   * Task handler as a function.
+   * Calculates the retry information for a failed task.
+   * @see ProcessEngineWorkerRegistrar.calculateRetry
    */
-  fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
+  internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): ProcessEngineWorkerRegistrar.FailureRetry =
+    registrar.calculateRetry(taskInformation, cause)
 
   /**
-   * Failure retry information.
+   * Determines if the task should be completed before the commit of the transaction.
+   * @see ProcessEngineWorkerRegistrar.completeBeforeCommit
    */
-  data class FailureRetry(
-    val retryCount: Int?,
-    val retryBackoff: Duration?
-  )
+  internal fun completeBeforeCommit(complete: Completion): Boolean = registrar.completeBeforeCommit(complete)
 
 }
