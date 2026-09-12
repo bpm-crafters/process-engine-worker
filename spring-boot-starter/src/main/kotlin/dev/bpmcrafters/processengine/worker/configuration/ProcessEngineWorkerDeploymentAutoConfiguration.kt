@@ -17,7 +17,7 @@ import org.springframework.core.io.support.ResourcePatternResolver
  */
 @AutoConfiguration
 @EnableConfigurationProperties(ProcessEngineWorkerDeploymentProperties::class)
-@ConditionalOnBean(DeploymentApi::class)
+//@ConditionalOnBean(DeploymentApi::class)
 class ProcessEngineWorkerDeploymentAutoConfiguration {
 
   /**

@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: process-engine-worker-example-camunda7-remote-retry-backoff
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    try-it-out-enabled: true
+
+logging:
+  level:
+    org.springframework.context.support.[PostProcessorRegistrationDelegate$BeanPostProcessorChecker]: ERROR
+
+feign:
+  client:
+    config:
+      default:
+        url: "http://localhost:9090/engine-rest/"
+
+dev:
+  bpm-crafters:
+    process-api:
+      worker:
+        deployment:
+          enabled: true
+        backoff-exceptions:
+          "[java.net.ConnectException]": PT10S
+      adapter:
+        c7remote:
+          enabled: true
+          service-tasks:
+            worker-id: ${random.uuid}
+            delivery-strategy: remote_scheduled
+            lock-time-in-seconds: 60
+            retries: 0
+          user-tasks:
+            delivery-strategy: disabled

@@ -35,7 +35,7 @@ data class ProcessEngineWorkerProperties(
    * Throwables that should be retried with a backoff. The retry counter for tasks that are being backed off from will not be decreased.
    *
    * Be careful with this setting, as it can lead to infinite loops.
-   * Warnings will be logged whenever a task is being backed off from so you can monitor and resolve issues.
+   * Errors will still be logged, even if a task is being backed off from, so you can monitor and resolve issues.
    */
   var backoffExceptions: MutableMap<Class<out Throwable>, Duration> = mutableMapOf()
 ) {
