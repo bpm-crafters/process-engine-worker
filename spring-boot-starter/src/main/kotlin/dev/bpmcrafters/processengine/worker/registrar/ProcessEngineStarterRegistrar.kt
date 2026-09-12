@@ -276,8 +276,8 @@ class ProcessEngineStarterRegistrar(
       while (t != null) {
         retryBackoff = processEngineWorkerProperties.backoffExceptions[t.javaClass]
         if (retryBackoff != null) {
-          retryCount = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)
-          logger.warn(cause) { "PROCESS-ENGINE-WORKER-019: Backing off from task ${taskInformation.taskId}" }
+          // We need at least one retry to not have the process engine run into an incident.
+          retryCount = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES) ?: 1
           break
         }
         t = t.cause

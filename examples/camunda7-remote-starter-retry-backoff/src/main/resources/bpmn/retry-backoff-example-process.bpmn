@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1tbjsw7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.46.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.22.0">
+  <bpmn:error id="Error_17tnhi1" name="ERROR" />
+  <bpmn:process id="retry-backoff-example-process" name="Retry Backoff Example Process" isExecutable="true" camunda:historyTimeToLive="365">
+    <bpmn:startEvent id="Event_0wyh767">
+      <bpmn:outgoing>Flow_1bd2fyo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="Event_0divvt6">
+      <bpmn:incoming>Flow_19qszo5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1bd2fyo" sourceRef="Event_0wyh767" targetRef="do-stuff" />
+    <bpmn:sequenceFlow id="Flow_19qszo5" sourceRef="do-stuff" targetRef="Event_0divvt6" />
+    <bpmn:serviceTask id="do-stuff" name="Do stuff" camunda:type="external" camunda:topic="example.retry-backoff.do-stuff">
+      <bpmn:incoming>Flow_1bd2fyo</bpmn:incoming>
+      <bpmn:outgoing>Flow_19qszo5</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="retry-backoff-example-process">
+      <bpmndi:BPMNShape id="Event_0wyh767_di" bpmnElement="Event_0wyh767">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0divvt6_di" bpmnElement="Event_0divvt6">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1s91skr_di" bpmnElement="do-stuff">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1bd2fyo_di" bpmnElement="Flow_1bd2fyo">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19qszo5_di" bpmnElement="Flow_19qszo5">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
