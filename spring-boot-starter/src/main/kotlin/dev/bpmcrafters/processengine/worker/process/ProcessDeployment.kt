@@ -27,12 +27,13 @@ open class ProcessDeployment(
    * Deploys resources, configured via properties.
    */
   open fun deployResources(): DeploymentInformation? {
+    logger.info { "PROCESS-ENGINE-WORKER-052: Deploying resource(s)." }
     val namedResources = buildList<Resource> {
       try {
         addAll(resourcePatternResolver.getResources(deploymentProperties.bpmnResourcePattern))
         addAll(resourcePatternResolver.getResources(deploymentProperties.dmnResourcePattern))
       } catch (e: IOException) {
-        logger.warn(e) { "PROCESS-ENGINE-WORKER-051: Failed to load resources for deployment." }
+        logger.warn(e) { "PROCESS-ENGINE-WORKER-051: Failed to load resource(s) for deployment." }
       }
     }.map { resource -> NamedResource(resource.filename ?: "unknown", resource.inputStream) }
 
@@ -44,7 +45,7 @@ open class ProcessDeployment(
       DeployBundleCommand(resources = namedResources)
     ).get(deploymentProperties.deploymentTimeoutInSeconds, TimeUnit.SECONDS)
       .also { deploymentResult ->
-        logger.info { "PROCESS-ENGINE-WORKER-050: Deployed ${namedResources.size} resources with key ${deploymentResult.deploymentKey}." }
+        logger.info { "PROCESS-ENGINE-WORKER-050: Deployed ${namedResources.size} resource(s) with key ${deploymentResult.deploymentKey}." }
       }
   }
 }

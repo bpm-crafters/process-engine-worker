@@ -266,15 +266,26 @@ class ProcessEngineStarterRegistrar(
   }
 
   internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
-    val retryCount = if (cause is FailJobException) {
-      cause.retryCount
-    } else {
-      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
-    }
-    val retryBackoff = if (cause is FailJobException) {
-      cause.retryBackoff
-    } else {
-      null
+    var retryCount: Int? = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
+    var retryBackoff: Duration? = null
+    if (cause is FailJobException) {
+      retryCount = cause.retryCount
+      retryBackoff = cause.retryBackoff
+    } else if (processEngineWorkerProperties.backoffExceptions.isNotEmpty()) {
+      var t: Throwable? = cause
+      while (t != null) {
+        retryBackoff = processEngineWorkerProperties.backoffExceptions[t.javaClass]
+        if (retryBackoff != null) {
+          // We need at least one retry to not have the process engine run into an incident.
+          retryCount = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES) ?: 1
+          break
+        }
+        t = t.cause
+        if (t == cause) {
+          // Sometimes cause chains can be cyclic. This is to prevent infinite loops.
+          break
+        }
+      }
     }
     return FailureRetry(
       retryCount = retryCount,

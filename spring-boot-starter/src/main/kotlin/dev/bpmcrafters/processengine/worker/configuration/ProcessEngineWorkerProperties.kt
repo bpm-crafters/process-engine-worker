@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.configuration
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.validation.annotation.Validated
+import java.time.Duration
 
 /**
  * Configuration properties allowing simple switch off/on of auto-registration.
@@ -30,6 +31,13 @@ data class ProcessEngineWorkerProperties(
    * Default tenant id to use for all workers.
    */
   var tenantId: String? = null,
+  /**
+   * Throwables that should be retried with a backoff. The retry counter for tasks that are being backed off from will not be decreased.
+   *
+   * Be careful with this setting, as it can lead to infinite loops.
+   * Errors will still be logged, even if a task is being backed off from, so you can monitor and resolve issues.
+   */
+  var backoffExceptions: MutableMap<Class<out Throwable>, Duration> = mutableMapOf()
 ) {
   companion object {
     const val DEFAULT_PREFIX = "dev.bpm-crafters.process-api.worker"
