@@ -1,0 +1,14 @@
+---
+name: "Process Engine Worker"
+description: "Declarative external task workers (@ProcessEngineWorker) on top of the Process Engine API with build-time discovery"
+metadata:
+  keywords:
+    - "bpmn"
+    - "process-engine"
+    - "worker"
+    - "external-task"
+    - "camunda"
+  guide: "https://github.com/bpm-crafters/process-engine-worker"
+  categories:
+    - "business-automation"
+  status: "preview"

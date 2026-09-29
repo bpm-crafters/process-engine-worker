@@ -25,6 +25,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+      <artifactId>process-engine-worker-core</artifactId>
+    </dependency>
+    <dependency>
       <groupId>dev.bpm-crafters.process-engine-api</groupId>
       <artifactId>process-engine-api</artifactId>
       <version>${process-engine-api.version}</version>

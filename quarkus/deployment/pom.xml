@@ -1,0 +1,144 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-quarkus-parent</artifactId>
+    <version>0.8.6-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>process-engine-worker-quarkus-deployment</artifactId>
+  <name>${project.artifactId}</name>
+  <description>Quarkus extension for the Process Engine Worker (deployment)</description>
+
+  <properties>
+    <!-- java-only module: javadoc jar is created by the maven-javadoc-plugin in the release profile -->
+    <dokka.skip>true</dokka.skip>
+    <!-- the parent pom points the source directories to src/(main|test)/kotlin -->
+    <kp.mainSources>${project.basedir}/src/main/java</kp.mainSources>
+    <kp.testSources>${project.basedir}/src/test/java</kp.testSources>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+      <artifactId>process-engine-worker-quarkus</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-core-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jackson-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <!-- lightweight SPI (depends on quarkus-core-deployment only) providing AdditionalJpaModelBuildItem;
+           the full quarkus-hibernate-orm-deployment is NOT required to build the extension -->
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-deployment-spi</artifactId>
+    </dependency>
+
+    <!-- TEST -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit-internal</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-narayana-jta-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-micrometer-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+      <artifactId>process-engine-worker-idempotency-registry-jpa</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-api</groupId>
+      <artifactId>process-engine-api-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>java-compile</id>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>io.quarkus</groupId>
+                  <artifactId>quarkus-extension-processor</artifactId>
+                  <version>${quarkus.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <doclint>none</doclint>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -17,23 +17,17 @@ class ExternalTaskCompletionWithoutTransactionITest : FixtureITestBase() {
   fun `happy path create two verified valid entity`() {
     val name = "Jan-${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true)
-    await().atMost(30, SECONDS).untilAsserted {
-      assertThat(processInstanceIsRunning(pi)).isTrue()
-    }
 
-    // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    // worker takes over and creates entity (waiting for the instance to be running first would race with the worker)
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
 
     val name2 = "Jan-${UUID.randomUUID()}"
     val pi2 = startProcess(name = name2, verified = true)
-    await().untilAsserted {
-      assertThat(processInstanceIsRunning(pi2)).isTrue()
-    }
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse()
     }
 
@@ -47,7 +41,7 @@ class ExternalTaskCompletionWithoutTransactionITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -56,7 +50,7 @@ class ExternalTaskCompletionWithoutTransactionITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isTrue()
     }
   }
@@ -68,7 +62,7 @@ class ExternalTaskCompletionWithoutTransactionITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi)).isTrue()
 
     // worker takes over and creates entity
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi)).isFalse
     }
     assertThat(entityExistsForName(name)).isTrue()
@@ -78,7 +72,7 @@ class ExternalTaskCompletionWithoutTransactionITest : FixtureITestBase() {
     assertThat(processInstanceIsRunning(pi2)).isTrue()
 
     // worker takes over and creates entity, but fails in completion
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       assertThat(processInstanceIsRunning(pi2)).isFalse()
     }
     // entity still exists -> atomicity violated

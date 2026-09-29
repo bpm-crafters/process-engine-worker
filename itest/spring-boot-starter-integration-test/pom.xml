@@ -42,7 +42,13 @@
         <configuration>
           <includes>
             <include>*ITest.class</include>
+            <!-- nested (static) test classes, e.g. the idempotency variants -->
+            <include>*ITest$*ITest.class</include>
           </includes>
+          <!-- override the default exclusion of nested classes (**/*$*) -->
+          <excludes>
+            <exclude>**/*Base.class</exclude>
+          </excludes>
         </configuration>
         <executions>
           <execution>

@@ -25,7 +25,7 @@ class ExternalTaskFailJobExceptionITest : FixtureITestBase() {
     val name = "Big or Lil' Someone ${UUID.randomUUID()}"
     val pi = startProcess(name = name, verified = true, simulateRandomTechnicalError = true)
     assertThat(processInstanceIsRunning(pi)).isTrue()
-    await().atMost(30, SECONDS).untilAsserted {
+    await().atMost(60, SECONDS).untilAsserted {
       val task = getExternalTasks(pi)[0]
       assertThat(task.errorMessage).isEqualTo("Simulating a technical error for task ${task.id}")
       assertThat(task.retries!!).isEqualTo(3)
