@@ -76,11 +76,23 @@ internal class ProcessEngineRegistrarRetryTest {
 
   @Test
   fun `no failure on cyclic chains`() {
-    val cause = RuntimeException(IllegalStateException())
-    cause.cause?.initCause(cause)
+    val cause2 = IllegalArgumentException()
+    val cause1 = IllegalStateException(cause2)
+    cause2.initCause(cause1)
+    val cause0 = RuntimeException(cause1)
     val task = TaskInformation(UUID.randomUUID().toString(), mapOf(TaskInformation.RETRIES to "3"))
-    val retry = testSubject.calculateRetry(task, cause)
+    val retry = testSubject.calculateRetry(task, cause0)
     assertThat(retry.retryCount).isEqualTo(2)
     assertThat(retry.retryBackoff).isNull()
   }
+
+  @Test
+  fun `backoff exceptions result in at least 1 retry`() {
+    val cause = IOException()
+    val task = TaskInformation(UUID.randomUUID().toString(), mapOf(/*No TaskInformation.RETRIES*/))
+    val retry = testSubject.calculateRetry(task, cause)
+    assertThat(retry.retryCount).isEqualTo(1)
+    assertThat(retry.retryBackoff).isEqualTo(5.minutes.toJavaDuration())
+  }
+
 }

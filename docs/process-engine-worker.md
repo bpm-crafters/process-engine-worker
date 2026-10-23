@@ -87,6 +87,12 @@ If the annotation `@org.springframework.transaction.annotation.Transactional` wi
 is used, the library will execute the worker method and the completion of the external task via API in the same transaction. This will lead to
 a transaction rollback, if the external task can't be completed (e.g. due to a network error).
 
+## Custom Retries and Backoffs
+
+In your code you can throw a `dev.bpmcrafters.processengine.worker.FailJobException` to manually manage retries and backoffs
+or you can configure `dev.bpm-crafters.process-api.worker.backoff-exceptions` to automatically back off for a specific duration
+and not decrement the retry counter.
+
 ## Configuration
 
 You can configure the Process Engine Worker by adding the following properties to your `application.properties` or `application.yml`:
@@ -99,10 +105,6 @@ dev:
         registerProcessWorkers: true # Enable or disable automatic worker registration
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
+      backoff-exceptions:
+        "[java.net.ConnectException]": PT10S # Enables retries for specific exceptions. This can be used to prevent incidents, e.g. when a service is not reachable.
 ```
-
-
-
-
-
-

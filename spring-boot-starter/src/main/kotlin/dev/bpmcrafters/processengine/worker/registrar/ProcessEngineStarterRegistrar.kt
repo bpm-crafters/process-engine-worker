@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
 import java.lang.reflect.Method
 import java.time.Duration
+import java.util.IdentityHashMap
 import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
@@ -273,6 +274,7 @@ class ProcessEngineStarterRegistrar(
       retryBackoff = cause.retryBackoff
     } else if (processEngineWorkerProperties.backoffExceptions.isNotEmpty()) {
       var t: Throwable? = cause
+      val seen = IdentityHashMap<Throwable, Boolean>()
       while (t != null) {
         retryBackoff = processEngineWorkerProperties.backoffExceptions[t.javaClass]
         if (retryBackoff != null) {
@@ -281,10 +283,11 @@ class ProcessEngineStarterRegistrar(
           break
         }
         t = t.cause
-        if (t == cause) {
+        if (seen[t] ?: false) {
           // Sometimes cause chains can be cyclic. This is to prevent infinite loops.
           break
         }
+        seen[t] = true
       }
     }
     return FailureRetry(
