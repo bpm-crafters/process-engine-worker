@@ -11,7 +11,7 @@ object TestHelper {
    * Camunda 7 Run test container.
    */
   class Camunda7RunTestContainer(tag: String) : GenericContainer<Camunda7RunTestContainer>(
-    "camunda/camunda-bpm-platform:$tag"
+    "bpmcrafters/camunda-bpm-platform:$tag"
   ) {
     init {
 
