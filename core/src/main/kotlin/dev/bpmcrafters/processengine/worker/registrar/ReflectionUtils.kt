@@ -1,3 +1,5 @@
+@file:JvmName("CoreReflectionUtilsKt")
+
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
@@ -128,22 +130,21 @@ fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
  * Retrieves list of worker methods.
  */
 fun Any.getAnnotatedWorkers(): List<Method> = javaClass.methods
-  .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata() != null }
+  .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata(javaClass) != null }
 
 /** Finds direct or interface worker metadata without depending on a framework annotation model. */
-fun Method.workerMetadata(): Method? {
+fun Method.workerMetadata(): Method? = workerMetadata(declaringClass)
+
+/** Includes interfaces introduced by the actual worker class when its implementation is inherited. */
+fun Method.workerMetadata(targetClass: Class<*>): Method? {
   if (isAnnotationPresent(ProcessEngineWorker::class.java)) return this
-  val inheritedTypes = declaringClass.interfaces.toList() + listOfNotNull(declaringClass.superclass)
+  val inheritedTypes = targetClass.interfaces.toList() + listOfNotNull(targetClass.superclass)
   val inherited = inheritedTypes.firstNotNullOfOrNull { type ->
     runCatching { type.getMethod(name, *parameterTypes) }.getOrNull()?.workerMetadata()
   }
   if (inherited != null) return inherited
-  return declaringClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
+  return targetClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
 }
-
-/** Resolves contracts introduced by the actual bean, even when its implementation is inherited. */
-fun Method.workerMetadata(beanClass: Class<*>): Method? = workerMetadata()
-  ?: beanClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
 
 /** Matches resolved generic parameters, rather than attributing an erased bridge to unrelated overloads. */
 private fun Method.genericWorkerMetadata(type: Type, bindings: Map<TypeVariable<*>, Type>): Method? {

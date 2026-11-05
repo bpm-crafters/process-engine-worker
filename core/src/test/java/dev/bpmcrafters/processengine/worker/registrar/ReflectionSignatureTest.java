@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.*;
 class ReflectionSignatureTest {
     @Test
     void resolvesNestedGenericArrayComponentsWithoutMatchingUnrelatedArrayOverloads() throws Exception {
-        assertThat(ReflectionUtilsKt.getAnnotatedWorkers(new NestedArrayWorker())).containsExactly(
+        assertThat(CoreReflectionUtilsKt.getAnnotatedWorkers(new NestedArrayWorker())).containsExactly(
                 NestedArrayWorker.class.getMethod("work", Integer[][].class));
     }
 
@@ -22,18 +22,18 @@ class ReflectionSignatureTest {
 
     @Test
     void acceptsUnboundedButNotBoundedOrIncompatiblePayloadSignatures() throws Exception {
-        assertThat(ReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("unbounded", Map.class))).isTrue();
-        assertThat(ReflectionUtilsKt.isPayload(Signatures.class.getMethod("unbounded", Map.class).getParameters()[0])).isTrue();
-        assertThat(ReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("bounded", Map.class))).isFalse();
-        assertThat(ReflectionUtilsKt.isPayload(Signatures.class.getMethod("bounded", Map.class).getParameters()[0])).isFalse();
-        assertThat(ReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("wrongKey"))).isFalse();
-        assertThat(ReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("wrongValue"))).isFalse();
+        assertThat(CoreReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("unbounded", Map.class))).isTrue();
+        assertThat(CoreReflectionUtilsKt.isPayload(Signatures.class.getMethod("unbounded", Map.class).getParameters()[0])).isTrue();
+        assertThat(CoreReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("bounded", Map.class))).isFalse();
+        assertThat(CoreReflectionUtilsKt.isPayload(Signatures.class.getMethod("bounded", Map.class).getParameters()[0])).isFalse();
+        assertThat(CoreReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("wrongKey"))).isFalse();
+        assertThat(CoreReflectionUtilsKt.hasPayloadReturnType(Signatures.class.getMethod("wrongValue"))).isFalse();
     }
 
     @Test
     void rejectsAnnotationLookupForUnannotatedMethodClearly() throws Exception {
         final var method = Signatures.class.getMethod("wrongKey");
-        assertThatThrownBy(() -> ReflectionUtilsKt.getTopic(method)).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> CoreReflectionUtilsKt.getTopic(method)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No @ProcessEngineWorker metadata");
     }
 

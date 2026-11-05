@@ -40,7 +40,7 @@ class ProcessEngineStarterRegistrar(
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val targetClass = AopUtils.getTargetClass(bean)
     val methods = targetClass.methods.map { BridgeMethodResolver.findBridgedMethod(it) }.distinct().mapNotNull { method ->
-      method.workerMetadata()?.let { metadata -> method to metadata }
+      method.workerMetadata(targetClass)?.let { metadata -> method to metadata }
     }
     // Do not resolve lazy collaborators while processing infrastructure beans.
     if (methods.isEmpty()) return bean
@@ -62,7 +62,8 @@ class ProcessEngineStarterRegistrar(
         method
       }
       val invocable = AopUtils.selectInvocableMethod(proxyMethod, bean.javaClass)
-      runtime.register(method, metadata, method.isTransactional() || metadata.isTransactional()) { arguments ->
+      // Match the method Spring intercepts, including interface metadata hidden by an inherited implementation.
+      runtime.register(method, metadata, invocable.isTransactional(targetClass)) { arguments ->
         invocable.invoke(bean, *arguments)
       }
     }
