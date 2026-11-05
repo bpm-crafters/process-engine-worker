@@ -3,8 +3,81 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter adds framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
+
+## Framework-neutral registration
+
+Add the core artifact instead of the Spring Boot starter:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-core</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Provide Process Engine API subscription and completion clients and a variable converter. This Java example
+uses only core and Process Engine API types:
+
+```java
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker;
+import dev.bpmcrafters.processengine.worker.Variable;
+import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerRegistrar;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi;
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi;
+import java.util.Map;
+
+public class PlainWorker {
+  @ProcessEngineWorker("greet")
+  public Map<String, Object> greet(@Variable("name") String name) {
+    return Map.of("greeting", "Hello " + name);
+  }
+
+  public static void register(TaskSubscriptionApi subscriptions,
+                              ServiceTaskCompletionApi completion,
+                              VariableConverter converter) {
+    var registrar = new ProcessEngineWorkerRegistrar(subscriptions, completion, converter);
+    registrar.register(new PlainWorker());
+  }
+}
+```
+
+The three-argument constructor supplies default parameter/result resolvers, no-op metrics and no-op
+idempotency storage. Plain-object registration discovers public worker methods, including inherited and
+interface metadata, and does not infer transactions. Registration waits for each subscription to complete.
+Compile with `-parameters` when you rely on parameter-name fallback rather than explicit variable names.
+
+Java shorthand annotations set `value`; Kotlin positional annotations set `topic` or `name`.
+The runtime resolves both aliases explicitly. Equal explicit aliases are valid; conflicting aliases fail
+registration. Unset aliases fall back to the method or parameter name. Core does not implement Spring
+meta-annotation synthesis.
+
+For framework integration, use the full constructor with `WorkerRuntimeOptions`, API clients, converters,
+resolvers, `WorkerTransactionExecutor`, metrics and an `IdempotencyRegistry`. Register each worker with
+`register(concreteMethod, metadataMethod, transactional, arguments -> managedMethod.invoke(managedProxy, arguments))`.
+Use the concrete target method for parameter and result types and the annotated interface method for inherited
+annotations. The existing three-argument overload remains available and resolves inherited annotations
+from its supplied method; pass a concrete method to retain its narrowed types. Plain-object registration
+discovers both methods automatically. Resolve compiler bridges and register each
+logical worker only once. For generic JDK proxies, invoke the exposed erased interface signature, not a
+narrowed implementation signature that the proxy does not expose.
+Keep annotation metadata separate from the invocable method so JDK and class proxies retain interception.
+The transaction executor must run the supplied action atomically and return after commit, propagating
+rollback and commit failures. `BEFORE_COMMIT` completes within that action; `AFTER_COMMIT` completes after
+the executor returns. Non-transactional workers complete directly; `autoComplete = false` leaves completion
+to the worker in every mode.
+
+Framework adapters own managed discovery, lifecycle/subscription shutdown, transaction execution and
+transaction-aware storage, configuration binding, and resource deployment. The Spring starter implements
+Spring discovery, proxy invocation, transaction execution, properties and startup deployment; core contains
+the shared subscription, argument/result resolution, invocation, retry/error handling and idempotency logic.
+Core has no Spring dependencies. Jackson and Micrometer integrations are optional: add their libraries
+when you use `JacksonVariableConverter` or Micrometer metrics. No Quarkus/CDI integration is included.
+
+## Spring Boot registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
@@ -100,9 +173,6 @@ dev:
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
-
-
-
 
 
 

@@ -10,8 +10,8 @@ import java.util.UUID
 
 internal class ProcessEngineRegistrarRetryTest {
 
-  val testSubject = ProcessEngineStarterRegistrar(
-    mock(),
+  val testSubject = ProcessEngineWorkerRegistrar(
+    WorkerRuntimeOptions(),
     mock(),
     mock(),
     mock(),

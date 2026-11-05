@@ -1,12 +1,8 @@
 package dev.bpmcrafters.processengine.worker.idempotency
 
-import dev.bpmcrafters.processengineapi.CommonRestrictions.PROCESS_INSTANCE_ID
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * In-memory local implementation of the registry.
@@ -16,41 +12,30 @@ import java.util.concurrent.ConcurrentLinkedQueue
  */
 class InMemoryIdempotencyRegistry : IdempotencyRegistry {
 
-  private val results = ConcurrentHashMap<String, Map<String, Any?>>()
-
-  private val taskIdsByProcessInstanceId = ConcurrentHashMap<String, Queue<String>>()
+  private val delegate = LocalInMemoryIdempotencyRegistry()
 
   override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) {
     if (TransactionSynchronizationManager.isActualTransactionActive()) {
       TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
 
         override fun afterCommit() {
-          doRegister(taskInformation, result)
+          delegate.register(taskInformation, result)
         }
 
       })
     } else {
-      doRegister(taskInformation, result)
+      delegate.register(taskInformation, result)
     }
   }
 
-  private fun doRegister(taskInformation: TaskInformation, result: Map<String, Any?>) {
-    results[taskInformation.taskId] = result
-    taskIdsByProcessInstanceId
-      .computeIfAbsent(taskInformation.meta[PROCESS_INSTANCE_ID] as String)
-      { ConcurrentLinkedQueue() }
-      .add(taskInformation.taskId)
-  }
-
-  override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = results[taskInformation.taskId]
+  override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = delegate.getTaskResult(taskInformation)
 
   override fun removeTaskResult(taskId: String) {
-    results.remove(taskId)
+    delegate.removeTaskResult(taskId)
   }
 
   override fun removeAllTaskResults(processInstanceId: String) {
-    val taskIds = taskIdsByProcessInstanceId.remove(processInstanceId)
-    taskIds?.forEach(results::remove)
+    delegate.removeAllTaskResults(processInstanceId)
   }
 
 }

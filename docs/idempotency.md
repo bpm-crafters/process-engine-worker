@@ -14,11 +14,12 @@ When a worker is triggered, the process engine worker:
 
 ## Implementations
 
-There are three available implementations of the `IdempotencyRegistry`:
+The registry contract lives in `process-engine-worker-core`. Available implementations include:
 
 | Implementation                | Description                                       | Recommended Use                                   |
 |-------------------------------|---------------------------------------------------|---------------------------------------------------|
 | `NoOpIdempotencyRegistry`     | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
+| `LocalInMemoryIdempotencyRegistry` | Core-only immediate local storage, without transaction synchronization. | Plain Java tests or non-transactional, non-clustered applications. |
 | `InMemoryIdempotencyRegistry` | Stores results in a local `ConcurrentHashMap`.    | Testing or non-clustered environments.            |
 | `JpaIdempotencyRegistry`      | Stores results in a database using JPA.           | Production, clustered environments.               |
 
@@ -39,6 +40,18 @@ class IdempotencyConfiguration {
 ```
 
 > **Warning:** The `InMemoryIdempotencyRegistry` is not suitable for clustered environments as the state is not shared between nodes.
+
+The Spring starter retains `dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry`
+and its zero-argument constructor. It delegates storage to the core implementation but publishes new results
+only after a Spring transaction commits. Rollback discards pending writes; registration outside a transaction
+writes immediately. This also applies when you construct the registry yourself as a custom bean.
+
+Core's `LocalInMemoryIdempotencyRegistry` writes immediately and does not provide rollback protection.
+Other framework adapters must supply transaction-aware storage or synchronization when worker execution
+uses transactions. Neither in-memory implementation provides atomic duplicate suppression across concurrent
+invocations or nodes. Successful automatic completion removes cached results by default; configure
+`WorkerRuntimeOptions.removeTaskResultOnCompletion` for programmatic registration or the existing Spring
+property for the starter. Manual completion remains the worker's responsibility.
 
 ### JPA-based Registry
 

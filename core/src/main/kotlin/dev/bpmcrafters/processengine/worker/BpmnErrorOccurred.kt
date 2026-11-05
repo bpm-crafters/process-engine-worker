@@ -20,4 +20,3 @@ open class BpmnErrorOccurred(
    */
   val payload: Map<String, Any> = mapOf()
 ) : Exception(message)
-
