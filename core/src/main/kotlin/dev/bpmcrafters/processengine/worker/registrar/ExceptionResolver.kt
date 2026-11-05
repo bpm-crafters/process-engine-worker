@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.registrar
 import java.lang.reflect.UndeclaredThrowableException
 import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.CompletionException
 
 /**
  * Utility to help unwrapping exceptions.
@@ -32,7 +33,7 @@ class ExceptionResolver {
         e
       }
 
-      is ExecutionException -> if (e.cause != null) {
+      is ExecutionException, is CompletionException -> if (e.cause != null) {
         getCause(e.cause!!)
       } else {
         e

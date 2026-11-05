@@ -3,7 +3,7 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter adds framework integration. It abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter and Quarkus extension add framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
 
 ## Framework-neutral registration
@@ -75,7 +75,7 @@ transaction-aware storage, configuration binding, and resource deployment. The S
 Spring discovery, proxy invocation, transaction execution, properties and startup deployment; core contains
 the shared subscription, argument/result resolution, invocation, retry/error handling and idempotency logic.
 Core has no Spring dependencies. Jackson and Micrometer integrations are optional: add their libraries
-when you use `JacksonVariableConverter` or Micrometer metrics. No Quarkus/CDI integration is included.
+when you use `JacksonVariableConverter` or Micrometer metrics.
 
 ## Spring Boot registration
 
@@ -121,6 +121,18 @@ The `@ProcessEngineWorker` annotation supports the following properties:
 | `completion`   | `enum`    | `DEFAULT`   | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                 |
 | `lockDuration` | `long`    | `-1`        | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                               |
 | `tenantId`     | `String`  | `""`        | Optional tenant id to be used for current worker during the registration. Any non-blank value will be considered. If the value is empty, the value from the property will be used.                             |
+
+## Quarkus registration
+
+Use `process-engine-worker-quarkus` to discover CDI workers and retain their interceptors.
+Annotate a plain `@ApplicationScoped` or `@Singleton` bean with the same core
+`@ProcessEngineWorker` and `@Variable` method/parameter annotations. Supply the
+Process Engine API clients as CDI beans; the extension supplies the Quarkus Jackson
+converter and manages subscriptions and request contexts.
+
+See the [Quarkus guide](quarkus.md) for dependencies, configuration, Jakarta transaction
+semantics, resource deployment and a runnable example. The later Transactional support
+and Configuration sections describe the Spring Boot integration, not Quarkus configuration.
 
 ## Method parameter resolution
 
@@ -173,6 +185,4 @@ dev:
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
-
-
 

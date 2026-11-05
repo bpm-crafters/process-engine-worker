@@ -141,6 +141,10 @@ fun Method.workerMetadata(): Method? {
   return declaringClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
 }
 
+/** Resolves contracts introduced by the actual bean, even when its implementation is inherited. */
+fun Method.workerMetadata(beanClass: Class<*>): Method? = workerMetadata()
+  ?: beanClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
+
 /** Matches resolved generic parameters, rather than attributing an erased bridge to unrelated overloads. */
 private fun Method.genericWorkerMetadata(type: Type, bindings: Map<TypeVariable<*>, Type>): Method? {
   val owner = type.rawClass() ?: return null

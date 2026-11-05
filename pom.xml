@@ -31,6 +31,8 @@
 
   <modules>
     <module>core</module>
+    <module>quarkus-extension</module>
+    <module>quarkus-idempotency-registry-jpa</module>
     <module>spring-boot-idempotency-registry-jpa</module>
     <module>spring-boot-starter</module>
   </modules>

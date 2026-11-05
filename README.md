@@ -8,10 +8,22 @@
 
 ## Purpose of the library
 
-A small opinionated annotated-based SpringBoot worker implementation for creation of 
-external task workers using Process-Engine-API.
+A small, annotation-based worker library for external tasks using Process Engine API.
+Use framework-neutral core, the Spring Boot starter, or the Quarkus extension.
 
-## How to use 
+## Quarkus
+
+Add `dev.bpm-crafters.process-engine-worker:process-engine-worker-quarkus`
+with version `${process-engine-worker.version}` to a Quarkus 3.40 LTS (3.40.1.1)
+application. Supply CDI `TaskSubscriptionApi` and `ServiceTaskCompletionApi` beans
+from your engine adapter, then annotate a method on an `@ApplicationScoped` or
+`@Singleton` bean with `@ProcessEngineWorker`. The extension does not bundle an engine adapter.
+
+See the [Quarkus guide](docs/quarkus.md) for configuration, Jakarta transactions,
+deployment and optional JPA idempotency. The [runnable Quarkus demo](examples/quarkus-worker)
+uses an in-memory demo adapter and needs no external engine or database.
+
+## How to use with Spring Boot
 
 Add the following dependency to your project's class path:
 
@@ -183,4 +195,3 @@ HTTP client tests using your IntelliJ, located in the example directory.
 Don't forget to first deploy the process! 
 Either manually via operate / modeler, or with the HTTP client script: 
 c8-deploy-process.http
-

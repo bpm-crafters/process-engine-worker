@@ -2,7 +2,10 @@
 title: Idempotency Registry
 ---
 
-The Idempotency Registry is a feature designed to prevent duplicate worker invocations. It ensures that if a task is processed multiple times (e.g., due to network issues or retries in the process engine), the worker logic is only executed once, and the previous result is returned for subsequent calls.
+The Idempotency Registry caches worker results by task ID. A redelivery can replay a
+stored result instead of invoking business logic again. This is not an exactly-once
+guarantee: concurrent deliveries can both miss the cache, and successful automatic
+completion removes the result by default.
 
 ## How it Works
 
@@ -26,6 +29,8 @@ The registry contract lives in `process-engine-worker-core`. Available implement
 ## Setup Procedures
 
 ### In-Memory Registry
+
+The following example uses Spring. For Quarkus, see [Quarkus registries](#quarkus-registries).
 
 To use the in-memory registry, you need to provide a bean of type `IdempotencyRegistry` in your Spring configuration:
 
@@ -164,3 +169,40 @@ databaseChangeLog:
 ```
 
 > **Note:** The `result_` column type should be suitable for storing binary data (e.g., `blob` for most databases, `bytea` for PostgreSQL).
+
+## Quarkus registries
+
+The Quarkus extension defaults to `NoOpIdempotencyRegistry`. Supply a CDI
+`IdempotencyRegistry` bean to override it. For local tests, produce
+`dev.bpmcrafters.processengine.worker.quarkus.JtaInMemoryIdempotencyRegistry`
+with an injected `jakarta.transaction.TransactionSynchronizationRegistry`:
+
+```kotlin
+@jakarta.enterprise.context.ApplicationScoped
+class RegistryConfiguration {
+  @jakarta.enterprise.inject.Produces
+  @jakarta.inject.Singleton
+  fun registry(
+    transactions: jakarta.transaction.TransactionSynchronizationRegistry
+  ): IdempotencyRegistry = JtaInMemoryIdempotencyRegistry(transactions)
+}
+```
+
+Import `IdempotencyRegistry` from `dev.bpmcrafters.processengine.worker.idempotency`
+and `JtaInMemoryIdempotencyRegistry` from the package above. This local registry
+stages writes and removals in JTA transactions; commit publishes them and rollback
+discards them. It is not shared between application instances.
+
+For persistent storage, add
+`dev.bpm-crafters.process-engine-worker:process-engine-worker-quarkus-idempotency-registry-jpa`
+with version `${process-engine-worker.version}`. CDI selection follows
+**application registry > JPA registry > no-op registry**. The JPA registry uses
+the default persistence unit; the application supplies its JDBC driver and schema migrations.
+
+See the [Quarkus JPA registry guide](../quarkus-idempotency-registry-jpa/README.md)
+for the Spring-compatible `task_log_entry_` schema, Java object serialization format
+and native serialization registration. Every result graph must be serializable.
+Register custom, nested, polymorphic and historical payload classes for native
+serialization, for example with `@RegisterForReflection(serialization = true)`.
+Common Java/Kotlin containers are registered by the extension; arbitrary application
+payloads are not. None of these registries suppress concurrent duplicate execution.

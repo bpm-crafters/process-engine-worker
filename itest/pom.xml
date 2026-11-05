@@ -21,6 +21,7 @@
   </properties>
 
   <modules>
+    <module>quarkus-extension-integration-test</module>
     <module>spring-boot-integration-testing</module>
     <module>spring-boot-starter-integration-test</module>
   </modules>

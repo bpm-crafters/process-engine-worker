@@ -14,6 +14,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.reflect.Method
 import java.time.Duration
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.atomic.AtomicBoolean
 
 private val logger = KotlinLogging.logger {}
 
@@ -60,24 +61,73 @@ class ProcessEngineWorkerRegistrar(
     register(method, requireNotNull(method.workerMetadata()), isTransactional, invoker)
   }
 
+  /** Coordinates the entire delivery, including cache hits and deferred completion, without duplicating core semantics. */
+  fun register(method: Method, metadataMethod: Method, coordinator: WorkerDeliveryCoordinator, invoker: WorkerInvoker) {
+    val topic = metadataMethod.getTopic()
+    val payloadReturnType = resultResolver.payloadReturnType(method)
+    warnUnsupportedReturn(method, metadataMethod.getAutoComplete(), payloadReturnType)
+    val subscription = SubscribeForTaskCmd(
+      restrictions = restrictions(metadataMethod),
+      taskType = TaskType.EXTERNAL,
+      taskDescriptionKey = topic,
+      payloadDescription = variableDescription(method, metadataMethod),
+      action = { task, payload ->
+        val delivery = object : WorkerDelivery {
+          private val failureReported = AtomicBoolean()
+          override fun autoComplete() = metadataMethod.getAutoComplete()
+          override fun completeBeforeCommit() = this@ProcessEngineWorkerRegistrar.completeBeforeCommit(metadataMethod.getCompletion())
+          override fun cachedResult() = idempotencyRegistry.getTaskResult(task)
+          override fun invoke(): Any? = invoker.invoke(parameterResolver.createInvocationArguments(
+            method, metadataMethod, task, payload, variableConverter, taskCompletionApi
+          ))
+          override fun processResult(result: Any?) = resolveAndRegister(task, result, payloadReturnType, method, snapshot = true)
+          override fun complete(result: Map<String, Any?>) {
+            completeTask(task, result)
+            processEngineWorkerMetrics.taskCompleted(topic)
+          }
+          override fun reportFailure(failure: Throwable) {
+            if (failureReported.compareAndSet(false, true)) reportDeliveryFailure(task, failure, topic)
+          }
+        }
+        try {
+          processEngineWorkerMetrics.taskReceived(topic)
+          coordinator.deliver(delivery)
+        } catch (failure: Throwable) {
+          delivery.reportFailure(failure)
+        }
+      },
+      termination = { logger.debug { "PROCESS-ENGINE-WORKER-010: Terminating task ${it.taskId} from topic $topic" } }
+    )
+    taskSubscriptionApi.subscribeForTask(subscription).get()
+  }
+
+  /** Coordinated deliveries have one terminal reporting owner; reporter failures are not new task failures. */
+  private fun reportDeliveryFailure(task: TaskInformation, failure: Throwable, topic: String) {
+    val original = exceptionResolver.getCause(failure)
+    try {
+      handleAndReportException(task, original, topic)
+    } catch (reportingFailure: Throwable) {
+      val reportingCause = exceptionResolver.getCause(reportingFailure)
+      if (reportingCause !== original) original.addSuppressed(reportingCause)
+      logger.error(original) { "PROCESS-ENGINE-WORKER-011: Exception while reporting failure for external task worker" }
+    }
+  }
+
+  private fun variableDescription(method: Method, metadataMethod: Method): Set<String>? = method.parameters
+    .mapIndexed { index, parameter -> if (parameter.isVariable()) parameter else metadataMethod.parameters[index] }
+    .filter { it.isVariable() }
+    .takeIf { it.isNotEmpty() }
+    ?.extractVariableNames()
+
   /** Keeps concrete parameter/result types separate from inherited annotation metadata. */
   fun register(method: Method, metadataMethod: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
     val topic = metadataMethod.getTopic()
     val payloadReturnType = resultResolver.payloadReturnType(method)
     val autoCompleteTask = metadataMethod.getAutoComplete()
 
-    if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
-      logger.warn { "PROCESS-ENGINE-WORKER-002: Found an unambiguous process task worker defined in ${method.declaringClass.name}#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
-    }
+    warnUnsupportedReturn(method, autoCompleteTask, payloadReturnType)
 
-    val annotatedVariableParameters = method.parameters.mapIndexed { index, parameter ->
-      if (parameter.isVariable()) parameter else metadataMethod.parameters[index]
-    }.filter { it.isVariable() }
-    val variableNames = if (annotatedVariableParameters.isNotEmpty()) {
-      annotatedVariableParameters.extractVariableNames()
-    } else {
-      null // null means no limitation
-    }
+    val variableNames = variableDescription(method, metadataMethod)
 
     val subscription = taskSubscriptionApi.subscribeForTask(
       subscribe(
@@ -102,6 +152,12 @@ class ProcessEngineWorkerRegistrar(
       }
     )
     subscription.get()
+  }
+
+  private fun warnUnsupportedReturn(method: Method, autoCompleteTask: Boolean, payloadReturnType: Boolean) {
+    if (autoCompleteTask && !method.hasVoidReturnType() && !payloadReturnType) {
+      logger.warn { "PROCESS-ENGINE-WORKER-002: Found an unambiguous process task worker defined in ${method.declaringClass.name}#${method.name} having non-void and not payload compatible return type and auto-complete set to true." }
+    }
   }
 
   private fun restrictions(method: Method): Map<String, String> = buildMap {
@@ -188,14 +244,17 @@ class ProcessEngineWorkerRegistrar(
       logger.trace { "PROCESS-ENGINE-WORKER-015: invoking external task worker for ${taskInformation.taskId}" }
       val typedResult = actionWithResult.invoke(taskInformation, payload)
       logger.trace { "PROCESS-ENGINE-WORKER-017: successfully invoked external task worker for ${taskInformation.taskId}" }
-      // convert
-      result = if (payloadReturnType) {
-        resultResolver.resolve(method = method, result = typedResult)
-      } else {
-        mapOf()
-      }
-      idempotencyRegistry.register(taskInformation, result)
+      result = resolveAndRegister(taskInformation, typedResult, payloadReturnType, method)
     }
+    return result
+  }
+
+  private fun resolveAndRegister(
+    task: TaskInformation, typedResult: Any?, payloadReturnType: Boolean, method: Method, snapshot: Boolean = false
+  ): Map<String, Any?> {
+    val resolved = if (payloadReturnType) resultResolver.resolve(method, typedResult) else mapOf()
+    val result = if (snapshot) java.util.Collections.unmodifiableMap(LinkedHashMap(resolved)) else resolved
+    idempotencyRegistry.register(task, result)
     return result
   }
 
@@ -213,7 +272,7 @@ class ProcessEngineWorkerRegistrar(
   /*
    * Encapsulate error detection and reporting.
    */
-  private fun handleAndReportException(taskInformation: TaskInformation, e: Exception, topic: String) {
+  private fun handleAndReportException(taskInformation: TaskInformation, e: Throwable, topic: String) {
     val cause = exceptionResolver.getCause(e)
     if (cause is BpmnErrorOccurred) {
       try {

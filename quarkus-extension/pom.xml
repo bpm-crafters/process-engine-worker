@@ -1,0 +1,65 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-root</artifactId>
+    <version>0.8.6-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>process-engine-worker-quarkus-parent</artifactId>
+  <packaging>pom</packaging>
+  <properties><quarkus.version>3.40.1.1</quarkus.version></properties>
+  <modules><module>runtime</module><module>deployment</module></modules>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId><artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version><type>pom</type><scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <quarkus.http.test-port>0</quarkus.http.test-port>
+            <quarkus.http.test-ssl-port>0</quarkus.http.test-ssl-port>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-maven-plugin</artifactId>
+        <configuration>
+          <!-- Do not inherit the root's Spring compiler preset. -->
+          <compilerPlugins combine.self="override">
+            <plugin>all-open</plugin>
+            <plugin>no-arg</plugin>
+            <plugin>jpa</plugin>
+          </compilerPlugins>
+          <pluginOptions combine.self="override">
+            <option>all-open:annotation=io.quarkus.runtime.annotations.Recorder</option>
+            <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
+            <option>all-open:annotation=jakarta.enterprise.context.RequestScoped</option>
+            <option>all-open:annotation=jakarta.enterprise.context.SessionScoped</option>
+            <option>all-open:annotation=jakarta.inject.Singleton</option>
+            <option>all-open:annotation=jakarta.interceptor.Interceptor</option>
+            <option>all-open:annotation=jakarta.transaction.Transactional</option>
+            <option>all-open:annotation=jakarta.ws.rs.Path</option>
+            <option>all-open:annotation=jakarta.persistence.Entity</option>
+            <option>all-open:annotation=jakarta.persistence.MappedSuperclass</option>
+            <option>all-open:annotation=jakarta.persistence.Embeddable</option>
+            <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
+            <option>all-open:annotation=io.quarkus.test.junit.QuarkusIntegrationTest</option>
+          </pluginOptions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId>
+        <configuration><release>17</release><parameters>true</parameters></configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
