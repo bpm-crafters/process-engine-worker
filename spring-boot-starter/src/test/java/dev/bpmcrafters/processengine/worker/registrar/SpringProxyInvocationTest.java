@@ -154,6 +154,18 @@ class SpringProxyInvocationTest {
         @ProcessEngineWorker("generic") R work(@Variable("number") T number);
     }
     public interface SpecializedContract<T> extends GenericContract<T, Map<String, Object>> {}
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void discoversSubclassInterfaceMetadataForInheritedImplementation(final boolean classProxy) {
+        assertPayloadThroughProxy(new InheritedImplementationWorker(), classProxy, Map.of("number", "42"), Map.of("number", 42));
+    }
+
+    public static class InheritedImplementationBase {
+        public Map<String, Object> work(final Integer number) { return Map.of("number", number); }
+        public Map<String, Object> work(final String unrelated) { throw new AssertionError("Unannotated overload"); }
+    }
+    public static class InheritedImplementationWorker extends InheritedImplementationBase implements SpecializedContract<Integer> {}
     public static class GenericWorker implements SpecializedContract<Integer> {
         @Override public Map<String, Object> work(final Integer number) { return Map.of("number", number); }
         public Map<String, Object> work(final String unrelated) { throw new AssertionError("Unannotated overload"); }

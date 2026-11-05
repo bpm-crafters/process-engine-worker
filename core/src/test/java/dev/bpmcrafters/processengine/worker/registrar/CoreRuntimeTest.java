@@ -62,11 +62,11 @@ class CoreRuntimeTest {
 
     @Test
     void acceptsEqualAliasesAndDefaultsAndRejectsConflicts() throws Exception {
-        assertThat(ReflectionUtilsKt.getTopic(Aliases.class.getMethod("equal", String.class))).isEqualTo("same");
-        assertThat(ReflectionUtilsKt.extractVariableName(Aliases.class.getMethod("equal", String.class)
+        assertThat(CoreReflectionUtilsKt.getTopic(Aliases.class.getMethod("equal", String.class))).isEqualTo("same");
+        assertThat(CoreReflectionUtilsKt.extractVariableName(Aliases.class.getMethod("equal", String.class)
                 .getParameters()[0])).isEqualTo("same");
-        assertThat(ReflectionUtilsKt.getTopic(Aliases.class.getMethod("defaults", String.class))).isEqualTo("defaults");
-        assertThat(ReflectionUtilsKt.extractVariableName(Aliases.class.getMethod("defaults", String.class)
+        assertThat(CoreReflectionUtilsKt.getTopic(Aliases.class.getMethod("defaults", String.class))).isEqualTo("defaults");
+        assertThat(CoreReflectionUtilsKt.extractVariableName(Aliases.class.getMethod("defaults", String.class)
                 .getParameters()[0])).isEqualTo("argument");
         assertThatThrownBy(() -> runtime(false, false).register(new ConflictingTopic()))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Conflicting annotation aliases");
@@ -77,7 +77,7 @@ class CoreRuntimeTest {
     @Test
     void instantiatesJavaVariableConverter() throws Exception {
         final var parameter = ConvertedWorker.class.getMethod("run", String.class).getParameters()[0];
-        assertThat(ReflectionUtilsKt.extractVariableConverter(parameter, new JacksonVariableConverter(new ObjectMapper())))
+        assertThat(CoreReflectionUtilsKt.extractVariableConverter(parameter, new JacksonVariableConverter(new ObjectMapper())))
                 .isInstanceOf(JavaConverter.class);
         runtime(false, false).register(new ConvertedWorker());
         command().getAction().accept(task, Map.of("input", "hello"));
@@ -370,13 +370,13 @@ class CoreRuntimeTest {
 
     @Test
     void discoveredConcreteMethodsRetainPublicAnnotationHelpers() {
-        final var method = ReflectionUtilsKt.getAnnotatedWorkers(new CovariantWorker()).get(0);
+        final var method = CoreReflectionUtilsKt.getAnnotatedWorkers(new CovariantWorker()).get(0);
         assertThat(method.getReturnType()).isEqualTo(Map.class);
-        assertThat(ReflectionUtilsKt.getTopic(method)).isEqualTo("covariant");
-        assertThat(ReflectionUtilsKt.getAutoComplete(method)).isTrue();
-        assertThat(ReflectionUtilsKt.getCompletion(method)).isEqualTo(ProcessEngineWorker.Completion.DEFAULT);
-        assertThat(ReflectionUtilsKt.getLockDuration(method)).isNull();
-        assertThat(ReflectionUtilsKt.getTenantId(method)).isNull();
+        assertThat(CoreReflectionUtilsKt.getTopic(method)).isEqualTo("covariant");
+        assertThat(CoreReflectionUtilsKt.getAutoComplete(method)).isTrue();
+        assertThat(CoreReflectionUtilsKt.getCompletion(method)).isEqualTo(ProcessEngineWorker.Completion.DEFAULT);
+        assertThat(CoreReflectionUtilsKt.getLockDuration(method)).isNull();
+        assertThat(CoreReflectionUtilsKt.getTenantId(method)).isNull();
     }
 
     @Test
@@ -401,6 +401,25 @@ class CoreRuntimeTest {
         @ProcessEngineWorker("generic") R work(@Variable("number") T number);
     }
     public interface SpecializedContract<T> extends GenericContract<T, Map<String, Object>> {}
+
+    @Test
+    void discoversSubclassInterfaceMetadataForInheritedImplementation() {
+        runtime(false, false).register(new InheritedImplementationWorker());
+        final var command = command();
+        verify(subscriptions, times(1)).subscribeForTask(any());
+        assertThat(command.getTaskDescriptionKey()).isEqualTo("generic");
+        assertThat(command.getPayloadDescription()).containsExactly("number");
+        command.getAction().accept(task, Map.of("number", "42"));
+        final var completed = ArgumentCaptor.forClass(CompleteTaskCmd.class);
+        verify(completion).completeTask(completed.capture());
+        assertThat(completed.getValue().get()).containsEntry("number", 42);
+    }
+
+    public static class InheritedImplementationBase {
+        public Map<String, Object> work(final Integer number) { return Map.of("number", number); }
+        public Map<String, Object> work(final String unrelated) { throw new AssertionError("Unannotated overload"); }
+    }
+    public static class InheritedImplementationWorker extends InheritedImplementationBase implements SpecializedContract<Integer> {}
     public static class GenericWorker implements SpecializedContract<Integer> {
         @Override public Map<String, Object> work(final Integer number) { return Map.of("number", number); }
         public Map<String, Object> work(final String unrelated) { throw new AssertionError("Unannotated overload"); }
