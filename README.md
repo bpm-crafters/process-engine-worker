@@ -21,7 +21,7 @@ from your engine adapter, then annotate a method on an `@ApplicationScoped` or
 
 See the [Quarkus guide](docs/quarkus.md) for configuration, Jakarta transactions,
 deployment and optional JPA idempotency. The [runnable Quarkus demo](examples/quarkus-worker)
-uses an in-memory demo adapter and needs no external engine or database.
+uses the published Camunda adapter and requires an external Camunda 8.8.2 engine.
 
 ## How to use with Spring Boot
 

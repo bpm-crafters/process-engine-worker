@@ -26,6 +26,7 @@ import jakarta.transaction.Transactional
 import java.lang.invoke.MethodType
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import java.util.function.Predicate
 import org.jboss.jandex.AnnotationInstance
 import org.jboss.jandex.AnnotationTarget
 import org.jboss.jandex.DotName
@@ -50,13 +51,16 @@ class WorkerProcessor {
     ParameterResolver::class.java, ResultResolver::class.java, ProcessEngineWorkerMetrics::class.java, IdempotencyRegistry::class.java)
 
   @BuildStep
-  fun retainWorkers(combined: CombinedIndexBuildItem): UnremovableBeanBuildItem =
-    UnremovableBeanBuildItem.beanClassNames(candidates(combined.index))
+  fun retainWorkers(combined: CombinedIndexBuildItem): UnremovableBeanBuildItem {
+    val candidates = candidates(combined.index)
+    // Keep unsupported worker producers until validation can report them, even when unused.
+    return UnremovableBeanBuildItem(Predicate { bean -> isWorker(bean, candidates) })
+  }
 
   @BuildStep
-  fun deliveryBindings(combined: CombinedIndexBuildItem): AnnotationsTransformerBuildItem {
+  fun deliveryBindings(combined: CombinedIndexBuildItem, exclusions: BuildExclusionsBuildItem): AnnotationsTransformerBuildItem {
     val methods = HashSet<String>()
-    for (candidate in candidates(combined.index)) {
+    for (candidate in candidates(combined.index) - exclusions.excludedDeclaringClasses) {
       val beanClass = load(candidate)
       if (beanClass.isInterface) continue
       beanClass.methods.filter { !it.isBridge && !it.isSynthetic }
@@ -87,10 +91,18 @@ class WorkerProcessor {
     return candidates
   }
 
+  private fun isWorker(bean: BeanInfo, candidates: Set<String>): Boolean {
+    if (bean.isClassBean) return bean.beanClass.toString() in candidates
+    // A producer's beanClass is its declaring class, not the type it creates.
+    return bean.providerType.name().toString() in candidates ||
+      bean.types.any { it.name().toString() in candidates } ||
+      bean.unrestrictedTypes.any { it.name().toString() in candidates }
+  }
+
   @BuildStep
   @Record(ExecutionTime.RUNTIME_INIT)
   fun discover(
-    combined: CombinedIndexBuildItem, validation: ValidationPhaseBuildItem,
+    combined: CombinedIndexBuildItem, validation: ValidationPhaseBuildItem, exclusions: BuildExclusionsBuildItem,
     container: BeanContainerBuildItem, recorder: WorkerRecorder,
     reflection: BuildProducer<ReflectiveClassBuildItem>, hierarchies: BuildProducer<ReflectiveHierarchyBuildItem>,
   ) {
@@ -98,8 +110,7 @@ class WorkerProcessor {
     val descriptors = ArrayList<WorkerDefinition>()
     val workerClasses = HashSet<Class<*>>()
     for (bean in validation.context.beans()) {
-      val worker = bean.beanClass.toString() in candidates || bean.providerType.name().toString() in candidates
-      if (!worker) continue
+      if (!isWorker(bean, candidates)) continue
       require(bean.isClassBean) { "Worker producer beans are unsupported: $bean" }
       val scope = bean.scope.dotName.toString()
       require(scope == ApplicationScoped::class.java.name || scope == Singleton::class.java.name) {
@@ -118,7 +129,7 @@ class WorkerProcessor {
       }
       registerReflection(beanClass, combined.index, reflection, hierarchies)
     }
-    validateManagedWorkers(combined.index, workerClasses)
+    validateManagedWorkers(combined.index, workerClasses, exclusions)
     registerConverters(combined.index, reflection)
     recorder.configure(descriptors)
   }
@@ -137,10 +148,10 @@ class WorkerProcessor {
   private fun exceptionTypes(transaction: AnnotationInstance?, attribute: String): List<String> =
     transaction?.value(attribute)?.asClassArray()?.map { it.name().toString() } ?: emptyList()
 
-  private fun validateManagedWorkers(index: IndexView, workerClasses: Set<Class<*>>) {
+  private fun validateManagedWorkers(index: IndexView, workerClasses: Set<Class<*>>, exclusions: BuildExclusionsBuildItem) {
     for (annotation in index.getAnnotations(WORKER)) {
       val owner = annotation.target().asMethod().declaringClass()
-      if (owner.isInterface || Modifier.isAbstract(owner.flags().toInt())) continue
+      if (exclusions.isExcluded(owner) || owner.isInterface || Modifier.isAbstract(owner.flags().toInt())) continue
       val ownerClass = load(owner.name().toString())
       require(workerClasses.any { ownerClass.isAssignableFrom(it) }) {
         "Annotated worker has no supported CDI-managed bean: ${owner.name()}"

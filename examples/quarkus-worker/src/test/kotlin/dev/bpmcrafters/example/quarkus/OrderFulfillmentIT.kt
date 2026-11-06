@@ -8,6 +8,7 @@ import io.restassured.config.HttpClientConfig
 import io.restassured.config.RestAssuredConfig
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.function.Executable
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -16,6 +17,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.LockSupport
 
 /** Opt-in, packaged JVM application against the caller-owned Compose project, not an engine fixture. */
@@ -83,6 +86,60 @@ class OrderFulfillmentIT {
     assertTrue(notify.start.isBefore(fetch.end), "Timer notification must start during inventory wait: fetch=$fetch, notify=$notify")
     assertTrue(notify.end.isBefore(fetch.end), "Notification must be delivered and completed independently during inventory wait; run with the default 60s delay: fetch=$fetch, notify=$notify")
     assertFalse(fetch.end.isAfter(ship.start), "Shipment must follow inventory completion: fetch=$fetch, ship=$ship")
+  }
+
+  @Test fun fourConcurrentInventoryWaitsDoNotStarveNotifications() {
+    val ids = List(4) { UUID.randomUUID() }
+    try {
+      // Publish each order once, without serial engine/index waits between submissions.
+      CompletableFuture.allOf(*ids.map { id ->
+        CompletableFuture.runAsync { ingress(id, "10.00", "out-of-stock") }
+      }.toTypedArray()).get(20, TimeUnit.SECONDS)
+      val keys = ids.associateWith(::instanceFor)
+      eventually("all four inventory activities active together") {
+        val active = keys.values.map { key ->
+          search("element-instances", mapOf("processInstanceKey" to key,
+            "elementId" to "Activity_0tmo7ip", "state" to "ACTIVE"))
+            .singleOrNull { it.path("processInstanceKey").asText() == key &&
+              it.path("elementId").asText() == "Activity_0tmo7ip" && it.path("state").asText() == "ACTIVE" }
+        }
+        active.takeIf { elements -> elements.all { it != null } }
+      }
+      val delivered = eventually("all four delayed-inventory notifications") {
+        val tasks = ids.associateWith { id ->
+          notifications(id).firstOrNull { it.path("type").asText() == DELAYED_INVENTORY }
+        }
+        tasks.takeIf { it.values.all { task -> task != null } }
+      }
+      // Finish every notification before asserting timing, including on the unfixed bridge.
+      assertAll("complete all four notifications", ids.map { id -> Executable {
+        val taskId = delivered.getValue(id)!!.path("taskId").asText()
+        application().post("/delayed-inventory/$taskId").then().statusCode(204)
+      } })
+      assertAll("all four orders finish", keys.values.map { key -> Executable { completed(key) } })
+      val fetches = keys.mapValues { (_, key) -> completedElement(key, "Activity_0tmo7ip") }
+      val notifications = keys.mapValues { (_, key) -> completedElement(key, DELAYED_INVENTORY) }
+      val earliestInventoryEnd = fetches.values.minOf { it.end }
+      // An individual notification beating its own fetch is insufficient: all four must
+      // complete before ANY inventory handler releases its service-worker execution slot.
+      assertAll("notifications complete while all four inventory jobs still wait", ids.map { id -> Executable {
+        val fetch = fetches.getValue(id)
+        val notify = notifications.getValue(id)
+        assertFalse(fetch.start.isAfter(notify.start), "Inventory must start before notification for $id: fetch=$fetch, notify=$notify")
+        assertTrue(notify.end.isBefore(earliestInventoryEnd),
+          "Notification for $id must complete before the earliest inventory completion; use the default 60s delay: notify=$notify, fetches=$fetches")
+      } })
+    } finally {
+      // Best effort even if a barrier, HTTP assertion, or timing assertion fails. Never
+      // leave already-delivered tasks blocking application shutdown just for diagnostics.
+      ids.forEach { id ->
+        runCatching { notifications(id) }.getOrDefault(emptyList()).forEach { task ->
+          if (task.path("type").asText() == DELAYED_INVENTORY) runCatching {
+            application().post("/delayed-inventory/${task.path("taskId").asText()}").then().statusCode(204)
+          }
+        }
+      }
+    }
   }
 
   private fun application() = given().config(RestAssuredConfig.config().httpClient(

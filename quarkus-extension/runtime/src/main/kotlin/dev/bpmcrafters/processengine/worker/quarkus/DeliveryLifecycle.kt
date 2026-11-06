@@ -34,6 +34,19 @@ class DeliveryLifecycle(
     run(action)
   }
 
+  /** Adapter notifications may finish accepted work, but must never revive a drained runtime. */
+  fun terminate(action: Runnable) {
+    synchronized(this) {
+      // Once closed and idle, no admission path can acquire a new lease.
+      if (closed && active == 0) return
+      check(BlockingOperationControl.isBlockingAllowed()) {
+        "Process engine task delivery requires a blocking-capable thread, not an event-loop thread"
+      }
+      active++
+    }
+    run(action)
+  }
+
   private fun run(action: Runnable) {
     depth.set(currentDepth() + 1)
     try {

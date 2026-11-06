@@ -39,7 +39,7 @@ class SubscriptionTracker(
   private fun managed(command: SubscribeForTaskCmd) = SubscribeForTaskCmd(
     command.restrictions, command.taskType, command.taskDescriptionKey, command.payloadDescription,
     { task, payload -> deliveries.deliver { command.action.accept(task, payload) } },
-    TaskTerminationHandler { task -> deliveries.deliver { command.termination.accept(task) } }
+    TaskTerminationHandler { task -> deliveries.terminate { command.termination.accept(task) } }
   )
 
   private fun acquired(subscription: TaskSubscription?, error: Throwable?, observed: CompletableFuture<TaskSubscription>) {

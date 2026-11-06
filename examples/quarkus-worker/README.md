@@ -60,11 +60,16 @@ The environment overrides above select alternate engine ports. Without overrides
 application uses `http://localhost:26500` and `http://localhost:8088`. Equivalent
 configuration keys are `example.camunda.grpc-address` and `example.camunda.rest-address`.
 The three workers register before delivery starts. Deployment runs automatically at
-startup. Four SDK worker threads allow the inventory wait and user notifications to
-run independently; the service-task lease exceeds the configured delay by at least
-60 seconds. User-task leases last 60 seconds and refresh every 5 seconds, including
-retries after transient refresh failures. Shutdown stops refreshing and releases user
-tasks, drains extension deliveries, then closes the owned SDK client.
+startup. The default SDK client provides four execution threads for service workers.
+A separate, CDI-qualified notification client provides one independent execution
+thread for the nonblocking user-task handlers and handles user-task completion.
+Both clients use the same engine addresses and shared subscription repository;
+four waiting inventory handlers cannot starve notification delivery. The service-task
+lease exceeds the configured delay by at least 60 seconds. User-task leases last
+60 seconds and refresh every 5 seconds, including retries after transient refresh
+failures. Shutdown stops refreshing and releases user tasks, drains extension
+deliveries, then closes both owned SDK clients exactly once. Qualified disposers
+provide fallback cleanup; a failure closing one client does not prevent closing the other.
 
 **Do not run the Spring example and this application against the same cluster at the
 same time:** they consume the same service-task topics. Use separate Compose projects.
@@ -133,7 +138,9 @@ HTTP tests also capture the message-start command and mapped domain order, verif
 manual deployment sends the packaged model bytes, and reject other resource paths
 without calling the deployment API.
 Lifecycle tests also check registration-before-activation, disabled lazy lookups,
-observer priorities, pool unsubscription, and exactly-once client close/disposal.
+observer priorities, pool unsubscription, notification-client qualification, concurrent
+client ownership, and exactly-once closure of both clients through shutdown or disposer
+fallback, including close failures.
 
 The opt-in `real-engine` Maven profile runs `OrderFulfillmentIT` against the packaged
 **JVM** application and your already-running Compose project. It sends HTTP ingress
@@ -141,8 +148,14 @@ requests for all three scenarios, polls persisted engine variables and completed
 instances with bounded deadlines, and completes both notification types. It uses UUID
 correlation and compares persisted completed activity timestamps: the notification
 starts and completes during the inventory wait, and shipment starts after inventory
-completes. This avoids treating missing, eventually consistent search results as
-concurrency proof. Keep the replenishment delay at 60 seconds for this timing check.
+completes. The regression `fourConcurrentInventoryWaitsDoNotStarveNotifications`
+also submits four distinct out-of-stock orders concurrently, waits for all four
+inventory activities to be active, and completes all four notifications through the
+application API. It requires every persisted notification completion timestamp to
+precede the earliest inventory completion across all four orders. This avoids treating
+missing, eventually consistent search results as concurrency proof and detects a shared
+executor that dispatches notifications only after an inventory worker becomes free.
+Keep the replenishment delay at 60 seconds for these timing checks.
 It never creates, stops or cleans up Docker containers itself.
 
 From the repository root, after starting your isolated stack:
