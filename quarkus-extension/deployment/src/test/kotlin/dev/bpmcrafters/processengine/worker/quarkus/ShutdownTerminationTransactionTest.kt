@@ -16,32 +16,39 @@ import jakarta.transaction.Status
 import jakarta.transaction.Synchronization
 import jakarta.transaction.TransactionSynchronizationRegistry
 import jakarta.transaction.Transactional
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
 
 class ShutdownTerminationTransactionTest {
   companion object {
-    @JvmField @RegisterExtension
+    @JvmField
+    @RegisterExtension
     val APP = QuarkusExtensionTest().withApplicationRoot {
-      it.addClasses(State::class.java, Engine::class.java, Workers::class.java,
-        CommitMarker::class.java, Handle::class.java, Metadata::class.java)
+      it.addClasses(
+        State::class.java, Engine::class.java, Workers::class.java,
+        CommitMarker::class.java, Handle::class.java, Metadata::class.java
+      )
     }
   }
 
-  @Inject lateinit var state: State
+  @Inject
+  lateinit var state: State
 
   @Test
   fun remoteSuccessAndTerminationDuringShutdownStillCommitLocalBusinessTransaction() {
     val executor = Executors.newFixedThreadPool(2)
     try {
-      val delivery = executor.submit { state.command.action.accept(
-        TaskInformation("task", mapOf("processInstanceId" to "process")), emptyMap()) }
+      val delivery = executor.submit {
+        state.command.action.accept(
+          TaskInformation("task", mapOf("processInstanceId" to "process")), emptyMap()
+        )
+      }
       state.workerEntered.get(5, TimeUnit.SECONDS)
       val shutdown = executor.submit {
         // The fixture and runtime have different Quarkus classloaders.
@@ -106,8 +113,10 @@ class ShutdownTerminationTransactionTest {
 
   @Singleton
   class Workers {
-    @Inject lateinit var state: State
-    @Inject lateinit var transactions: TransactionSynchronizationRegistry
+    @Inject
+    lateinit var state: State
+    @Inject
+    lateinit var transactions: TransactionSynchronizationRegistry
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     @ProcessEngineWorker(topic = "shutdown", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
@@ -121,15 +130,18 @@ class ShutdownTerminationTransactionTest {
 
   @Dependent
   class Engine : TaskSubscriptionApi, ServiceTaskCompletionApi, AutoCloseable {
-    @Inject lateinit var state: State
+    @Inject
+    lateinit var state: State
     override fun subscribeForTask(command: SubscribeForTaskCmd): CompletableFuture<TaskSubscription> {
       state.command = command
       return CompletableFuture.completedFuture(Handle())
     }
+
     override fun unsubscribe(command: UnsubscribeFromTaskCmd): CompletableFuture<Empty> {
       state.unsubscribeStarted.complete(null)
       return CompletableFuture.completedFuture(Empty)
     }
+
     override fun getSupportedRestrictions(): Set<String> = emptySet()
     override fun meta(instance: MetaInfoAware): MetaInfo = Metadata()
     override fun completeTask(command: CompleteTaskCmd): CompletableFuture<Empty> {
@@ -141,16 +153,23 @@ class ShutdownTerminationTransactionTest {
       assertThat(state.disposed).hasValue(0)
       return CompletableFuture.completedFuture(Empty)
     }
+
     override fun completeTaskByError(command: CompleteTaskByErrorCmd): CompletableFuture<Empty> =
       throw AssertionError("Unexpected business error")
+
     override fun failTask(command: FailTaskCmd): CompletableFuture<Empty> {
       state.failed.add(command.taskId)
       return CompletableFuture.completedFuture(Empty)
     }
-    @PreDestroy fun dispose() {
+
+    @PreDestroy
+    fun dispose() {
       state.events.add("dispose")
       if (state.disposed.incrementAndGet() == 2) state.allDisposed.complete(null)
     }
-    override fun close() { state.closed.incrementAndGet() }
+
+    override fun close() {
+      state.closed.incrementAndGet()
+    }
   }
 }

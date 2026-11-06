@@ -26,7 +26,7 @@ health ports stay internal; published ports bind only to `127.0.0.1`.
 From this directory:
 
 ```shell
-docker compose -p quarkus-order-fulfillment up -d --wait --wait-timeout 420
+docker compose up -d
 ```
 
 `.env` sets the default gRPC/REST host ports to 26500/8088. **Do not stop or reuse
@@ -104,8 +104,8 @@ to domain `order.orderId` and `order.shippingAddress` variables. Use a new UUID 
 each request. Quantities are positive integers and prices/totals use decimal arithmetic.
 Missing, null or invalid order fields return HTTP 400.
 
-1. **Happy path:** keep the payload above. The process collects payment, fetches goods
-   (`shipped=true`) and ships (`goodsShipped=true`). Inspect the completed instance
+1. **Happy path:** keep the payload above. The process collects payment, fetches goods (`shipped=true`) and ships (`goodsShipped=true`). Inspect the completed
+   instance
    and variables in Operate or the engine's `/v2/process-instances/search` and
    `/v2/variables/search` APIs.
 2. **Payment failure:** use a new UUID and set price to `21.00` with amount `2`.
@@ -123,8 +123,9 @@ Missing, null or invalid order fields return HTTP 400.
 payload, not business-key metadata. Detail endpoints return the typed order plus
 failure information or delayed item names. Both completion endpoints return 204 and
 write `{"customer-informed":true}`. Unknown tasks and mismatched task types return
+
 404. Failed engine completion retains the local task for retry. The in-memory view
-is not a durable task database; engine leases allow reconstruction after restart.
+     is not a durable task database; engine leases allow reconstruction after restart.
 
 ## Offline and real-engine tests
 
@@ -142,8 +143,8 @@ observer priorities, pool unsubscription, notification-client qualification, con
 client ownership, and exactly-once closure of both clients through shutdown or disposer
 fallback, including close failures.
 
-The opt-in `real-engine` Maven profile runs `OrderFulfillmentIT` against the packaged
-**JVM** application and your already-running Compose project. It sends HTTP ingress
+The opt-in `real-engine` Maven profile runs `OrderFulfillmentIT` against the packaged **JVM** application and your already-running Compose project. It sends
+HTTP ingress
 requests for all three scenarios, polls persisted engine variables and completed
 instances with bounded deadlines, and completes both notification types. It uses UUID
 correlation and compares persisted completed activity timestamps: the notification

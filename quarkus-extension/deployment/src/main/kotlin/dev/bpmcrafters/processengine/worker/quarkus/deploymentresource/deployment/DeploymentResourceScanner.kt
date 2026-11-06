@@ -6,7 +6,7 @@ import java.io.UncheckedIOException
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.TreeMap
+import java.util.*
 
 class DeploymentResourceScanner {
   data class Source(val tree: PathTree, val removed: Set<String>, val excludedRoots: Set<URI> = emptySet()) {

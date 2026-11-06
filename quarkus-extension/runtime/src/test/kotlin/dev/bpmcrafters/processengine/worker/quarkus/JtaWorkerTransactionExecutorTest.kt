@@ -61,7 +61,10 @@ class JtaWorkerTransactionExecutorTest {
   private fun enlist(events: MutableList<String>) {
     try {
       transactions.transaction.registerSynchronization(object : Synchronization {
-        override fun beforeCompletion() { events.add("before") }
+        override fun beforeCompletion() {
+          events.add("before")
+        }
+
         override fun afterCompletion(status: Int) {
           events.add(if (status == Status.STATUS_COMMITTED) "committed" else "rolled back")
         }

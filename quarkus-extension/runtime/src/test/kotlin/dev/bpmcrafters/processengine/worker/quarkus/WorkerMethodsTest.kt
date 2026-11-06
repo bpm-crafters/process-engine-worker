@@ -3,7 +3,8 @@ package dev.bpmcrafters.processengine.worker.quarkus
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.Variable
 import dev.bpmcrafters.processengine.worker.registrar.workerMetadata
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.junit.jupiter.api.Test
 
 class WorkerMethodsTest {
@@ -52,44 +53,66 @@ class WorkerMethodsTest {
   }
 
   class GenericArray<T> {
-    @ProcessEngineWorker fun work(@Variable("value") value: Array<T>) = Unit
+    @ProcessEngineWorker
+    fun work(@Variable("value") value: Array<T>) = Unit
   }
+
   class GenericUpperBound<T> {
-    @ProcessEngineWorker fun work(@Variable("value") value: List<@JvmWildcard T>) = Unit
+    @ProcessEngineWorker
+    fun work(@Variable("value") value: List<@JvmWildcard T>) = Unit
   }
+
   class GenericLowerBound<T> {
-    @ProcessEngineWorker fun work(@Variable("value") value: MutableList<in T>) = Unit
+    @ProcessEngineWorker
+    fun work(@Variable("value") value: MutableList<in T>) = Unit
   }
+
   class GenericReturn<T> {
-    @ProcessEngineWorker fun work(): T? = null
+    @ProcessEngineWorker
+    fun work(): T? = null
   }
+
   class ConcreteWildcard {
-    @ProcessEngineWorker fun work(): Map<String, *> = emptyMap<String, Any?>()
+    @ProcessEngineWorker
+    fun work(): Map<String, *> = emptyMap<String, Any?>()
   }
+
   open class GenericParent<T> {
-    @ProcessEngineWorker fun work(@Variable("value") value: T) = Unit
+    @ProcessEngineWorker
+    fun work(@Variable("value") value: T) = Unit
   }
+
   class ErasedChild : GenericParent<String>()
 
   interface GenericWorker<T> {
-    @ProcessEngineWorker(topic = "generic") fun work(@Variable("value") value: T): Map<String, Any?>
+    @ProcessEngineWorker(topic = "generic")
+    fun work(@Variable("value") value: T): Map<String, Any?>
   }
+
   class StringWorker : GenericWorker<String> {
     override fun work(value: String): Map<String, Any?> = mapOf("value" to value)
     fun work(unrelated: Int) = Unit
   }
+
   open class Parent {
-    @ProcessEngineWorker open fun work() = Unit
+    @ProcessEngineWorker
+    open fun work() = Unit
   }
+
   class Child : Parent() {
     override fun work() = Unit
   }
+
   class PrivateWorker {
-    @ProcessEngineWorker private fun work() = Unit
+    @ProcessEngineWorker
+    private fun work() = Unit
   }
+
   class StaticWorker {
     companion object {
-      @JvmStatic @ProcessEngineWorker fun work() = Unit
+      @JvmStatic
+      @ProcessEngineWorker
+      fun work() = Unit
     }
   }
 }

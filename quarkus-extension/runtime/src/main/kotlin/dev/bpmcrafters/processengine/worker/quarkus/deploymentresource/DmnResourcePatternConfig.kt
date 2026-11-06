@@ -10,6 +10,7 @@ import io.smallrye.config.WithParentName
 @ConfigMapping(prefix = "dev.bpm-crafters.process-api.worker.deployment.dmn-resource-pattern")
 fun interface DmnResourcePatternConfig {
   /** Classpath Ant pattern for DMN resources. Only classpath: and classpath*: are supported. */
-  @WithDefault("classpath*:/**/*.dmn") @WithParentName
+  @WithDefault("classpath*:/**/*.dmn")
+  @WithParentName
   fun pattern(): String
 }

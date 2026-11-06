@@ -7,7 +7,8 @@ import jakarta.enterprise.context.Dependent
 import jakarta.enterprise.inject.Instance
 import jakarta.enterprise.inject.spi.Bean
 import jakarta.inject.Singleton
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import java.io.ByteArrayInputStream
@@ -21,8 +22,10 @@ class DeploymentBeansTest {
   @Test
   fun dependentHandleIsDestroyedAfterEachSuccessfulOrFailedInvocation() {
     val api = mock<DeploymentApi>()
-    whenever(api.deploy(any())).thenReturn(CompletableFuture.completedFuture(null),
-      CompletableFuture.failedFuture(IllegalStateException("failed")))
+    whenever(api.deploy(any())).thenReturn(
+      CompletableFuture.completedFuture(null),
+      CompletableFuture.failedFuture(IllegalStateException("failed"))
+    )
     val instance = instance(api, Dependent::class.java)
     val deployment = service(instance)
     deployment.deployResources()

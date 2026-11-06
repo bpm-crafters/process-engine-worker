@@ -14,20 +14,28 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class ConfiguredWorkerTest {
   companion object {
-    @JvmField @RegisterExtension
+    @JvmField
+    @RegisterExtension
     val APP = QuarkusExtensionTest()
-      .withApplicationRoot { it.addClasses(Worker::class.java, WorkerExtensionTest.Engine::class.java,
-        WorkerExtensionTest.RegistryProducer::class.java, WorkerExtensionTest.TestSubscription::class.java,
-        WorkerExtensionTest.TestMetadata::class.java, WorkerExtensionTest.Outcome::class.java) }
+      .withApplicationRoot {
+        it.addClasses(
+          Worker::class.java, WorkerExtensionTest.Engine::class.java,
+          WorkerExtensionTest.RegistryProducer::class.java, WorkerExtensionTest.TestSubscription::class.java,
+          WorkerExtensionTest.TestMetadata::class.java, WorkerExtensionTest.Outcome::class.java
+        )
+      }
       .overrideRuntimeConfigKey("dev.bpm-crafters.process-api.worker.tenant-id", "configured-tenant")
       .overrideRuntimeConfigKey("dev.bpm-crafters.process-api.worker.complete-tasks-before-commit", "true")
       .overrideRuntimeConfigKey("dev.bpm-crafters.process-api.worker.remove-task-result-on-completion", "false")
   }
 
-  @Inject lateinit var engine: WorkerExtensionTest.Engine
-  @Inject lateinit var registry: IdempotencyRegistry
+  @Inject
+  lateinit var engine: WorkerExtensionTest.Engine
+  @Inject
+  lateinit var registry: IdempotencyRegistry
 
-  @Test fun appliesTenantDefaultCompletionTimingAndResultRetention() {
+  @Test
+  fun appliesTenantDefaultCompletionTimingAndResultRetention() {
     val task = TaskInformation("configured-task", mapOf("processInstanceId" to "process"))
     engine.deliver("configured", task, emptyMap())
     assertThat(engine.subscriptions["configured"]!!.restrictions).containsEntry("tenantId", "configured-tenant")
@@ -37,7 +45,8 @@ class ConfiguredWorkerTest {
 
   @Singleton
   class Worker {
-    @Transactional @ProcessEngineWorker(topic = "configured")
+    @Transactional
+    @ProcessEngineWorker(topic = "configured")
     fun work(): Map<String, Any?> = mapOf("configured" to true)
   }
 }

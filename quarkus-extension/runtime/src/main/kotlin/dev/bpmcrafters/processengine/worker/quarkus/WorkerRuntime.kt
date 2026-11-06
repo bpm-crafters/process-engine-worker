@@ -19,8 +19,10 @@ import java.util.concurrent.CompletionException
 
 @Singleton
 class WorkerRuntime {
-  @Inject lateinit var config: WorkerConfig
-  @Inject lateinit var transactions: TransactionManager
+  @Inject
+  lateinit var config: WorkerConfig
+  @Inject
+  lateinit var transactions: TransactionManager
   private var descriptors = emptyList<WorkerDefinition>()
   private val handles = mutableListOf<InstanceHandle<*>>()
   private var subscriptions: SubscriptionTracker? = null

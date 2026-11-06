@@ -9,7 +9,7 @@ import jakarta.transaction.Transactional.TxType
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.UndeclaredThrowableException
-import java.util.ArrayDeque
+import java.util.*
 import java.util.concurrent.Callable
 
 /** Coordinates core phases at the actual CDI transaction boundary, never on an unwrapped target. */
@@ -164,7 +164,8 @@ class CdiDeliveryCoordinator(
     // Rollback sees the exception crossing CDI; reporting instead unwraps recursively.
     val outward = token.referenceFailure ?: token.boundaryFailure ?: failure
     val cause = if (outward is UndeclaredThrowableException && token.boundaryFailure != null &&
-      outward.undeclaredThrowable === token.boundaryFailure) token.boundaryFailure else outward
+      outward.undeclaredThrowable === token.boundaryFailure
+    ) token.boundaryFailure else outward
     if (definition.dontRollbackOn().any { exceptionType(it).isInstance(cause) }) return false
     if (definition.rollbackOn().any { exceptionType(it).isInstance(cause) }) return true
     return cause is RuntimeException || cause is Error
@@ -207,9 +208,12 @@ class CdiDeliveryCoordinator(
   ) {
     var entered = false
     var claimed = false
-    @Volatile private var afterCommit: Map<String, Any?>? = null
-    @Volatile var outcome = Status.STATUS_UNKNOWN
-    @Volatile private var processed = false
+    @Volatile
+    private var afterCommit: Map<String, Any?>? = null
+    @Volatile
+    var outcome = Status.STATUS_UNKNOWN
+    @Volatile
+    private var processed = false
     var boundaryFailure: Throwable? = null
     var referenceFailure: Throwable? = null
     private var deferred: DeliveryLifecycle.Ticket? = null
@@ -274,7 +278,9 @@ class CdiDeliveryCoordinator(
         val transaction = transactions.transaction ?: error("CDI-owned worker transaction is missing")
         transaction.registerSynchronization(object : Synchronization {
           override fun beforeCompletion() = Unit
-          override fun afterCompletion(status: Int) { outcome = status }
+          override fun afterCompletion(status: Int) {
+            outcome = status
+          }
         })
       } catch (failure: Exception) {
         throw DeliveryProcessingException(failure)
@@ -307,7 +313,9 @@ class CdiDeliveryCoordinator(
       completeOwned()
     }
 
-    fun cancelDeferred() { deferred?.cancel() }
+    fun cancelDeferred() {
+      deferred?.cancel()
+    }
   }
 
   companion object {

@@ -13,12 +13,18 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class MicrometerActivationTest {
   companion object {
-    @JvmField @RegisterExtension val APP = QuarkusExtensionTest().withEmptyApplication()
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withEmptyApplication()
   }
-  @Inject lateinit var metrics: ProcessEngineWorkerMetrics
-  @Inject lateinit var registry: MeterRegistry
 
-  @Test fun augmentationSelectsMicrometerDefaultWhenTheExtensionIsPresent() {
+  @Inject
+  lateinit var metrics: ProcessEngineWorkerMetrics
+  @Inject
+  lateinit var registry: MeterRegistry
+
+  @Test
+  fun augmentationSelectsMicrometerDefaultWhenTheExtensionIsPresent() {
     assertThat(metrics).isInstanceOf(ProcessEngineWorkerMetricsMicrometer::class.java)
     val backend = SimpleMeterRegistry()
     val composite = registry as CompositeMeterRegistry

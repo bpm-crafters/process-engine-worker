@@ -33,13 +33,16 @@ class SubscriptionTrackerTest {
     val remoteCompleted = AtomicInteger()
     val terminated = AtomicInteger()
     val task = TaskInformation("task", emptyMap())
-    owned.subscribeForTask(SubscribeForTaskCmd(emptyMap(), TaskType.EXTERNAL, "topic", null,
-      { _, _ ->
-        entered.complete(null)
-        release.get(5, TimeUnit.SECONDS)
-        remoteCompleted.incrementAndGet()
-        client.managed.termination.accept(task)
-      }, TaskTerminationHandler { terminated.incrementAndGet() })).join()
+    owned.subscribeForTask(
+      SubscribeForTaskCmd(
+        emptyMap(), TaskType.EXTERNAL, "topic", null,
+        { _, _ ->
+          entered.complete(null)
+          release.get(5, TimeUnit.SECONDS)
+          remoteCompleted.incrementAndGet()
+          client.managed.termination.accept(task)
+        }, TaskTerminationHandler { terminated.incrementAndGet() })
+    ).join()
     try {
       val running = executor.submit { client.managed.action.accept(task, emptyMap()) }
       entered.get(5, TimeUnit.SECONDS)
@@ -64,7 +67,11 @@ class SubscriptionTrackerTest {
     val contexts = AtomicInteger()
     val lifecycle = DeliveryLifecycle(Runnable::run) { action ->
       contexts.incrementAndGet()
-      try { action.run() } finally { contexts.decrementAndGet() }
+      try {
+        action.run()
+      } finally {
+        contexts.decrementAndGet()
+      }
     }
     val owned = SubscriptionTracker(client, lifecycle)
     val executor = Executors.newFixedThreadPool(2)
@@ -73,13 +80,16 @@ class SubscriptionTrackerTest {
     val callbackEntered = CompletableFuture<Void>()
     val releaseCallback = CompletableFuture<Void>()
     val task = TaskInformation("task", emptyMap())
-    owned.subscribeForTask(SubscribeForTaskCmd(emptyMap(), TaskType.EXTERNAL, "topic", null,
-      { _, _ -> entered.complete(null); releaseWorker.get(5, TimeUnit.SECONDS) },
-      TaskTerminationHandler {
-        assertThat(contexts.get()).isPositive()
-        callbackEntered.complete(null)
-        releaseCallback.get(5, TimeUnit.SECONDS)
-      })).join()
+    owned.subscribeForTask(
+      SubscribeForTaskCmd(
+        emptyMap(), TaskType.EXTERNAL, "topic", null,
+        { _, _ -> entered.complete(null); releaseWorker.get(5, TimeUnit.SECONDS) },
+        TaskTerminationHandler {
+          assertThat(contexts.get()).isPositive()
+          callbackEntered.complete(null)
+          releaseCallback.get(5, TimeUnit.SECONDS)
+        })
+    ).join()
     try {
       val running = executor.submit { client.managed.action.accept(task, emptyMap()) }
       entered.get(5, TimeUnit.SECONDS)
@@ -113,8 +123,11 @@ class SubscriptionTrackerTest {
     val lifecycle = DeliveryLifecycle(Runnable::run) { action -> contexts.incrementAndGet(); action.run() }
     val owned = SubscriptionTracker(client, lifecycle)
     val task = TaskInformation("task", emptyMap())
-    owned.subscribeForTask(SubscribeForTaskCmd(emptyMap(), TaskType.EXTERNAL, "topic", null,
-      { _, _ -> }, TaskTerminationHandler { terminated.incrementAndGet() })).join()
+    owned.subscribeForTask(
+      SubscribeForTaskCmd(
+        emptyMap(), TaskType.EXTERNAL, "topic", null,
+        { _, _ -> }, TaskTerminationHandler { terminated.incrementAndGet() })
+    ).join()
     client.onUnsubscribe = { client.managed.termination.accept(task) }
     owned.closeAsync().get(5, TimeUnit.SECONDS)
     assertThat(lifecycle.resourcesReleased()).isCompleted()
@@ -129,8 +142,11 @@ class SubscriptionTrackerTest {
     val terminated = AtomicInteger()
     val lifecycle = DeliveryLifecycle(Runnable::run) { action -> contexts.incrementAndGet(); action.run() }
     val owned = SubscriptionTracker(client, lifecycle)
-    owned.subscribeForTask(SubscribeForTaskCmd(emptyMap(), TaskType.EXTERNAL, "topic", null,
-      { _, _ -> }, TaskTerminationHandler { terminated.incrementAndGet() })).join()
+    owned.subscribeForTask(
+      SubscribeForTaskCmd(
+        emptyMap(), TaskType.EXTERNAL, "topic", null,
+        { _, _ -> }, TaskTerminationHandler { terminated.incrementAndGet() })
+    ).join()
     owned.closeAsync().get(5, TimeUnit.SECONDS)
     assertThat(lifecycle.resourcesReleased()).isCompleted()
     BlockingOperationControl.setIoThreadDetector(arrayOf(IOThreadDetector { true }))
@@ -280,6 +296,8 @@ class SubscriptionTrackerTest {
 
     override fun getSupportedRestrictions(): Set<String> = setOf("tenant")
     override fun meta(instance: MetaInfoAware): MetaInfo = metadata
-    override fun close() { closed = true }
+    override fun close() {
+      closed = true
+    }
   }
 }

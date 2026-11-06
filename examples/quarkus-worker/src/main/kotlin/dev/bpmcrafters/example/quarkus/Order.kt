@@ -1,9 +1,9 @@
 package dev.bpmcrafters.example.quarkus
 
+import jakarta.ws.rs.BadRequestException
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.UUID
-import jakarta.ws.rs.BadRequestException
+import java.util.*
 
 data class Address(val streetLine: String, val zipCode: String, val city: String, val country: String)
 data class OrderPosition(val name: String, val amount: Int, val price: BigDecimal)
@@ -17,6 +17,7 @@ data class Order(val orderId: UUID, val orderPositions: List<OrderPosition>, val
 data class AddressRequest(val streetLine: String? = null, val zipCode: String? = null, val city: String? = null, val country: String? = null) {
   fun toDomain() = Address(required(streetLine), required(zipCode), required(city), required(country))
 }
+
 data class PositionRequest(val name: String? = null, val amount: Int? = null, val price: BigDecimal? = null) {
   fun toDomain(): OrderPosition {
     val quantity = amount?.takeIf { it > 0 } ?: throw BadRequestException("Positive amount required")
@@ -24,8 +25,11 @@ data class PositionRequest(val name: String? = null, val amount: Int? = null, va
     return OrderPosition(required(name), quantity, cost)
   }
 }
-data class OrderRequest(val id: UUID? = null, val shipmentAddress: AddressRequest? = null,
-  val invoiceAddress: AddressRequest? = null, val orderPositions: List<PositionRequest?>? = null) {
+
+data class OrderRequest(
+  val id: UUID? = null, val shipmentAddress: AddressRequest? = null,
+  val invoiceAddress: AddressRequest? = null, val orderPositions: List<PositionRequest?>? = null
+) {
   fun toDomain() = Order(
     id ?: throw BadRequestException("id required"),
     orderPositions?.takeIf { it.isNotEmpty() }?.map { (it ?: throw BadRequestException("Null position")).toDomain() }
@@ -34,4 +38,5 @@ data class OrderRequest(val id: UUID? = null, val shipmentAddress: AddressReques
     invoiceAddress?.toDomain() ?: throw BadRequestException("invoiceAddress required")
   )
 }
+
 private fun required(value: String?): String = value?.takeUnless { it.isBlank() } ?: throw BadRequestException("Non-blank address/name required")

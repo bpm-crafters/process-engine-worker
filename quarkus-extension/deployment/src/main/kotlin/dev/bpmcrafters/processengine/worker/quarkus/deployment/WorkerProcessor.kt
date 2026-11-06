@@ -23,14 +23,14 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Singleton
 import jakarta.transaction.Transactional
-import java.lang.invoke.MethodType
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
-import java.util.function.Predicate
 import org.jboss.jandex.AnnotationInstance
 import org.jboss.jandex.AnnotationTarget
 import org.jboss.jandex.DotName
 import org.jboss.jandex.IndexView
+import java.lang.invoke.MethodType
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
+import java.util.function.Predicate
 
 class WorkerProcessor {
   @BuildStep
@@ -39,8 +39,10 @@ class WorkerProcessor {
   @BuildStep
   fun defaults(capabilities: Capabilities): AdditionalBeanBuildItem {
     val beans = AdditionalBeanBuildItem.builder().setUnremovable()
-      .addBeanClasses(WorkerDefaults::class.java, WorkerRuntime::class.java,
-        WorkerDeliveryInterceptor::class.java, WorkerDeliveryEntryInterceptor::class.java)
+      .addBeanClasses(
+        WorkerDefaults::class.java, WorkerRuntime::class.java,
+        WorkerDeliveryInterceptor::class.java, WorkerDeliveryEntryInterceptor::class.java
+      )
     if (capabilities.isPresent(Capability.METRICS)) beans.addBeanClass(MicrometerWorkerDefaults::class.java)
     return beans.build()
   }
@@ -48,7 +50,8 @@ class WorkerProcessor {
   @BuildStep
   fun collaborators(): UnremovableBeanBuildItem = UnremovableBeanBuildItem.beanTypes(
     TaskSubscriptionApi::class.java, ServiceTaskCompletionApi::class.java, VariableConverter::class.java,
-    ParameterResolver::class.java, ResultResolver::class.java, ProcessEngineWorkerMetrics::class.java, IdempotencyRegistry::class.java)
+    ParameterResolver::class.java, ResultResolver::class.java, ProcessEngineWorkerMetrics::class.java, IdempotencyRegistry::class.java
+  )
 
   @BuildStep
   fun retainWorkers(combined: CombinedIndexBuildItem): UnremovableBeanBuildItem {
@@ -65,8 +68,12 @@ class WorkerProcessor {
       if (beanClass.isInterface) continue
       beanClass.methods.filter { !it.isBridge && !it.isSynthetic }
         .filter { it.workerMetadata(beanClass) != null }
-        .forEach { method -> methods.add("${method.declaringClass.name}|${method.name}|" +
-          MethodType.methodType(method.returnType, method.parameterTypes.toList()).descriptorString()) }
+        .forEach { method ->
+          methods.add(
+            "${method.declaringClass.name}|${method.name}|" +
+              MethodType.methodType(method.returnType, method.parameterTypes.toList()).descriptorString()
+          )
+        }
     }
     return AnnotationsTransformerBuildItem(object : AnnotationsTransformer {
       override fun appliesTo(kind: AnnotationTarget.Kind) = kind == AnnotationTarget.Kind.METHOD
@@ -122,8 +129,12 @@ class WorkerProcessor {
         val transaction = transaction(bean, method)
         val rollback = exceptionTypes(transaction, "rollbackOn")
         val dontRollback = exceptionTypes(transaction, "dontRollbackOn")
-        descriptors.add(WorkerDefinition(bean.identifier, beanClass.name, WorkerMethods.descriptor(beanClass, method),
-          transactionType(transaction), rollback, dontRollback))
+        descriptors.add(
+          WorkerDefinition(
+            bean.identifier, beanClass.name, WorkerMethods.descriptor(beanClass, method),
+            transactionType(transaction), rollback, dontRollback
+          )
+        )
         val exceptions = rollback + dontRollback
         if (exceptions.isNotEmpty()) reflection.produce(ReflectiveClassBuildItem.builder(*exceptions.toTypedArray()).build())
       }
@@ -169,11 +180,15 @@ class WorkerProcessor {
     if (indexed != null) {
       for (method in indexed.methods()) {
         for (parameter in method.parameterTypes()) {
-          hierarchies.produce(ReflectiveHierarchyBuildItem.builder(parameter).index(index)
-            .source("Process engine worker ${type.name}").build())
+          hierarchies.produce(
+            ReflectiveHierarchyBuildItem.builder(parameter).index(index)
+              .source("Process engine worker ${type.name}").build()
+          )
         }
-        if (!method.isConstructor) hierarchies.produce(ReflectiveHierarchyBuildItem.builder(method.returnType())
-          .index(index).source("Process engine worker ${type.name}").build())
+        if (!method.isConstructor) hierarchies.produce(
+          ReflectiveHierarchyBuildItem.builder(method.returnType())
+            .index(index).source("Process engine worker ${type.name}").build()
+        )
       }
     }
     registerReflection(type.superclass, index, reflection, hierarchies)
@@ -181,12 +196,16 @@ class WorkerProcessor {
   }
 
   private fun registerConverters(index: IndexView, reflection: BuildProducer<ReflectiveClassBuildItem>) {
-    reflection.produce(ReflectiveClassBuildItem.builder(ProcessEngineWorker::class.java.name, Variable::class.java.name)
-      .methods().build())
+    reflection.produce(
+      ReflectiveClassBuildItem.builder(ProcessEngineWorker::class.java.name, Variable::class.java.name)
+        .methods().build()
+    )
     for (variable in index.getAnnotations(DotName.createSimple(Variable::class.java.name))) {
       val converter = variable.value("converter")
-      if (converter != null) reflection.produce(ReflectiveClassBuildItem.builder(converter.asClass().name().toString())
-        .constructors().methods().build())
+      if (converter != null) reflection.produce(
+        ReflectiveClassBuildItem.builder(converter.asClass().name().toString())
+          .constructors().methods().build()
+      )
     }
   }
 

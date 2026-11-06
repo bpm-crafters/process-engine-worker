@@ -6,9 +6,13 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class RegistrationDisabledTest {
   companion object {
-    @JvmField @RegisterExtension
+    @JvmField
+    @RegisterExtension
     val APP = QuarkusExtensionTest().withApplicationRoot { it.addClass(DisabledWorkerTest.UnusedWorker::class.java) }
       .overrideRuntimeConfigKey("dev.bpm-crafters.process-api.worker.register-process-workers", "false")
   }
-  @Test fun startsWithoutEngineClientsWhenRegistrationIsDisabled() {}
+
+  @Test
+  fun startsWithoutEngineClientsWhenRegistrationIsDisabled() {
+  }
 }

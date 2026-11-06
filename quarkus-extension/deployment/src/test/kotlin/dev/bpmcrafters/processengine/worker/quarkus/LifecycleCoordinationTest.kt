@@ -15,22 +15,34 @@ import jakarta.inject.Singleton
 import jakarta.transaction.Status
 import jakarta.transaction.TransactionManager
 import jakarta.transaction.Transactional
-import java.util.concurrent.*
-import java.util.concurrent.atomic.AtomicInteger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 class LifecycleCoordinationTest {
   companion object {
-    @JvmField @RegisterExtension
-    val APP = QuarkusExtensionTest().withApplicationRoot { it.addClasses(State::class.java, Engine::class.java,
-      Workers::class.java, Handle::class.java, Metadata::class.java) }
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withApplicationRoot {
+      it.addClasses(
+        State::class.java, Engine::class.java,
+        Workers::class.java, Handle::class.java, Metadata::class.java
+      )
+    }
   }
-  @Inject lateinit var state: State
-  @Inject lateinit var transactions: TransactionManager
 
-  @Test fun shutdownInsideDeliveryCancelsUncommittedCallbacksAndDisposesOnlyAfterAsyncUnsubscribe() {
+  @Inject
+  lateinit var state: State
+  @Inject
+  lateinit var transactions: TransactionManager
+
+  @Test
+  fun shutdownInsideDeliveryCancelsUncommittedCallbacksAndDisposesOnlyAfterAsyncUnsubscribe() {
     transactions.begin()
     try {
       val ambient = transactions.transaction
@@ -59,8 +71,10 @@ class LifecycleCoordinationTest {
       if (transactions.transaction != null) transactions.rollback()
     }
   }
+
   class Handle : TaskSubscription
   class Metadata : MetaInfo
+
   @Singleton
   class State {
     val commands = ConcurrentHashMap<String, SubscribeForTaskCmd>()
@@ -77,11 +91,16 @@ class LifecycleCoordinationTest {
       commands[topic]!!.action.accept(TaskInformation(id, mapOf("processInstanceId" to "process")), emptyMap())
     }
   }
+
   @Singleton
   class Workers {
-    @Inject lateinit var state: State
-    @Transactional @ProcessEngineWorker(topic = "ambient")
+    @Inject
+    lateinit var state: State
+
+    @Transactional
+    @ProcessEngineWorker(topic = "ambient")
     fun ambient(): Map<String, Any?> = mapOf("value" to "ambient")
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     @ProcessEngineWorker(topic = "stop", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(ReflectiveOperationException::class)
@@ -94,17 +113,21 @@ class LifecycleCoordinationTest {
       return mapOf("value" to "stop")
     }
   }
+
   @Dependent
   class Engine : TaskSubscriptionApi, ServiceTaskCompletionApi, AutoCloseable {
-    @Inject lateinit var state: State
+    @Inject
+    lateinit var state: State
     override fun subscribeForTask(command: SubscribeForTaskCmd): CompletableFuture<TaskSubscription> {
       state.commands[requireNotNull(command.taskDescriptionKey)] = command
       return CompletableFuture.completedFuture(Handle())
     }
+
     override fun unsubscribe(command: UnsubscribeFromTaskCmd): CompletableFuture<Empty> {
       state.unsubscribes.incrementAndGet()
       return state.unsubscribeResult
     }
+
     override fun getSupportedRestrictions(): Set<String> = emptySet()
     override fun meta(instance: MetaInfoAware): MetaInfo = Metadata()
     override fun completeTask(command: CompleteTaskCmd): CompletableFuture<Empty> {
@@ -112,15 +135,21 @@ class LifecycleCoordinationTest {
       state.events.add("complete:${command.taskId}")
       return CompletableFuture.completedFuture(Empty)
     }
+
     override fun completeTaskByError(command: CompleteTaskByErrorCmd): CompletableFuture<Empty> = throw AssertionError("Unexpected business error")
     override fun failTask(command: FailTaskCmd): CompletableFuture<Empty> {
       state.failed.add(command.taskId)
       return CompletableFuture.completedFuture(Empty)
     }
-    @PreDestroy fun dispose() {
+
+    @PreDestroy
+    fun dispose() {
       state.events.add("dispose")
       if (state.disposed.incrementAndGet() == 2) state.allDisposed.complete(null)
     }
-    override fun close() { state.closed.incrementAndGet() }
+
+    override fun close() {
+      state.closed.incrementAndGet()
+    }
   }
 }

@@ -8,10 +8,19 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class UnmanagedWorkerTest {
   companion object {
-    @JvmField @RegisterExtension
+    @JvmField
+    @RegisterExtension
     val APP = QuarkusExtensionTest().withApplicationRoot { it.addClass(UnmanagedWorker::class.java) }
       .assertException { assertThat(it).hasStackTraceContaining("Annotated worker has no supported CDI-managed bean") }
   }
-  @Test fun explainsMissingCdiScopeRatherThanSilentlyIgnoringWorkers() {}
-  class UnmanagedWorker { @ProcessEngineWorker fun work() {} }
+
+  @Test
+  fun explainsMissingCdiScopeRatherThanSilentlyIgnoringWorkers() {
+  }
+
+  class UnmanagedWorker {
+    @ProcessEngineWorker
+    fun work() {
+    }
+  }
 }

@@ -10,6 +10,7 @@ import io.smallrye.config.WithParentName
 @ConfigMapping(prefix = "dev.bpm-crafters.process-api.worker.deployment.bpmn-resource-pattern")
 fun interface BpmnResourcePatternConfig {
   /** Classpath Ant pattern for BPMN resources. Only classpath: and classpath*: are supported. */
-  @WithDefault("classpath*:/**/*.bpmn") @WithParentName
+  @WithDefault("classpath*:/**/*.bpmn")
+  @WithParentName
   fun pattern(): String
 }

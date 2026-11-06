@@ -11,6 +11,9 @@ import jakarta.inject.Singleton
 /** Added to Arc only when the Micrometer extension is present. */
 @Singleton
 class MicrometerWorkerDefaults {
-  @Produces @Singleton @DefaultBean @Priority(10)
+  @Produces
+  @Singleton
+  @DefaultBean
+  @Priority(10)
   fun metrics(registry: MeterRegistry): ProcessEngineWorkerMetrics = ProcessEngineWorkerMetricsMicrometer(registry)
 }

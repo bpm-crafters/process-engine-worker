@@ -14,18 +14,26 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class WorkerWithUnrelatedProducersTest {
   companion object {
-    @JvmField @RegisterExtension
-    val APP = QuarkusExtensionTest().withApplicationRoot { it.addClasses(
-      Worker::class.java, RecordingRegistry::class.java,
-      WorkerIdentityAndMetadataTest.Engine::class.java, WorkerIdentityAndMetadataTest.Handle::class.java,
-      WorkerIdentityAndMetadataTest.Metadata::class.java) }
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withApplicationRoot {
+      it.addClasses(
+        Worker::class.java, RecordingRegistry::class.java,
+        WorkerIdentityAndMetadataTest.Engine::class.java, WorkerIdentityAndMetadataTest.Handle::class.java,
+        WorkerIdentityAndMetadataTest.Metadata::class.java
+      )
+    }
   }
 
-  @Inject lateinit var engine: WorkerIdentityAndMetadataTest.Engine
-  @Inject lateinit var worker: Worker
-  @Inject lateinit var registry: IdempotencyRegistry
+  @Inject
+  lateinit var engine: WorkerIdentityAndMetadataTest.Engine
+  @Inject
+  lateinit var worker: Worker
+  @Inject
+  lateinit var registry: IdempotencyRegistry
 
-  @Test fun registersManagedWorkerOnceAndUsesItsProducedRegistryDuringDelivery() {
+  @Test
+  fun registersManagedWorkerOnceAndUsesItsProducedRegistryDuringDelivery() {
     assertThat(engine.commands.map { it.taskDescriptionKey }).containsExactly("producer-owner")
     engine.deliver("producer-owner", emptyMap())
     assertThat(worker.invocations).isEqualTo(1)
@@ -39,8 +47,13 @@ class WorkerWithUnrelatedProducersTest {
   class Worker {
     val customRegistry = RecordingRegistry()
     var invocations = 0
-    @Produces @Singleton fun registry(): IdempotencyRegistry = customRegistry
-    @Produces @JvmField final val unrelated: String = "not a worker"
+    @Produces
+    @Singleton
+    fun registry(): IdempotencyRegistry = customRegistry
+    @Produces
+    @JvmField
+    final val unrelated: String = "not a worker"
+
     @ProcessEngineWorker(topic = "producer-owner")
     fun work(): Map<String, Any?> {
       invocations++
@@ -55,7 +68,11 @@ class WorkerWithUnrelatedProducersTest {
       lookups.add(taskInformation.taskId)
       return null
     }
-    override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) { registrations.add(result) }
+
+    override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) {
+      registrations.add(result)
+    }
+
     override fun removeTaskResult(taskId: String) {}
     override fun removeAllTaskResults(processInstanceId: String) {}
   }

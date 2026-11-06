@@ -9,7 +9,9 @@ import jakarta.inject.Singleton
 
 @Singleton
 class DeploymentBeans {
-  @Produces @Singleton @DefaultBean
+  @Produces
+  @Singleton
+  @DefaultBean
   fun processDeployment(api: Instance<DeploymentApi>, resources: DeploymentResources, config: DeploymentConfig): ProcessDeployment =
     ProcessDeployment {
       // Like Spring's ConditionalOnBean, explicit startup enablement still skips a missing client.

@@ -14,7 +14,8 @@ import jakarta.interceptor.InvocationContext
 @WorkerDeliveryBinding
 @Priority(Int.MIN_VALUE)
 class WorkerDeliveryEntryInterceptor {
-  @Inject @Intercepted
+  @Inject
+  @Intercepted
   lateinit var bean: Bean<*>
 
   @AroundInvoke

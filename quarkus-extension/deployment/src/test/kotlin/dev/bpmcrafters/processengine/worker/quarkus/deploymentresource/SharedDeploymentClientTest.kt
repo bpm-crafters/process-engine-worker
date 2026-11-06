@@ -13,26 +13,43 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class SharedDeploymentClientTest {
   companion object {
-    @JvmField @RegisterExtension
-    val APP = QuarkusExtensionTest().withApplicationRoot { it.addClasses(Clients::class.java, DependentDeploymentClientTest.Client::class.java,
-      DependentDeploymentClientTest.Client.Metadata::class.java, DependentDeploymentClientTest.TimeoutFuture::class.java)
-      .addAsResource(StringAsset("payload"), "shared-client/order.bpmn") }
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withApplicationRoot {
+      it.addClasses(
+        Clients::class.java, DependentDeploymentClientTest.Client::class.java,
+        DependentDeploymentClientTest.Client.Metadata::class.java, DependentDeploymentClientTest.TimeoutFuture::class.java
+      )
+        .addAsResource(StringAsset("payload"), "shared-client/order.bpmn")
+    }
       .overrideConfigKey("dev.bpm-crafters.process-api.worker.deployment.bpmn-resource-pattern", "classpath*:/shared-client/*.bpmn")
       .overrideConfigKey("dev.bpm-crafters.process-api.worker.deployment.dmn-resource-pattern", "classpath*:/shared-client/*.dmn")
   }
-  @Inject lateinit var deployment: ProcessDeployment
-  @Inject lateinit var clients: Clients
-  @Test fun pseudoSingletonProducerIsReusedAndNotDisposedByManualDeployment() {
+
+  @Inject
+  lateinit var deployment: ProcessDeployment
+  @Inject
+  lateinit var clients: Clients
+  @Test
+  fun pseudoSingletonProducerIsReusedAndNotDisposedByManualDeployment() {
     deployment.deployResources()
     deployment.deployResources()
     assertThat(clients.created).isEqualTo(1)
     assertThat(clients.disposed).isZero()
   }
+
   @Singleton
   class Clients {
     var created = 0
     var disposed = 0
-    @Produces @Singleton fun create(): DeploymentApi { created++; return DependentDeploymentClientTest.Client("success") }
-    fun dispose(@Disposes client: DeploymentApi) { disposed++ }
+    @Produces
+    @Singleton
+    fun create(): DeploymentApi {
+      created++; return DependentDeploymentClientTest.Client("success")
+    }
+
+    fun dispose(@Disposes client: DeploymentApi) {
+      disposed++
+    }
   }
 }

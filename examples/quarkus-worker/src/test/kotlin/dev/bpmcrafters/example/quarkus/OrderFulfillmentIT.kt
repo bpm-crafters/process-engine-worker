@@ -9,14 +9,14 @@ import io.restassured.config.RestAssuredConfig
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
-import java.time.Duration
-import java.time.Instant
-import java.time.OffsetDateTime
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.util.UUID
+import java.time.Duration
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.LockSupport
@@ -29,7 +29,8 @@ class OrderFulfillmentIT {
   private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
   private var lastResponse = "No engine response yet"
 
-  @Test fun `happy order reaches a persisted completed instance with shipment variables`() {
+  @Test
+  fun `happy order reaches a persisted completed instance with shipment variables`() {
     val id = UUID.randomUUID()
     ingress(id, "10.00")
     val key = instanceFor(id)
@@ -40,7 +41,8 @@ class OrderFulfillmentIT {
     assertTrue(notifications(id).isEmpty())
   }
 
-  @Test fun `rejected payment requires customer notification and does not ship`() {
+  @Test
+  fun `rejected payment requires customer notification and does not ship`() {
     val id = UUID.randomUUID()
     ingress(id, "21.00")
     val key = instanceFor(id)
@@ -62,7 +64,8 @@ class OrderFulfillmentIT {
     assertTrue(notifications(id).isEmpty())
   }
 
-  @Test fun `inventory timer delivers notification while inventory waits then ships`() {
+  @Test
+  fun `inventory timer delivers notification while inventory waits then ships`() {
     val id = UUID.randomUUID()
     ingress(id, "10.00", "out-of-stock")
     val key = instanceFor(id)
@@ -84,11 +87,15 @@ class OrderFulfillmentIT {
     val ship = completedElement(key, "Activity_15rdezk")
     assertFalse(fetch.start.isAfter(notify.start), "Inventory must start before notification: fetch=$fetch, notify=$notify")
     assertTrue(notify.start.isBefore(fetch.end), "Timer notification must start during inventory wait: fetch=$fetch, notify=$notify")
-    assertTrue(notify.end.isBefore(fetch.end), "Notification must be delivered and completed independently during inventory wait; run with the default 60s delay: fetch=$fetch, notify=$notify")
+    assertTrue(
+      notify.end.isBefore(fetch.end),
+      "Notification must be delivered and completed independently during inventory wait; run with the default 60s delay: fetch=$fetch, notify=$notify"
+    )
     assertFalse(fetch.end.isAfter(ship.start), "Shipment must follow inventory completion: fetch=$fetch, ship=$ship")
   }
 
-  @Test fun fourConcurrentInventoryWaitsDoNotStarveNotifications() {
+  @Test
+  fun fourConcurrentInventoryWaitsDoNotStarveNotifications() {
     val ids = List(4) { UUID.randomUUID() }
     try {
       // Publish each order once, without serial engine/index waits between submissions.
@@ -98,10 +105,16 @@ class OrderFulfillmentIT {
       val keys = ids.associateWith(::instanceFor)
       eventually("all four inventory activities active together") {
         val active = keys.values.map { key ->
-          search("element-instances", mapOf("processInstanceKey" to key,
-            "elementId" to "Activity_0tmo7ip", "state" to "ACTIVE"))
-            .singleOrNull { it.path("processInstanceKey").asText() == key &&
-              it.path("elementId").asText() == "Activity_0tmo7ip" && it.path("state").asText() == "ACTIVE" }
+          search(
+            "element-instances", mapOf(
+              "processInstanceKey" to key,
+              "elementId" to "Activity_0tmo7ip", "state" to "ACTIVE"
+            )
+          )
+            .singleOrNull {
+              it.path("processInstanceKey").asText() == key &&
+                it.path("elementId").asText() == "Activity_0tmo7ip" && it.path("state").asText() == "ACTIVE"
+            }
         }
         active.takeIf { elements -> elements.all { it != null } }
       }
@@ -112,23 +125,29 @@ class OrderFulfillmentIT {
         tasks.takeIf { it.values.all { task -> task != null } }
       }
       // Finish every notification before asserting timing, including on the unfixed bridge.
-      assertAll("complete all four notifications", ids.map { id -> Executable {
-        val taskId = delivered.getValue(id)!!.path("taskId").asText()
-        application().post("/delayed-inventory/$taskId").then().statusCode(204)
-      } })
+      assertAll("complete all four notifications", ids.map { id ->
+        Executable {
+          val taskId = delivered.getValue(id)!!.path("taskId").asText()
+          application().post("/delayed-inventory/$taskId").then().statusCode(204)
+        }
+      })
       assertAll("all four orders finish", keys.values.map { key -> Executable { completed(key) } })
       val fetches = keys.mapValues { (_, key) -> completedElement(key, "Activity_0tmo7ip") }
       val notifications = keys.mapValues { (_, key) -> completedElement(key, DELAYED_INVENTORY) }
       val earliestInventoryEnd = fetches.values.minOf { it.end }
       // An individual notification beating its own fetch is insufficient: all four must
       // complete before ANY inventory handler releases its service-worker execution slot.
-      assertAll("notifications complete while all four inventory jobs still wait", ids.map { id -> Executable {
-        val fetch = fetches.getValue(id)
-        val notify = notifications.getValue(id)
-        assertFalse(fetch.start.isAfter(notify.start), "Inventory must start before notification for $id: fetch=$fetch, notify=$notify")
-        assertTrue(notify.end.isBefore(earliestInventoryEnd),
-          "Notification for $id must complete before the earliest inventory completion; use the default 60s delay: notify=$notify, fetches=$fetches")
-      } })
+      assertAll("notifications complete while all four inventory jobs still wait", ids.map { id ->
+        Executable {
+          val fetch = fetches.getValue(id)
+          val notify = notifications.getValue(id)
+          assertFalse(fetch.start.isAfter(notify.start), "Inventory must start before notification for $id: fetch=$fetch, notify=$notify")
+          assertTrue(
+            notify.end.isBefore(earliestInventoryEnd),
+            "Notification for $id must complete before the earliest inventory completion; use the default 60s delay: notify=$notify, fetches=$fetches"
+          )
+        }
+      })
     } finally {
       // Best effort even if a barrier, HTTP assertion, or timing assertion fails. Never
       // leave already-delivered tasks blocking application shutdown just for diagnostics.
@@ -142,11 +161,13 @@ class OrderFulfillmentIT {
     }
   }
 
-  private fun application() = given().config(RestAssuredConfig.config().httpClient(
-    HttpClientConfig.httpClientConfig()
-      .setParam("http.connection.timeout", 10_000)
-      .setParam("http.socket.timeout", 10_000)
-  ))
+  private fun application() = given().config(
+    RestAssuredConfig.config().httpClient(
+      HttpClientConfig.httpClientConfig()
+        .setParam("http.connection.timeout", 10_000)
+        .setParam("http.socket.timeout", 10_000)
+    )
+  )
 
   private fun ingress(id: UUID, price: String, name: String = "book") {
     application().contentType("application/json").body(validOrder(id, price, name))
@@ -166,8 +187,12 @@ class OrderFulfillmentIT {
     do {
       val page = mutableMapOf<String, Any>("limit" to 100)
       cursor?.let { page["after"] = it }
-      val result = engineRequest("POST", "/v2/variables/search", mapOf("filter" to mapOf("name" to "order"),
-        "sort" to listOf(mapOf("field" to "variableKey", "order" to "ASC")), "page" to page))
+      val result = engineRequest(
+        "POST", "/v2/variables/search", mapOf(
+          "filter" to mapOf("name" to "order"),
+          "sort" to listOf(mapOf("field" to "variableKey", "order" to "ASC")), "page" to page
+        )
+      )
       val items = result.path("items").toList()
       for (item in items) {
         val full = if (item.path("isTruncated").asBoolean()) engineRequest("GET", "/v2/variables/${item.path("variableKey").asText()}") else item

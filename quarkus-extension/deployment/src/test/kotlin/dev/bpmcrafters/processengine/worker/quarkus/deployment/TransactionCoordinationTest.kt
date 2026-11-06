@@ -15,8 +15,15 @@ import jakarta.enterprise.context.RequestScoped
 import jakarta.enterprise.inject.Produces
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import jakarta.interceptor.*
+import jakarta.interceptor.AroundInvoke
+import jakarta.interceptor.Interceptor
+import jakarta.interceptor.InterceptorBinding
+import jakarta.interceptor.InvocationContext
 import jakarta.transaction.*
+import org.assertj.core.api.Assertions.*
+import org.awaitility.Awaitility.await
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
 import java.util.*
@@ -26,28 +33,36 @@ import java.util.logging.Handler
 import java.util.logging.Level
 import java.util.logging.LogRecord
 import java.util.logging.Logger
-import org.assertj.core.api.Assertions.*
-import org.awaitility.Awaitility.await
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
 
 class TransactionCoordinationTest {
   companion object {
-    @JvmField @RegisterExtension
-    val APP = QuarkusExtensionTest().withApplicationRoot { it.addClasses(
-      Workers::class.java, Engine::class.java, Handle::class.java, Metadata::class.java, Audit::class.java,
-      AuditRegistry::class.java, RegistryProducer::class.java, RequestProbe::class.java, RequestProbe.Companion::class.java,
-      Outer::class.java, Inner::class.java, OuterInterceptor::class.java, InnerInterceptor::class.java,
-      WriteSynchronization::class.java, FailingSynchronization::class.java, ReportingLogCapture::class.java, CheckedApplicationFailure::class.java) }
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withApplicationRoot {
+      it.addClasses(
+        Workers::class.java, Engine::class.java, Handle::class.java, Metadata::class.java, Audit::class.java,
+        AuditRegistry::class.java, RegistryProducer::class.java, RequestProbe::class.java, RequestProbe.Companion::class.java,
+        Outer::class.java, Inner::class.java, OuterInterceptor::class.java, InnerInterceptor::class.java,
+        WriteSynchronization::class.java, FailingSynchronization::class.java, ReportingLogCapture::class.java, CheckedApplicationFailure::class.java
+      )
+    }
+
     fun task(id: String) = TaskInformation(id, mapOf("processInstanceId" to "process"))
   }
-  @Inject lateinit var engine: Engine
-  @Inject lateinit var audit: Audit
-  @Inject lateinit var registry: IdempotencyRegistry
-  @Inject lateinit var transactions: TransactionManager
-  @Inject lateinit var workers: Workers
 
-  @Test fun supportsAndMandatoryEstablishAnOwnedEnvelopeButOrdinaryCallsKeepCdiSemantics() {
+  @Inject
+  lateinit var engine: Engine
+  @Inject
+  lateinit var audit: Audit
+  @Inject
+  lateinit var registry: IdempotencyRegistry
+  @Inject
+  lateinit var transactions: TransactionManager
+  @Inject
+  lateinit var workers: Workers
+
+  @Test
+  fun supportsAndMandatoryEstablishAnOwnedEnvelopeButOrdinaryCallsKeepCdiSemantics() {
     for (topic in listOf("supports", "mandatory")) {
       val task = task("owned-$topic")
       engine.deliver(topic, task)
@@ -59,7 +74,11 @@ class TransactionCoordinationTest {
     val ordinary = task("ordinary-supports")
     val context = io.quarkus.arc.Arc.container().requestContext()
     context.activate()
-    try { workers.supports(ordinary) } finally { context.terminate() }
+    try {
+      workers.supports(ordinary)
+    } finally {
+      context.terminate()
+    }
     assertThat(engine.business).containsKey(ordinary.taskId)
     assertThat(engine.business[ordinary.taskId]).isNull()
     assertThat(audit.registered).doesNotContainKey(ordinary.taskId)
@@ -67,7 +86,8 @@ class TransactionCoordinationTest {
     assertThatThrownBy { workers.mandatory(task("ordinary-mandatory")) }.isInstanceOf(TransactionalException::class.java)
   }
 
-  @Test fun requiresNewUsesOnlyItsActualWorkerTransactionForBusinessCacheAndBeforeCommitCompletion() {
+  @Test
+  fun requiresNewUsesOnlyItsActualWorkerTransactionForBusinessCacheAndBeforeCommitCompletion() {
     val task = task("new-before")
     engine.deliver("new-before", task)
     val business = engine.business[task.taskId]
@@ -78,7 +98,8 @@ class TransactionCoordinationTest {
     assertThat(registry.getTaskResult(task)).isNull()
   }
 
-  @Test fun requiresNewBeforeCommitFailureRollsBackBusinessAndCacheAtomically() {
+  @Test
+  fun requiresNewBeforeCommitFailureRollsBackBusinessAndCacheAtomically() {
     val task = task("new-before-failure")
     engine.offline.add(task.taskId)
     engine.deliver("new-before", task)
@@ -88,7 +109,8 @@ class TransactionCoordinationTest {
     assertThat(engine.failures[task.taskId]!!.reason).isEqualTo("completion offline")
   }
 
-  @Test fun requiresNewCacheReplaySkipsBusinessAndUsesSeparateReplayTransaction() {
+  @Test
+  fun requiresNewCacheReplaySkipsBusinessAndUsesSeparateReplayTransaction() {
     val task = task("new-replay")
     engine.offline.add(task.taskId)
     engine.deliver("new-after", task)
@@ -104,7 +126,8 @@ class TransactionCoordinationTest {
     assertThat(registry.getTaskResult(task)).isNull()
   }
 
-  @Test fun concurrentMissesRetainRetryCacheSemanticsWithoutClaimingAtomicDuplicateSuppression() {
+  @Test
+  fun concurrentMissesRetainRetryCacheSemanticsWithoutClaimingAtomicDuplicateSuppression() {
     val executor = Executors.newFixedThreadPool(2)
     val task = task("concurrent-miss")
     try {
@@ -122,7 +145,8 @@ class TransactionCoordinationTest {
     }
   }
 
-  @Test fun callerOwnsJoinedCommitAndDeferredCallbackGetsAFreshRequestContext() {
+  @Test
+  fun callerOwnsJoinedCommitAndDeferredCallbackGetsAFreshRequestContext() {
     val task = task("ambient-after")
     transactions.begin()
     try {
@@ -138,10 +162,13 @@ class TransactionCoordinationTest {
       }
       assertThat(engine.businessRequest[task.taskId]).isNotEqualTo(engine.completionRequest[task.taskId])
       assertThat(engine.completing[task.taskId]).isNull()
-    } finally { if (transactions.transaction != null) transactions.rollback() }
+    } finally {
+      if (transactions.transaction != null) transactions.rollback()
+    }
   }
 
-  @Test fun ambientRollbackReportsFailureWithoutPublishingResultOrCompletingTask() {
+  @Test
+  fun ambientRollbackReportsFailureWithoutPublishingResultOrCompletingTask() {
     val task = task("ambient-rollback")
     transactions.begin()
     try {
@@ -151,10 +178,13 @@ class TransactionCoordinationTest {
       assertThat(engine.results).doesNotContainKey(task.taskId)
       assertThat(registry.getTaskResult(task)).isNull()
       assertThat(engine.committedWrites).doesNotContain(task.taskId)
-    } finally { if (transactions.transaction != null) transactions.rollback() }
+    } finally {
+      if (transactions.transaction != null) transactions.rollback()
+    }
   }
 
-  @Test fun suspendedModesDoNotCommitOrMarkTheCallersTransaction() {
+  @Test
+  fun suspendedModesDoNotCommitOrMarkTheCallersTransaction() {
     transactions.begin()
     try {
       val ambient = transactions.transaction
@@ -168,10 +198,13 @@ class TransactionCoordinationTest {
       assertThat(engine.business).doesNotContainKey("suspended-never")
       assertThat(transactions.transaction).isSameAs(ambient)
       assertThat(ambient.status).isEqualTo(Status.STATUS_ACTIVE)
-    } finally { transactions.rollback() }
+    } finally {
+      transactions.rollback()
+    }
   }
 
-  @Test fun ambientFailureFollowsJakartaPolicyAndReportsOutsideTheCallersTransaction() {
+  @Test
+  fun ambientFailureFollowsJakartaPolicyAndReportsOutsideTheCallersTransaction() {
     for (topic in listOf("checked", "runtime-exempt", "runtime", "checked-rollback")) {
       val task = task("ambient-policy-$topic")
       transactions.begin()
@@ -185,11 +218,14 @@ class TransactionCoordinationTest {
         if (topic.startsWith("checked")) assertThat(engine.errors).containsKey(task.taskId)
         else assertThat(engine.failures).containsKey(task.taskId)
         if (rollback) transactions.rollback() else transactions.commit()
-      } finally { if (transactions.transaction != null) transactions.rollback() }
+      } finally {
+        if (transactions.transaction != null) transactions.rollback()
+      }
     }
   }
 
-  @Test fun requiresNewCacheReplaySuspendsRatherThanJoiningTheCallersTransaction() {
+  @Test
+  fun requiresNewCacheReplaySuspendsRatherThanJoiningTheCallersTransaction() {
     val task = task("new-ambient-replay")
     engine.offline.add(task.taskId)
     engine.deliver("new-after", task)
@@ -203,11 +239,14 @@ class TransactionCoordinationTest {
       assertThat(audit.lookups[task.taskId]!!.filterNotNull()).allSatisfy { assertThat(it).isNotSameAs(ambient) }
       assertThat(engine.calls[task.taskId]).isEqualTo(1)
       assertThat(engine.completionCounts[task.taskId]).isEqualTo(1)
-    } finally { transactions.rollback() }
+    } finally {
+      transactions.rollback()
+    }
     assertThat(registry.getTaskResult(task)).isNull()
   }
 
-  @Test fun beforeCompletionInBorrowedTransactionIsNotRepeatedAtCommit() {
+  @Test
+  fun beforeCompletionInBorrowedTransactionIsNotRepeatedAtCommit() {
     val task = task("borrowed-before")
     transactions.begin()
     try {
@@ -219,10 +258,13 @@ class TransactionCoordinationTest {
       transactions.commit()
       assertThat(engine.completionCounts[task.taskId]).isEqualTo(1)
       assertThat(registry.getTaskResult(task)).isNull()
-    } finally { if (transactions.transaction != null) transactions.rollback() }
+    } finally {
+      if (transactions.transaction != null) transactions.rollback()
+    }
   }
 
-  @Test fun neverRejectsAmbientCacheHitsBeforeAnyLookupOrBusinessInvocation() {
+  @Test
+  fun neverRejectsAmbientCacheHitsBeforeAnyLookupOrBusinessInvocation() {
     val task = task("never-cached")
     registry.register(task, mapOf("value" to "cached"))
     transactions.begin()
@@ -233,11 +275,14 @@ class TransactionCoordinationTest {
       assertThat(audit.lookups).doesNotContainKey(task.taskId)
       assertThat(engine.calls).doesNotContainKey(task.taskId)
       assertThat(ambient.status).isEqualTo(Status.STATUS_ACTIVE)
-    } finally { transactions.rollback() }
+    } finally {
+      transactions.rollback()
+    }
     assertThat(registry.getTaskResult(task)).containsEntry("value", "cached")
   }
 
-  @Test fun manualRequiresNewCompletionRunsOnceInsideItsActualTransaction() {
+  @Test
+  fun manualRequiresNewCompletionRunsOnceInsideItsActualTransaction() {
     val task = task("manual-new")
     engine.deliver("manual-new", task)
     engine.deliver("manual-new", task)
@@ -247,7 +292,8 @@ class TransactionCoordinationTest {
     assertThat(registry.getTaskResult(task)).containsEntry("value", task.taskId)
   }
 
-  @Test fun honorsCheckedRuntimeAndExplicitRollbackPolicies() {
+  @Test
+  fun honorsCheckedRuntimeAndExplicitRollbackPolicies() {
     for (topic in listOf("checked", "checked-exempt", "runtime-exempt", "checked-wrapper")) {
       val task = task("policy-$topic")
       engine.deliver(topic, task)
@@ -265,7 +311,8 @@ class TransactionCoordinationTest {
     assertThat(engine.failures["policy-checked-wrapper"]!!.reason).isEqualTo("wrapped runtime")
   }
 
-  @Test fun ordinaryCdiUnwrapsInvocationTargetExceptionBeforeApplyingRollbackPolicy() {
+  @Test
+  fun ordinaryCdiUnwrapsInvocationTargetExceptionBeforeApplyingRollbackPolicy() {
     val task = task("ordinary-arc-reflection")
     val context = io.quarkus.arc.Arc.container().requestContext()
     context.activate()
@@ -285,7 +332,8 @@ class TransactionCoordinationTest {
     }
   }
 
-  @Test fun keepsInnerTransactionResultAndAllInterceptorsIncludingOuterFailureAfterCommit() {
+  @Test
+  fun keepsInnerTransactionResultAndAllInterceptorsIncludingOuterFailureAfterCommit() {
     val normal = task("wrapped-normal")
     engine.deliver("wrapped", normal)
     assertThat(engine.results[normal.taskId]).containsEntry("inner", true).doesNotContainKeys("outer", "outer-mutated")
@@ -297,32 +345,42 @@ class TransactionCoordinationTest {
     assertThat(engine.completionCounts[failed.taskId]).isEqualTo(1)
     val context = io.quarkus.arc.Arc.container().requestContext()
     context.activate()
-    try { assertThat(workers.wrapped(task("wrapped-ordinary"))).containsExactly(entry("outer", true)) }
-    finally { context.terminate() }
+    try {
+      assertThat(workers.wrapped(task("wrapped-ordinary"))).containsExactly(entry("outer", true))
+    } finally {
+      context.terminate()
+    }
     assertThat(engine.results).doesNotContainKey("wrapped-ordinary")
   }
 
-  @Test fun nestedDeliveriesDoNotCaptureOrdinaryCallsOrLoseTheOuterToken() {
+  @Test
+  fun nestedDeliveriesDoNotCaptureOrdinaryCallsOrLoseTheOuterToken() {
     engine.deliver("root", task("root-task"))
     assertThat(engine.completionCounts).containsEntry("root-task", 1).containsEntry("root-task-child", 1)
     assertThat(engine.business["root-task"]).isSameAs(engine.business["root-task-child"])
     assertThat(audit.registered).doesNotContainKey("root-task-ordinary")
     assertThat(engine.completionCounts).doesNotContainKey("root-task-ordinary")
   }
-  @Test fun ordinarySameMethodCallFromAnOuterInterceptorCannotClaimTheDeliveryToken() {
+
+  @Test
+  fun ordinarySameMethodCallFromAnOuterInterceptorCannotClaimTheDeliveryToken() {
     engine.deliver("wrapped", task("wrapped-precall"))
     assertThat(engine.calls).containsEntry("wrapped-precall", 1).containsEntry("wrapped-precall-ordinary-before", 1)
     assertThat(audit.registered).containsKey("wrapped-precall").doesNotContainKey("wrapped-precall-ordinary-before")
     assertThat(engine.results).containsKey("wrapped-precall").doesNotContainKey("wrapped-precall-ordinary-before")
   }
-  @Test fun outerShortCircuitCannotMasqueradeAsATransactionBoundWorkerResult() {
+
+  @Test
+  fun outerShortCircuitCannotMasqueradeAsATransactionBoundWorkerResult() {
     engine.deliver("wrapped", task("wrapped-short-circuit"))
     assertThat(engine.calls).doesNotContainKey("wrapped-short-circuit")
     assertThat(engine.results).doesNotContainKey("wrapped-short-circuit")
     assertThat(engine.failures["wrapped-short-circuit"]!!.reason).contains("missed its delivery interceptor")
     assertThat(workers.wrapped(task("ordinary-short-circuit"))).containsExactly(entry("outer", true))
   }
-  @Test fun outerRecoveryDoesNotReplaceAnInnerFailedOutcomeButOrdinaryCallsStillRecover() {
+
+  @Test
+  fun outerRecoveryDoesNotReplaceAnInnerFailedOutcomeButOrdinaryCallsStillRecover() {
     engine.deliver("wrapped", task("wrapped-recover"))
     assertThat(engine.outcomes["wrapped-recover"]).isEqualTo(Status.STATUS_COMMITTED)
     assertThat(engine.errors["wrapped-recover"]!!.errorCode).isEqualTo("checked-code")
@@ -332,9 +390,13 @@ class TransactionCoordinationTest {
     try {
       assertThat(workers.wrapped(task("ordinary-recover"))).containsExactly(entry("outer", true))
       assertThat(engine.errors).doesNotContainKey("ordinary-recover")
-    } finally { context.terminate() }
+    } finally {
+      context.terminate()
+    }
   }
-  @Test fun requiresNewCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
+
+  @Test
+  fun requiresNewCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
     val task = task("commit-failure-recover")
     engine.deliver("swallowed-commit", task)
     assertThat(engine.calls[task.taskId]).isEqualTo(1)
@@ -346,12 +408,17 @@ class TransactionCoordinationTest {
     assertThat(engine.completionCounts.getOrDefault(task.taskId, 0)).isZero()
     assertThat(engine.failureAttempts.getOrDefault(task.taskId, 0)).isEqualTo(1)
   }
-  @Test fun requiresNewManualCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
+
+  @Test
+  fun requiresNewManualCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
     assertRecoveredCommitFailure("swallowed-manual-commit", 0)
   }
-  @Test fun requiresNewBeforeCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
+
+  @Test
+  fun requiresNewBeforeCommitFailureRecoveredByOuterInterceptorStillReportsOneFailure() {
     assertRecoveredCommitFailure("swallowed-before-commit", 1)
   }
+
   private fun assertRecoveredCommitFailure(topic: String, expectedCompletions: Int) {
     val task = task("$topic-recover")
     engine.deliver(topic, task)
@@ -365,8 +432,17 @@ class TransactionCoordinationTest {
     else assertThat(engine.completing[task.taskId]).isSameAs(engine.business[task.taskId])
     assertThat(engine.failureAttempts.getOrDefault(task.taskId, 0)).isEqualTo(1)
   }
-  @Test fun manualRequiredAmbientRollbackReportsOneFailure() { assertManualRollback("manual-required") }
-  @Test fun manualMandatoryAmbientRollbackReportsOneFailure() { assertManualRollback("manual-mandatory") }
+
+  @Test
+  fun manualRequiredAmbientRollbackReportsOneFailure() {
+    assertManualRollback("manual-required")
+  }
+
+  @Test
+  fun manualMandatoryAmbientRollbackReportsOneFailure() {
+    assertManualRollback("manual-mandatory")
+  }
+
   private fun assertManualRollback(topic: String) {
     val task = task("rollback-$topic")
     transactions.begin()
@@ -382,9 +458,13 @@ class TransactionCoordinationTest {
       assertThat(engine.committedWrites).doesNotContain(task.taskId)
       assertThat(engine.results).doesNotContainKey(task.taskId)
       assertThat(engine.completionCounts.getOrDefault(task.taskId, 0)).isZero()
-    } finally { if (transactions.transaction != null) transactions.rollback() }
+    } finally {
+      if (transactions.transaction != null) transactions.rollback()
+    }
   }
-  @Test fun manualInvocationFailureIsNotReportedAgainAtAmbientRollback() {
+
+  @Test
+  fun manualInvocationFailureIsNotReportedAgainAtAmbientRollback() {
     for (topic in listOf("manual-required", "manual-mandatory")) {
       val task = task("manual-invocation-failure-$topic")
       transactions.begin()
@@ -398,10 +478,14 @@ class TransactionCoordinationTest {
         assertThat(engine.failureAttempts.getOrDefault(task.taskId, 0)).isEqualTo(1)
         assertThat(registry.getTaskResult(task)).isNull()
         assertThat(engine.completionCounts.getOrDefault(task.taskId, 0)).isZero()
-      } finally { if (transactions.transaction != null) transactions.rollback() }
+      } finally {
+        if (transactions.transaction != null) transactions.rollback()
+      }
     }
   }
-  @Test fun bpmnReportingFailureHasOneTerminalOwnerOutsideAmbientTransaction() {
+
+  @Test
+  fun bpmnReportingFailureHasOneTerminalOwnerOutsideAmbientTransaction() {
     val task = task("bpmn-reporting-failure")
     val reportingFailure = IllegalStateException("business error reporting offline")
     engine.errorReportingFailures[task.taskId] = reportingFailure
@@ -418,9 +502,13 @@ class TransactionCoordinationTest {
         assertThat(ambient.status).isEqualTo(Status.STATUS_ACTIVE)
         assertThat(logs.failuresIncluding(escaped)).contains(engine.workerFailures[task.taskId], reportingFailure)
       }
-    } finally { transactions.rollback() }
+    } finally {
+      transactions.rollback()
+    }
   }
-  @Test fun technicalReportingFailureHasOneTerminalOwnerOutsideAmbientTransaction() {
+
+  @Test
+  fun technicalReportingFailureHasOneTerminalOwnerOutsideAmbientTransaction() {
     val task = task("technical-reporting-failure")
     val reportingFailure = IllegalStateException("technical failure reporting offline")
     engine.technicalReportingFailures[task.taskId] = reportingFailure
@@ -437,9 +525,13 @@ class TransactionCoordinationTest {
         assertThat(ambient.status).isEqualTo(Status.STATUS_ACTIVE)
         assertThat(logs.failuresIncluding(escaped)).contains(engine.workerFailures[task.taskId], reportingFailure)
       }
-    } finally { transactions.rollback() }
+    } finally {
+      transactions.rollback()
+    }
   }
-  @Test fun deferredRollbackReportingFailureHasOneTerminalOwner() {
+
+  @Test
+  fun deferredRollbackReportingFailureHasOneTerminalOwner() {
     val task = task("deferred-rollback-reporting-failure")
     val reportingFailure = IllegalStateException("deferred failure reporting offline")
     engine.technicalReportingFailures[task.taskId] = reportingFailure
@@ -464,49 +556,73 @@ class TransactionCoordinationTest {
         assertThat(registry.getTaskResult(task)).isNull()
         assertThat(engine.completionCounts.getOrDefault(task.taskId, 0)).isZero()
       }
-    } finally { if (transactions.transaction != null) transactions.rollback() }
+    } finally {
+      if (transactions.transaction != null) transactions.rollback()
+    }
   }
 
   @ApplicationScoped
   class Workers {
-    @Inject lateinit var engine: Engine
-    @Inject lateinit var transactions: TransactionManager
-    @Transactional(Transactional.TxType.SUPPORTS) @ProcessEngineWorker(topic = "supports", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+    @Inject
+    lateinit var engine: Engine
+    @Inject
+    lateinit var transactions: TransactionManager
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    @ProcessEngineWorker(topic = "supports", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun supports(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.MANDATORY) @ProcessEngineWorker(topic = "mandatory", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    @ProcessEngineWorker(topic = "mandatory", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun mandatory(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "new-before", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "new-before", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun newBefore(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "new-after")
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "new-after")
     @Throws(Exception::class)
     fun newAfter(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "race", autoComplete = false)
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "race", autoComplete = false)
     @Throws(Exception::class)
     fun race(task: TaskInformation): Map<String, Any?> {
       engine.raceEntered.countDown()
       engine.raceRelease.get(30, TimeUnit.SECONDS)
       return engine.write(task)
     }
-    @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "manual-new", autoComplete = false, completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "manual-new", autoComplete = false, completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun manualNew(task: TaskInformation, completion: ServiceTaskCompletionApi): Map<String, Any?> {
       val result = engine.write(task)
       completion.completeTask(CompleteTaskCmd(task.taskId, mapOf("manual" to true))).join()
       return result
     }
-    @Transactional @ProcessEngineWorker(topic = "after")
+
+    @Transactional
+    @ProcessEngineWorker(topic = "after")
     @Throws(Exception::class)
     fun after(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.NOT_SUPPORTED) @ProcessEngineWorker(topic = "not-supported")
+
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    @ProcessEngineWorker(topic = "not-supported")
     @Throws(Exception::class)
     fun notSupported(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional(Transactional.TxType.NEVER) @ProcessEngineWorker(topic = "never")
+
+    @Transactional(Transactional.TxType.NEVER)
+    @ProcessEngineWorker(topic = "never")
     @Throws(Exception::class)
     fun never(task: TaskInformation): Map<String, Any?> = engine.write(task)
-    @Transactional @ProcessEngineWorker(topic = "checked")
+
+    @Transactional
+    @ProcessEngineWorker(topic = "checked")
     @Throws(Exception::class)
     fun checked(task: TaskInformation) {
       engine.write(task)
@@ -514,12 +630,21 @@ class TransactionCoordinationTest {
       engine.workerFailures[task.taskId] = failure
       throw failure
     }
-    @Transactional(rollbackOn = [BpmnErrorOccurred::class]) @ProcessEngineWorker(topic = "checked-rollback")
+
+    @Transactional(rollbackOn = [BpmnErrorOccurred::class])
+    @ProcessEngineWorker(topic = "checked-rollback")
     @Throws(Exception::class)
-    fun checkedRollback(task: TaskInformation) { engine.write(task); throw checkedError() }
-    @Transactional(rollbackOn = [Exception::class], dontRollbackOn = [BpmnErrorOccurred::class]) @ProcessEngineWorker(topic = "checked-exempt")
+    fun checkedRollback(task: TaskInformation) {
+      engine.write(task); throw checkedError()
+    }
+
+    @Transactional(rollbackOn = [Exception::class], dontRollbackOn = [BpmnErrorOccurred::class])
+    @ProcessEngineWorker(topic = "checked-exempt")
     @Throws(Exception::class)
-    fun checkedExempt(task: TaskInformation) { engine.write(task); throw checkedError() }
+    fun checkedExempt(task: TaskInformation) {
+      engine.write(task); throw checkedError()
+    }
+
     @Transactional(rollbackOn = [RuntimeException::class], dontRollbackOn = [CheckedApplicationFailure::class])
     @ProcessEngineWorker(topic = "checked-wrapper")
     @Throws(Exception::class)
@@ -527,6 +652,7 @@ class TransactionCoordinationTest {
       engine.write(task)
       throw CheckedApplicationFailure(IllegalStateException("wrapped runtime"))
     }
+
     @Transactional(rollbackOn = [RuntimeException::class], dontRollbackOn = [InvocationTargetException::class])
     @ProcessEngineWorker(topic = "arc-reflection")
     @Throws(Exception::class)
@@ -534,10 +660,16 @@ class TransactionCoordinationTest {
       engine.write(task)
       throw InvocationTargetException(IllegalStateException("wrapped runtime"))
     }
-    @Transactional @ProcessEngineWorker(topic = "runtime")
+
+    @Transactional
+    @ProcessEngineWorker(topic = "runtime")
     @Throws(Exception::class)
-    fun runtime(task: TaskInformation) { engine.write(task); throw IllegalArgumentException("runtime") }
-    @Transactional(dontRollbackOn = [IllegalArgumentException::class]) @ProcessEngineWorker(topic = "runtime-exempt")
+    fun runtime(task: TaskInformation) {
+      engine.write(task); throw IllegalArgumentException("runtime")
+    }
+
+    @Transactional(dontRollbackOn = [IllegalArgumentException::class])
+    @ProcessEngineWorker(topic = "runtime-exempt")
     @Throws(Exception::class)
     fun runtimeExempt(task: TaskInformation) {
       engine.write(task)
@@ -545,52 +677,79 @@ class TransactionCoordinationTest {
       engine.workerFailures[task.taskId] = failure
       throw failure
     }
-    @Transactional @ProcessEngineWorker(topic = "rollback-only")
+
+    @Transactional
+    @ProcessEngineWorker(topic = "rollback-only")
     @Throws(Exception::class)
     fun rollbackOnly(task: TaskInformation): Map<String, Any?> {
       val result = engine.write(task)
       transactions.setRollbackOnly()
       return result
     }
-    @Transactional @ProcessEngineWorker(topic = "synchronization-failure")
+
+    @Transactional
+    @ProcessEngineWorker(topic = "synchronization-failure")
     @Throws(Exception::class)
     fun synchronizationFailure(task: TaskInformation): Map<String, Any?> = failBeforeCommit(task)
-    @Outer @Inner @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "swallowed-commit")
+
+    @Outer
+    @Inner
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "swallowed-commit")
     @Throws(Exception::class)
     fun swallowedCommit(task: TaskInformation): Map<String, Any?> = failBeforeCommit(task)
-    @Outer @Inner @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "swallowed-manual-commit", autoComplete = false)
+
+    @Outer
+    @Inner
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "swallowed-manual-commit", autoComplete = false)
     @Throws(Exception::class)
     fun swallowedManualCommit(task: TaskInformation): Map<String, Any?> = failBeforeCommit(task)
-    @Outer @Inner @Transactional(Transactional.TxType.REQUIRES_NEW)
+
+    @Outer
+    @Inner
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     @ProcessEngineWorker(topic = "swallowed-before-commit", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun swallowedBeforeCommit(task: TaskInformation): Map<String, Any?> = failBeforeCommit(task)
+
     @Throws(Exception::class)
     private fun failBeforeCommit(task: TaskInformation): Map<String, Any?> {
       val result = engine.write(task)
       transactions.transaction.registerSynchronization(FailingSynchronization())
       return result
     }
-    @Transactional @ProcessEngineWorker(topic = "manual-required", autoComplete = false)
+
+    @Transactional
+    @ProcessEngineWorker(topic = "manual-required", autoComplete = false)
     @Throws(Exception::class)
     fun manualRequired(task: TaskInformation): Map<String, Any?> = manualWork(task)
-    @Transactional(Transactional.TxType.MANDATORY) @ProcessEngineWorker(topic = "manual-mandatory", autoComplete = false)
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    @ProcessEngineWorker(topic = "manual-mandatory", autoComplete = false)
     @Throws(Exception::class)
     fun manualMandatory(task: TaskInformation): Map<String, Any?> = manualWork(task)
+
     @Throws(Exception::class)
     private fun manualWork(task: TaskInformation): Map<String, Any?> {
       val result = engine.write(task)
       if (task.taskId.startsWith("manual-invocation-failure")) throw IllegalArgumentException("manual invocation failed")
       return result
     }
-    @Outer @Inner @Transactional(Transactional.TxType.REQUIRES_NEW) @ProcessEngineWorker(topic = "wrapped")
+
+    @Outer
+    @Inner
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @ProcessEngineWorker(topic = "wrapped")
     @Throws(Exception::class)
     fun wrapped(task: TaskInformation): Map<String, Any?> {
       val result = engine.write(task)
       if (task.taskId.endsWith("recover")) throw checkedError()
       return result
     }
-    @Transactional @ProcessEngineWorker(topic = "root", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+
+    @Transactional
+    @ProcessEngineWorker(topic = "root", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun root(task: TaskInformation): Map<String, Any?> {
       val result = engine.write(task)
@@ -598,19 +757,31 @@ class TransactionCoordinationTest {
       engine.deliver("leaf", TaskInformation(task.taskId + "-child", mapOf("processInstanceId" to "process")))
       return result
     }
-    @Transactional @ProcessEngineWorker(topic = "leaf", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
+
+    @Transactional
+    @ProcessEngineWorker(topic = "leaf", completion = ProcessEngineWorker.Completion.BEFORE_COMMIT)
     @Throws(Exception::class)
     fun leaf(task: TaskInformation): Map<String, Any?> = engine.write(task)
     private fun checkedError() = BpmnErrorOccurred("checked", "checked-code", emptyMap())
   }
 
-  @InterceptorBinding @Retention(AnnotationRetention.RUNTIME) @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+  @InterceptorBinding
+  @Retention(AnnotationRetention.RUNTIME)
+  @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
   annotation class Outer
-  @InterceptorBinding @Retention(AnnotationRetention.RUNTIME) @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+
+  @InterceptorBinding
+  @Retention(AnnotationRetention.RUNTIME)
+  @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
   annotation class Inner
-  @Interceptor @Outer @Priority(100)
+
+  @Interceptor
+  @Outer
+  @Priority(100)
   class OuterInterceptor {
-    @Inject lateinit var workers: Workers
+    @Inject
+    lateinit var workers: Workers
+
     @AroundInvoke
     @Throws(Exception::class)
     @Suppress("UNCHECKED_CAST")
@@ -618,8 +789,9 @@ class TransactionCoordinationTest {
       val task = context.parameters[0] as TaskInformation
       if (task.taskId.endsWith("short-circuit")) return mapOf("outer" to true)
       if (task.taskId.endsWith("precall")) workers.wrapped(TaskInformation(task.taskId + "-ordinary-before", mapOf("processInstanceId" to "process")))
-      val result = try { context.proceed() as MutableMap<String, Any?> }
-      catch (failure: Exception) {
+      val result = try {
+        context.proceed() as MutableMap<String, Any?>
+      } catch (failure: Exception) {
         if (task.taskId.endsWith("recover")) return mapOf("outer" to true)
         throw failure
       }
@@ -628,7 +800,10 @@ class TransactionCoordinationTest {
       return mapOf("outer" to true)
     }
   }
-  @Interceptor @Inner @Priority(Interceptor.Priority.APPLICATION)
+
+  @Interceptor
+  @Inner
+  @Priority(Interceptor.Priority.APPLICATION)
   class InnerInterceptor {
     @AroundInvoke
     @Throws(Exception::class)
@@ -639,19 +814,28 @@ class TransactionCoordinationTest {
       return result
     }
   }
+
   @RequestScoped
   class RequestProbe {
-    companion object { private val IDS = AtomicLong() }
+    companion object {
+      private val IDS = AtomicLong()
+    }
+
     private val id = IDS.incrementAndGet().toString()
     fun id() = id
   }
+
   class Handle : TaskSubscription
   class Metadata : MetaInfo
   class CheckedApplicationFailure(cause: Throwable) : Exception("wrapped runtime", cause)
   class FailingSynchronization : Synchronization {
-    override fun beforeCompletion() { throw IllegalStateException("before completion failed") }
+    override fun beforeCompletion() {
+      throw IllegalStateException("before completion failed")
+    }
+
     override fun afterCompletion(status: Int) {}
   }
+
   data class WriteSynchronization(val engine: Engine, val taskId: String) : Synchronization {
     override fun beforeCompletion() {}
     override fun afterCompletion(status: Int) {
@@ -659,11 +843,19 @@ class TransactionCoordinationTest {
       if (status == Status.STATUS_COMMITTED) engine.committedWrites.add(taskId)
     }
   }
+
   class ReportingLogCapture : Handler(), AutoCloseable {
     private val root = Logger.getLogger("")
     private val failures = CopyOnWriteArrayList<Throwable>()
-    init { level = Level.ALL; root.addHandler(this) }
-    override fun publish(record: LogRecord) { record.thrown?.let { failures.add(it) } }
+
+    init {
+      level = Level.ALL; root.addHandler(this)
+    }
+
+    override fun publish(record: LogRecord) {
+      record.thrown?.let { failures.add(it) }
+    }
+
     fun failuresIncluding(escaped: Throwable?): Set<Throwable> {
       val observed = Collections.newSetFromMap(IdentityHashMap<Throwable, Boolean>())
       val pending = ArrayDeque(failures)
@@ -676,38 +868,59 @@ class TransactionCoordinationTest {
       }
       return observed
     }
+
     override fun flush() {}
-    override fun close() { root.removeHandler(this) }
+    override fun close() {
+      root.removeHandler(this)
+    }
   }
+
   @Singleton
   class Audit {
     val registered: MutableMap<String, Transaction?> = Collections.synchronizedMap(HashMap())
     val lookups = ConcurrentHashMap<String, MutableList<Transaction?>>()
   }
+
   class AuditRegistry(private val storage: IdempotencyRegistry, private val transactions: TransactionManager, private val audit: Audit) : IdempotencyRegistry {
     override fun register(task: TaskInformation, result: Map<String, Any?>) {
       audit.registered[task.taskId] = current()
       storage.register(task, result)
     }
+
     override fun getTaskResult(task: TaskInformation): Map<String, Any?>? {
       audit.lookups.computeIfAbsent(task.taskId) { CopyOnWriteArrayList() }.add(current())
       return storage.getTaskResult(task)
     }
-    override fun removeTaskResult(id: String) { storage.removeTaskResult(id) }
-    override fun removeAllTaskResults(id: String) { storage.removeAllTaskResults(id) }
-    private fun current(): Transaction? = try { transactions.transaction }
-    catch (failure: SystemException) { throw IllegalStateException(failure) }
+
+    override fun removeTaskResult(id: String) {
+      storage.removeTaskResult(id)
+    }
+
+    override fun removeAllTaskResults(id: String) {
+      storage.removeAllTaskResults(id)
+    }
+
+    private fun current(): Transaction? = try {
+      transactions.transaction
+    } catch (failure: SystemException) {
+      throw IllegalStateException(failure)
+    }
   }
+
   @Singleton
   class RegistryProducer {
-    @Produces @Singleton
+    @Produces
+    @Singleton
     fun registry(synchronization: TransactionSynchronizationRegistry, transactions: TransactionManager, audit: Audit): IdempotencyRegistry =
       AuditRegistry(JtaInMemoryIdempotencyRegistry(synchronization), transactions, audit)
   }
+
   @Singleton
   class Engine : TaskSubscriptionApi, ServiceTaskCompletionApi {
-    @Inject lateinit var transactions: TransactionManager
-    @Inject lateinit var request: RequestProbe
+    @Inject
+    lateinit var transactions: TransactionManager
+    @Inject
+    lateinit var request: RequestProbe
     val commands = ConcurrentHashMap<String, SubscribeForTaskCmd>()
     val business: MutableMap<String, Transaction?> = Collections.synchronizedMap(HashMap())
     val completing: MutableMap<String, Transaction?> = Collections.synchronizedMap(HashMap())
@@ -730,7 +943,10 @@ class TransactionCoordinationTest {
     val offline: MutableSet<String> = ConcurrentHashMap.newKeySet()
     val raceEntered = CountDownLatch(2)
     val raceRelease = CompletableFuture<Void>()
-    fun deliver(topic: String, task: TaskInformation) { commands[topic]!!.action.accept(task, emptyMap()) }
+    fun deliver(topic: String, task: TaskInformation) {
+      commands[topic]!!.action.accept(task, emptyMap())
+    }
+
     @Throws(Exception::class)
     fun write(task: TaskInformation): Map<String, Any?> {
       val id = task.taskId
@@ -741,10 +957,12 @@ class TransactionCoordinationTest {
       if (transaction == null) committedWrites.add(id) else transaction.registerSynchronization(WriteSynchronization(this, id))
       return mapOf("value" to id)
     }
+
     override fun subscribeForTask(command: SubscribeForTaskCmd): CompletableFuture<TaskSubscription> {
       commands[requireNotNull(command.taskDescriptionKey)] = command
       return CompletableFuture.completedFuture(Handle())
     }
+
     override fun unsubscribe(command: UnsubscribeFromTaskCmd): CompletableFuture<Empty> = done()
     override fun getSupportedRestrictions(): Set<String> = emptySet()
     override fun meta(instance: MetaInfoAware): MetaInfo = Metadata()
@@ -757,7 +975,10 @@ class TransactionCoordinationTest {
         results[command.taskId] = command.get()
         done()
       }
-    } catch (failure: Exception) { CompletableFuture.failedFuture(failure) }
+    } catch (failure: Exception) {
+      CompletableFuture.failedFuture(failure)
+    }
+
     override fun completeTaskByError(command: CompleteTaskByErrorCmd): CompletableFuture<Empty> {
       recordReporting(command.taskId)
       errorAttempts.merge(command.taskId, 1) { first, second -> first + second }
@@ -765,6 +986,7 @@ class TransactionCoordinationTest {
       errorReportingFailures[command.taskId]?.let { throw it }
       return done()
     }
+
     override fun failTask(command: FailTaskCmd): CompletableFuture<Empty> {
       recordReporting(command.taskId)
       failureAttempts.merge(command.taskId, 1) { first, second -> first + second }
@@ -772,13 +994,17 @@ class TransactionCoordinationTest {
       technicalReportingFailures[command.taskId]?.let { throw it }
       return done()
     }
+
     private fun recordReporting(id: String) {
       try {
         val transaction = transactions.transaction
         reporting[id] = transaction
         reportingHistory.computeIfAbsent(id) { CopyOnWriteArrayList() }.add(transaction)
-      } catch (failure: SystemException) { throw IllegalStateException(failure) }
+      } catch (failure: SystemException) {
+        throw IllegalStateException(failure)
+      }
     }
+
     private fun done(): CompletableFuture<Empty> = CompletableFuture.completedFuture(Empty)
   }
 }

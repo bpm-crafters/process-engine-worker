@@ -1,7 +1,6 @@
 services:
   camunda:
     image: camunda/camunda:8.8.2
-    restart: unless-stopped
     ports:
       - "127.0.0.1:${CAMUNDA_GRPC_PORT:-26500}:26500"
       - "127.0.0.1:${CAMUNDA_REST_PORT:-8088}:8080"
@@ -17,14 +16,13 @@ services:
       elasticsearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9600; printf \"GET /actuator/health/readiness HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ $$status == *\" 200 \"* ]]'"]
+      test: [ "CMD-SHELL", "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9600; printf \"GET /actuator/health/readiness HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ $$status == *\" 200 \"* ]]'" ]
       interval: 10s
       timeout: 5s
       start_period: 90s
       retries: 30
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.10
-    restart: unless-stopped
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"
@@ -33,7 +31,7 @@ services:
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null"]
+      test: [ "CMD-SHELL", "curl --fail --silent 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null" ]
       interval: 10s
       timeout: 10s
       retries: 30

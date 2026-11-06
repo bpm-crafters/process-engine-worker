@@ -10,18 +10,20 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem
 import io.quarkus.maven.dependency.DependencyFlags
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder
 import io.quarkus.paths.PathList
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.Optional
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
 
 class DeploymentResourceProcessorTest {
-  @TempDir lateinit var directory: Path
-  @Test fun substitutedApplicationRootAndUnindexedAdditionalJarReplaceOriginalTestArtifactContents() {
+  @TempDir
+  lateinit var directory: Path
+  @Test
+  fun substitutedApplicationRootAndUnindexedAdditionalJarReplaceOriginalTestArtifactContents() {
     val original = dependency("original-maven-artifact", 0).setScope("test")
     val model = ApplicationModelBuilder().setAppArtifact(original).build()
     val actual = Files.createDirectory(directory.resolve("actual-app"))
@@ -33,13 +35,16 @@ class DeploymentResourceProcessorTest {
       jar.closeEntry()
     }
     val generated = ArrayList<GeneratedResourceBuildItem>()
-    DeploymentResourceProcessor().resources(CurateOutcomeBuildItem(model), ArchiveRootBuildItem(actual),
+    DeploymentResourceProcessor().resources(
+      CurateOutcomeBuildItem(model), ArchiveRootBuildItem(actual),
       listOf(AdditionalApplicationArchiveBuildItem(PathList.of(jarPath))), bpmn(), dmn(), loading(), emptyList(),
       { generated.add(it) }, {}, {})
     assertThat(generated.map { String(it.data, Charsets.UTF_8) }).containsExactly("actual", "additional")
     assertThat(generated.map { it.name }).doesNotHaveDuplicates()
   }
-  @Test fun scansOnlyApplicationAndEffectiveRuntimeClasspathAndRegistersNativeCopiesAndWatchPredicate() {
+
+  @Test
+  fun scansOnlyApplicationAndEffectiveRuntimeClasspathAndRegistersNativeCopiesAndWatchPredicate() {
     val app = dependency("app", 0)
     val runtime = dependency("runtime", DependencyFlags.RUNTIME_CP)
     val buildOnly = dependency("build-only", DependencyFlags.DEPLOYMENT_CP)
@@ -54,8 +59,17 @@ class DeploymentResourceProcessorTest {
     val generated = ArrayList<GeneratedResourceBuildItem>()
     val nativeResources = ArrayList<NativeImageResourceBuildItem>()
     val watched = ArrayList<HotDeploymentWatchedFileBuildItem>()
-    val paths = DeploymentResourceProcessor().resources(CurateOutcomeBuildItem(model), ArchiveRootBuildItem(app.resolvedPaths.singlePath),
-      listOf(AdditionalApplicationArchiveBuildItem(PathList.of(buildOnly.resolvedPaths.singlePath, excluded.resolvedPaths.singlePath, runtime.resolvedPaths.singlePath))),
+    val paths = DeploymentResourceProcessor().resources(
+      CurateOutcomeBuildItem(model), ArchiveRootBuildItem(app.resolvedPaths.singlePath),
+      listOf(
+        AdditionalApplicationArchiveBuildItem(
+          PathList.of(
+            buildOnly.resolvedPaths.singlePath,
+            excluded.resolvedPaths.singlePath,
+            runtime.resolvedPaths.singlePath
+          )
+        )
+      ),
       bpmn(), dmn(), loading(), listOf(RemovedResourceBuildItem(runtime.key, setOf("builditem.bpmn"))),
       { generated.add(it) }, { nativeResources.add(it) }, { watched.add(it) })
     assertThat(generated.map { String(it.data, Charsets.UTF_8) }).containsExactly("app", "runtime")
@@ -67,13 +81,21 @@ class DeploymentResourceProcessorTest {
     assertThat(watched[0].locationPredicate.test("nested/new.dmn")).isTrue()
     assertThat(watched[0].locationPredicate.test("unrelated.txt")).isFalse()
   }
-  private fun bpmn() = object : BpmnResourcePatternConfig { override fun pattern() = "classpath*:/**/*.bpmn" }
-  private fun dmn() = object : DmnResourcePatternConfig { override fun pattern() = "classpath*:/**/*.dmn" }
+
+  private fun bpmn() = object : BpmnResourcePatternConfig {
+    override fun pattern() = "classpath*:/**/*.bpmn"
+  }
+
+  private fun dmn() = object : DmnResourcePatternConfig {
+    override fun pattern() = "classpath*:/**/*.dmn"
+  }
+
   private fun dependency(artifact: String, flags: Int): ResolvedDependencyBuilder {
     val root = Files.createDirectory(directory.resolve(artifact))
     Files.writeString(root.resolve("$artifact.bpmn"), artifact)
     return ResolvedDependencyBuilder().setGroupId("test").setArtifactId(artifact).setVersion("1").setType("jar").setFlags(flags).setResolvedPath(root)
   }
+
   private fun loading() = object : ClassLoadingConfig {
     override fun parentFirstArtifacts(): Optional<List<String>> = Optional.empty()
     override fun reloadableArtifacts(): Optional<String> = Optional.empty()

@@ -9,10 +9,15 @@ import org.junit.jupiter.api.extension.RegisterExtension
 
 class NoWorkersTest {
   companion object {
-    @JvmField @RegisterExtension val APP = QuarkusExtensionTest().withEmptyApplication()
+    @JvmField
+    @RegisterExtension
+    val APP = QuarkusExtensionTest().withEmptyApplication()
   }
-  @Inject lateinit var config: WorkerConfig
-  @Test fun startsWithoutEngineClientsWhenNoWorkersExist() {
+
+  @Inject
+  lateinit var config: WorkerConfig
+  @Test
+  fun startsWithoutEngineClientsWhenNoWorkersExist() {
     assertThat(config.enabled()).isTrue()
     assertThat(config.registerProcessWorkers()).isTrue()
     assertThat(config.completeTasksBeforeCommit()).isFalse()

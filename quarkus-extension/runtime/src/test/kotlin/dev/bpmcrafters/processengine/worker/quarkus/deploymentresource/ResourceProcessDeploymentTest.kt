@@ -2,8 +2,11 @@ package dev.bpmcrafters.processengine.worker.quarkus.deploymentresource
 
 import dev.bpmcrafters.processengineapi.MetaInfo
 import dev.bpmcrafters.processengineapi.MetaInfoAware
-import dev.bpmcrafters.processengineapi.deploy.*
-import org.assertj.core.api.Assertions.*
+import dev.bpmcrafters.processengineapi.deploy.DeployBundleCommand
+import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
+import dev.bpmcrafters.processengineapi.deploy.DeploymentInformation
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.IOException
@@ -119,7 +122,10 @@ class ResourceProcessDeploymentTest {
     var failOn: String? = null
     private var paths = emptyList<String>()
 
-    fun configure(paths: List<String>) { this.paths = java.util.List.copyOf(paths) }
+    fun configure(paths: List<String>) {
+      this.paths = java.util.List.copyOf(paths)
+    }
+
     override fun paths(): List<String> = paths
 
     override fun open(path: String): InputStream {
@@ -130,7 +136,10 @@ class ResourceProcessDeploymentTest {
 
   private class TrackedStream : ByteArrayInputStream(byteArrayOf(1)) {
     var closed = false
-    override fun close() { closed = true }
+    override fun close() {
+      closed = true
+    }
+
     override fun readAllBytes(): ByteArray {
       check(!closed) { "owned stream already closed" }
       return super.readAllBytes()

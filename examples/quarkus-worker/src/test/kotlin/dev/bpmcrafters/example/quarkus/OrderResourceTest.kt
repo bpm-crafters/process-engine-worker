@@ -3,20 +3,23 @@ package dev.bpmcrafters.example.quarkus
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
 import jakarta.inject.Inject
+import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.hamcrest.Matchers.equalTo
 import java.math.BigDecimal
-import java.util.UUID
+import java.util.*
 
 @QuarkusTest
 class OrderResourceTest {
-  @Inject lateinit var apis: TestApis
+  @Inject
+  lateinit var apis: TestApis
 
-  @BeforeEach fun resetRecordings() = apis.reset()
+  @BeforeEach
+  fun resetRecordings() = apis.reset()
 
-  @Test fun `ingress maps order and returns no invented process id`() {
+  @Test
+  fun `ingress maps order and returns no invented process id`() {
     val id = UUID.randomUUID()
     val request = validOrder(id).replace("\"invoiceAddress\":{\"streetLine\":\"Main 1\"", "\"invoiceAddress\":{\"streetLine\":\"Invoice 2\"")
     given().contentType("application/json").body(request).post("/ingress/order-received")
@@ -31,8 +34,11 @@ class OrderResourceTest {
     assertEquals(Address("Invoice 2", "12345", "Berlin", "DE"), order.invoiceAddress)
     assertEquals(listOf(OrderPosition("book", 2, BigDecimal("10.00"))), order.orderPositions)
   }
-  @Test fun `invalid missing and null order input is rejected`() {
-    listOf("null", "{}", "{\"id\":null}", "{\"id\":\"wrong\"}",
+
+  @Test
+  fun `invalid missing and null order input is rejected`() {
+    listOf(
+      "null", "{}", "{\"id\":null}", "{\"id\":\"wrong\"}",
       validOrder().replace("\"amount\":2", "\"amount\":null"),
       validOrder().replace("\"orderPositions\":[", "\"wrongField\":["),
       validOrder().replace("\"price\":10.00", "\"price\":\"wrong\"")
@@ -42,7 +48,8 @@ class OrderResourceTest {
     assertTrue(apis.starts.isEmpty(), "Invalid orders must not reach the engine API")
   }
 
-  @Test fun `manual deployment sends only the packaged shared model`() {
+  @Test
+  fun `manual deployment sends only the packaged shared model`() {
     given().contentType("application/json").body("""{"path":"$PROCESS_RESOURCE"}""")
       .post("/deploy").then().statusCode(200).body("deploymentKey", equalTo("test-deployment"))
     val command = apis.deployments.single()
@@ -54,14 +61,19 @@ class OrderResourceTest {
     assertTrue(resource.bytes.isNotEmpty())
   }
 
-  @Test fun `manual deployment rejects missing null and arbitrary classpath paths without engine calls`() {
-    listOf("null", "{}", """{"path":null}""", """{"path":"application.yaml"}""",
-      """{"path":"C7/Order Fulfillment C7.bpmn"}""").forEach { json ->
+  @Test
+  fun `manual deployment rejects missing null and arbitrary classpath paths without engine calls`() {
+    listOf(
+      "null", "{}", """{"path":null}""", """{"path":"application.yaml"}""",
+      """{"path":"C7/Order Fulfillment C7.bpmn"}"""
+    ).forEach { json ->
       given().contentType("application/json").body(json).post("/deploy").then().statusCode(400)
     }
     assertTrue(apis.deployments.isEmpty(), "Rejected resource paths must not reach the deployment API")
   }
-  @Test fun `unknown notification endpoints return not found`() {
+
+  @Test
+  fun `unknown notification endpoints return not found`() {
     for (type in listOf("failed-payment", "delayed-inventory")) {
       given().get("/$type/unknown").then().statusCode(404)
       given().post("/$type/unknown").then().statusCode(404)

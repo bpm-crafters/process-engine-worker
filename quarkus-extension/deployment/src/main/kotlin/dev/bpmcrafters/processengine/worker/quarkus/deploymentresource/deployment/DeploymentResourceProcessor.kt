@@ -44,8 +44,10 @@ class DeploymentResourceProcessor {
       generated.produce(GeneratedResourceBuildItem(resource.generatedPath, resource.content))
       nativeResources.produce(NativeImageResourceBuildItem(resource.generatedPath))
     }
-    watched.produce(HotDeploymentWatchedFileBuildItem.builder().setRestartNeeded(true)
-      .setLocationPredicate { name -> patterns.any { it.matches(name) } }.build())
+    watched.produce(
+      HotDeploymentWatchedFileBuildItem.builder().setRestartNeeded(true)
+      .setLocationPredicate { name -> patterns.any { it.matches(name) } }.build()
+    )
     return DeploymentResourcePathsBuildItem(resources.map { it.generatedPath })
   }
 

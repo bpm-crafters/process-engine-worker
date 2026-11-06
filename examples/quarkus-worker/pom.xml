@@ -25,10 +25,14 @@
       <version>${process-engine-adapters-c8.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId><artifactId>camunda-client-java</artifactId><version>8.8.2</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+      <version>8.8.2</version>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId><artifactId>zeebe-protocol</artifactId><version>8.8.2</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <version>8.8.2</version>
     </dependency>
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
@@ -49,7 +53,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId><artifactId>quarkus-junit-mockito</artifactId><scope>test</scope>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit-mockito</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.rest-assured</groupId>
@@ -66,10 +72,14 @@
   </dependencies>
   <build>
     <resources>
-      <resource><directory>src/main/resources</directory></resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
       <resource>
         <directory>../order-fulfillment/src/main/resources</directory>
-        <includes><include>C8/Order Fulfillment.bpmn</include></includes>
+        <includes>
+          <include>C8/Order Fulfillment.bpmn</include>
+        </includes>
       </resource>
     </resources>
     <plugins>
@@ -93,18 +103,32 @@
   <profiles>
     <profile>
       <id>real-engine</id>
-      <build><plugins><plugin>
-        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId>
-        <executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions>
-        <configuration>
-          <skipITs>false</skipITs>
-          <includes combine.self="override"><include>**/OrderFulfillmentIT.*</include></includes>
-          <systemPropertyVariables>
-            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-            <quarkus.http.test-port>0</quarkus.http.test-port>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin></plugins></build>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <skipITs>false</skipITs>
+              <includes combine.self="override">
+                <include>**/OrderFulfillmentIT.*</include>
+              </includes>
+              <systemPropertyVariables>
+                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                <quarkus.http.test-port>0</quarkus.http.test-port>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>

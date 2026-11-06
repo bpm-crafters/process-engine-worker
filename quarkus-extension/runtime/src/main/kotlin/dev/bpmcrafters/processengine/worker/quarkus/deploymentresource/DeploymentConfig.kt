@@ -9,7 +9,10 @@ import io.smallrye.config.WithDefault
 @ConfigMapping(prefix = "dev.bpm-crafters.process-api.worker.deployment")
 interface DeploymentConfig {
   /** Deploy at startup independently of worker registration. Missing DeploymentApi skips deployment. */
-  @WithDefault("false") fun enabled(): Boolean
+  @WithDefault("false")
+  fun enabled(): Boolean
+
   /** Maximum time to wait for the deployment future, in seconds. Must be positive. */
-  @WithDefault("30") fun deploymentTimeoutInSeconds(): Long
+  @WithDefault("30")
+  fun deploymentTimeoutInSeconds(): Long
 }

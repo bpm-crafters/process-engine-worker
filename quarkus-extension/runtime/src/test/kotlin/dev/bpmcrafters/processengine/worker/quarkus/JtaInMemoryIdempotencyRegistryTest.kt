@@ -1,7 +1,7 @@
 package dev.bpmcrafters.processengine.worker.quarkus
 
 import dev.bpmcrafters.processengineapi.task.TaskInformation
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 

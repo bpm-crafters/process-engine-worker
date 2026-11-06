@@ -1,7 +1,7 @@
 package dev.bpmcrafters.processengine.worker.quarkus
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class MicrometerWorkerDefaultsTest {

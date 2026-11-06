@@ -3,18 +3,21 @@ package dev.bpmcrafters.example.quarkus
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.bpmcrafters.processengineapi.adapter.c8.deploy.DeploymentApiImpl
 import dev.bpmcrafters.processengineapi.adapter.c8.process.StartProcessApiImpl
-import dev.bpmcrafters.processengineapi.adapter.c8.task.completion.*
-import dev.bpmcrafters.processengineapi.adapter.c8.task.delivery.*
+import dev.bpmcrafters.processengineapi.adapter.c8.task.completion.C8CamundaClientUserTaskJobCompletionApiImpl
+import dev.bpmcrafters.processengineapi.adapter.c8.task.completion.C8ExternalServiceTaskCompletionApiImpl
+import dev.bpmcrafters.processengineapi.adapter.c8.task.completion.LinearMemoryFailureRetrySupplier
+import dev.bpmcrafters.processengineapi.adapter.c8.task.delivery.SubscribingRefreshingZeebeJobUserTaskDelivery
+import dev.bpmcrafters.processengineapi.adapter.c8.task.delivery.SubscribingServiceTaskDelivery
 import dev.bpmcrafters.processengineapi.adapter.c8.task.subscription.C8TaskSubscriptionApiImpl
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
-import dev.bpmcrafters.processengineapi.process.StartProcessApi
 import dev.bpmcrafters.processengineapi.impl.task.InMemSubscriptionRepository
+import dev.bpmcrafters.processengineapi.process.StartProcessApi
 import dev.bpmcrafters.processengineapi.task.*
 import io.camunda.client.CamundaClient
 import io.camunda.client.impl.CamundaObjectMapper
 import io.camunda.client.impl.NoopCredentialsProvider
-import io.quarkus.runtime.StartupEvent
 import io.quarkus.runtime.ShutdownEvent
+import io.quarkus.runtime.StartupEvent
 import jakarta.annotation.Priority
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
@@ -39,16 +42,22 @@ annotation class NotificationClient
 @ApplicationScoped
 class CamundaBridge {
   private class OwnedClient(val client: CamundaClient, var closed: Boolean = false)
+
   private val ownedClients = mutableListOf<OwnedClient>()
 
-  @Produces @Singleton
-  fun client(mapper: ObjectMapper,
+  @Produces
+  @Singleton
+  fun client(
+    mapper: ObjectMapper,
     @ConfigProperty(name = "example.camunda.grpc-address") grpc: String,
     @ConfigProperty(name = "example.camunda.rest-address") rest: String
   ): CamundaClient = createClient(mapper, grpc, rest, 4)
 
-  @Produces @Singleton @NotificationClient
-  fun notificationClient(mapper: ObjectMapper,
+  @Produces
+  @Singleton
+  @NotificationClient
+  fun notificationClient(
+    mapper: ObjectMapper,
     @ConfigProperty(name = "example.camunda.grpc-address") grpc: String,
     @ConfigProperty(name = "example.camunda.rest-address") rest: String
   ): CamundaClient = createClient(mapper, grpc, rest, 1)
@@ -60,36 +69,66 @@ class CamundaBridge {
     .withJsonMapper(CamundaObjectMapper(mapper.copy())).numJobWorkerExecutionThreads(executionThreads).build()
     .let(::own)
 
-  @Produces @Singleton fun repository() = InMemSubscriptionRepository()
-  @Produces @Singleton fun serviceDelivery(client: CamundaClient, repository: InMemSubscriptionRepository,
+  @Produces
+  @Singleton
+  fun repository() = InMemSubscriptionRepository()
+
+  @Produces
+  @Singleton
+  fun serviceDelivery(
+    client: CamundaClient, repository: InMemSubscriptionRepository,
     @ConfigProperty(name = "example.inventory.replenishment-seconds", defaultValue = "60") delay: Long
   ) = SubscribingServiceTaskDelivery(client, repository, "quarkus-order-fulfillment", 10, maxOf(120, delay + 60))
-  @Produces @Singleton fun userDelivery(@NotificationClient client: CamundaClient, repository: InMemSubscriptionRepository) =
+
+  @Produces
+  @Singleton
+  fun userDelivery(@NotificationClient client: CamundaClient, repository: InMemSubscriptionRepository) =
     SubscribingRefreshingZeebeJobUserTaskDelivery(client, repository, "quarkus-order-notifications", 60_000)
-  @Produces @ApplicationScoped fun subscriptions(repository: InMemSubscriptionRepository, delivery: SubscribingRefreshingZeebeJobUserTaskDelivery): TaskSubscriptionApi =
+
+  @Produces
+  @ApplicationScoped
+  fun subscriptions(repository: InMemSubscriptionRepository, delivery: SubscribingRefreshingZeebeJobUserTaskDelivery): TaskSubscriptionApi =
     C8TaskSubscriptionApiImpl(repository, delivery)
-  @Produces @ApplicationScoped fun serviceCompletion(client: CamundaClient, repository: InMemSubscriptionRepository): ServiceTaskCompletionApi =
+
+  @Produces
+  @ApplicationScoped
+  fun serviceCompletion(client: CamundaClient, repository: InMemSubscriptionRepository): ServiceTaskCompletionApi =
     C8ExternalServiceTaskCompletionApiImpl(client, repository, LinearMemoryFailureRetrySupplier(3, 10))
-  @Produces @ApplicationScoped fun userCompletion(@NotificationClient client: CamundaClient, repository: InMemSubscriptionRepository): UserTaskCompletionApi =
+
+  @Produces
+  @ApplicationScoped
+  fun userCompletion(@NotificationClient client: CamundaClient, repository: InMemSubscriptionRepository): UserTaskCompletionApi =
     C8CamundaClientUserTaskJobCompletionApiImpl(client, repository)
-  @Produces @ApplicationScoped fun startProcess(client: CamundaClient): StartProcessApi = StartProcessApiImpl(client)
-  @Produces @ApplicationScoped fun deployment(client: CamundaClient): DeploymentApi = DeploymentApiImpl(client)
+
+  @Produces
+  @ApplicationScoped
+  fun startProcess(client: CamundaClient): StartProcessApi = StartProcessApiImpl(client)
+
+  @Produces
+  @ApplicationScoped
+  fun deployment(client: CamundaClient): DeploymentApi = DeploymentApiImpl(client)
 
   fun closeAfterDrain(@Observes @Priority(3000) event: ShutdownEvent) = closeOwned()
   fun dispose(@Disposes client: CamundaClient) = closeOwned()
   fun disposeNotifications(@Disposes @NotificationClient client: CamundaClient) = closeOwned()
-  @Synchronized internal fun own(client: CamundaClient): CamundaClient {
+
+  @Synchronized
+  internal fun own(client: CamundaClient): CamundaClient {
     if (ownedClients.none { it.client === client }) ownedClients.add(OwnedClient(client))
     return client
   }
-  @Synchronized internal fun closeOwned() {
+
+  @Synchronized
+  internal fun closeOwned() {
     // Never resolve unused producers during disabled shutdown. Serialize ownership and
     // disposal, and mark before closing so a failed close is not attempted twice.
     var failure: Throwable? = null
     ownedClients.forEach { owned ->
       if (owned.closed) return@forEach
       owned.closed = true
-      try { owned.client.close() } catch (exception: Throwable) {
+      try {
+        owned.client.close()
+      } catch (exception: Throwable) {
         val first = failure
         if (first == null) failure = exception else if (first !== exception) first.addSuppressed(exception)
       }
@@ -129,7 +168,9 @@ class CamundaDeliveryLifecycle(
   fun stop(@Observes @Priority(2000) event: ShutdownEvent) {
     refresh?.shutdownNow()
     refresh?.awaitTermination(10, TimeUnit.SECONDS)
-    try { startedUsers?.unsubscribeAll() } finally {
+    try {
+      startedUsers?.unsubscribeAll()
+    } finally {
       subscription?.let { subscriptions.get().unsubscribe(UnsubscribeFromTaskCmd(it)).get() }
       subscription = null
     }
@@ -137,7 +178,9 @@ class CamundaDeliveryLifecycle(
 
   companion object {
     internal fun refreshSafely(action: () -> Unit) {
-      try { action() } catch (exception: Exception) {
+      try {
+        action()
+      } catch (exception: Exception) {
         Logger.getLogger(CamundaDeliveryLifecycle::class.java).warn("User task refresh failed; retrying next cycle", exception)
       }
     }

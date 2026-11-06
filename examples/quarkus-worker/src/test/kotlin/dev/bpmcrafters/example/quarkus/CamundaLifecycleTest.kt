@@ -6,9 +6,9 @@ import dev.bpmcrafters.processengineapi.adapter.c8.task.delivery.SubscribingServ
 import dev.bpmcrafters.processengineapi.adapter.c8.task.subscription.C8TaskSubscriptionApiImpl
 import dev.bpmcrafters.processengineapi.impl.task.InMemSubscriptionRepository
 import dev.bpmcrafters.processengineapi.task.*
-import io.quarkus.runtime.StartupEvent
-import io.quarkus.runtime.ShutdownEvent
 import io.camunda.client.CamundaClient
+import io.quarkus.runtime.ShutdownEvent
+import io.quarkus.runtime.StartupEvent
 import jakarta.annotation.Priority
 import jakarta.enterprise.inject.Disposes
 import jakarta.enterprise.inject.Instance
@@ -25,7 +25,8 @@ class CamundaLifecycleTest {
     value
   }
 
-  @Test fun `disabled lifecycle never resolves engine beans`() {
+  @Test
+  fun `disabled lifecycle never resolves engine beans`() {
     fun <T> forbidden(): Instance<T> = api { _, _ -> error("Disabled lifecycle resolved an engine bean") }
     val pool = NotificationPool(jacksonObjectMapper(), mock(UserTaskCompletionApi::class.java))
     val lifecycle = CamundaDeliveryLifecycle(false, pool, forbidden(), forbidden(), forbidden())
@@ -35,7 +36,8 @@ class CamundaLifecycleTest {
     CamundaBridge().closeAfterDrain(ShutdownEvent())
   }
 
-  @Test fun `owned client closes once across normal shutdown and disposer fallback`() {
+  @Test
+  fun `owned client closes once across normal shutdown and disposer fallback`() {
     val client = mock(CamundaClient::class.java)
     val bridge = CamundaBridge()
     bridge.closeOwned()
@@ -46,7 +48,8 @@ class CamundaLifecycleTest {
     verify(client, times(1)).close()
   }
 
-  @Test fun `both owned clients close once after drain and repeated disposer fallbacks`() {
+  @Test
+  fun `both owned clients close once after drain and repeated disposer fallbacks`() {
     val serviceClient = mock(CamundaClient::class.java)
     val notificationClient = mock(CamundaClient::class.java)
     val bridge = CamundaBridge()
@@ -63,7 +66,8 @@ class CamundaLifecycleTest {
     verify(notificationClient, times(1)).close()
   }
 
-  @Test fun `either qualified disposer closes both clients without a shutdown event`() {
+  @Test
+  fun `either qualified disposer closes both clients without a shutdown event`() {
     for (notificationsFirst in listOf(false, true)) {
       val serviceClient = mock(CamundaClient::class.java)
       val notificationClient = mock(CamundaClient::class.java)
@@ -81,7 +85,8 @@ class CamundaLifecycleTest {
     }
   }
 
-  @Test fun `close failure does not leak other client and repeated disposal does not retry`() {
+  @Test
+  fun `close failure does not leak other client and repeated disposal does not retry`() {
     val serviceClient = mock(CamundaClient::class.java)
     val notificationClient = mock(CamundaClient::class.java)
     val firstFailure = IllegalStateException("service close failed")
@@ -101,7 +106,8 @@ class CamundaLifecycleTest {
     verify(notificationClient, times(1)).close()
   }
 
-  @Test fun `concurrent ownership and duplicate shutdown preserve both clients exactly once`() {
+  @Test
+  fun `concurrent ownership and duplicate shutdown preserve both clients exactly once`() {
     val clients = List(2) { mock(CamundaClient::class.java) }
     val bridge = CamundaBridge()
     CompletableFuture.allOf(*clients.map { client ->
@@ -113,7 +119,8 @@ class CamundaLifecycleTest {
     clients.forEach { verify(it, times(1)).close() }
   }
 
-  @Test fun `notification qualifier isolates producer delivery completion and disposer`() {
+  @Test
+  fun `notification qualifier isolates producer delivery completion and disposer`() {
     fun method(name: String) = CamundaBridge::class.java.methods.single { it.name == name }
     fun notificationParameter(name: String) = method(name).parameterAnnotations.first()
       .any { it is NotificationClient }
@@ -132,7 +139,8 @@ class CamundaLifecycleTest {
     }
   }
 
-  @Test fun `delivery starts only after pool and three workers register and shutdown releases pool`() {
+  @Test
+  fun `delivery starts only after pool and three workers register and shutdown releases pool`() {
     val repository = InMemSubscriptionRepository()
     val users = mock(SubscribingRefreshingZeebeJobUserTaskDelivery::class.java)
     val services = mock(SubscribingServiceTaskDelivery::class.java)
@@ -144,8 +152,11 @@ class CamundaLifecycleTest {
     verifyNoInteractions(services, users)
     // Equivalent extension registration occurs at the default observer priority (2500).
     listOf("retrievePayment", "fetchGoods", "shipGoods").forEach { topic ->
-      subscriptions.subscribeForTask(SubscribeForTaskCmd(emptyMap(), TaskType.EXTERNAL, topic, null,
-        TaskHandler { _, _ -> }, TaskTerminationHandler { _ -> })).get()
+      subscriptions.subscribeForTask(
+        SubscribeForTaskCmd(
+          emptyMap(), TaskType.EXTERNAL, topic, null,
+          TaskHandler { _, _ -> }, TaskTerminationHandler { _ -> })
+      ).get()
     }
     doAnswer { assertEquals(4, repository.getTaskSubscriptions().size); null }.`when`(services).subscribe()
     lifecycle.activate(StartupEvent())
@@ -157,7 +168,8 @@ class CamundaLifecycleTest {
     assertEquals(3, repository.getTaskSubscriptions().size)
   }
 
-  @Test fun `observer priorities bracket extension startup and shutdown`() {
+  @Test
+  fun `observer priorities bracket extension startup and shutdown`() {
     fun priority(method: String): Int = CamundaDeliveryLifecycle::class.java.methods.single { it.name == method }
       .parameterAnnotations.single().filterIsInstance<Priority>().single().value
     assertEquals(2400, priority("register"))

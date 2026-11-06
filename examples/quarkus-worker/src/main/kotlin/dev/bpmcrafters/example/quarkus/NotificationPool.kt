@@ -14,9 +14,11 @@ const val DELAYED_INVENTORY = "inform_customer_delay"
 const val PROCESS_RESOURCE = "C8/Order Fulfillment.bpmn"
 
 data class Notification(val taskId: String, val type: String, val orderId: String)
-data class NotificationDetails(val taskId: String, val type: String, val order: Order,
+data class NotificationDetails(
+  val taskId: String, val type: String, val order: Order,
   val paymentReference: String? = null, val failureReason: String? = null, val amount: BigDecimal? = null,
-  val items: List<String>? = null)
+  val items: List<String>? = null
+)
 
 /** Local, reconstructible pool of leased legacy job user tasks, indexed by engine task ID. */
 @ApplicationScoped
@@ -41,7 +43,9 @@ class NotificationPool(private val mapper: ObjectMapper, private val completion:
         val amount = payload["paymentAmount"]?.toString()?.toBigDecimalOrNull() ?: return
         NotificationDetails(task.taskId, type, order, order.orderId.toString(), reason, amount)
       } else NotificationDetails(task.taskId, type, order, items = order.orderPositions.map { it.name })
-    } catch (_: IllegalArgumentException) { return }
+    } catch (_: IllegalArgumentException) {
+      return
+    }
     tasks.putIfAbsent(task.taskId, details)
   }
 

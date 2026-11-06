@@ -3,7 +3,9 @@ package dev.bpmcrafters.example.quarkus
 import dev.bpmcrafters.processengine.worker.BpmnErrorOccurred
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.Variable
-import dev.bpmcrafters.processengineapi.task.*
+import dev.bpmcrafters.processengineapi.task.CompleteTaskCmd
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
+import dev.bpmcrafters.processengineapi.task.TaskInformation
 import jakarta.enterprise.context.ApplicationScoped
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jboss.logging.Logger
@@ -18,7 +20,10 @@ class InventoryUseCase(@ConfigProperty(name = "example.inventory.replenishment-s
       LOG.infof("INVENTORY: Replenished order %s", order.orderId)
     }
   }
-  companion object { private val LOG = Logger.getLogger(InventoryUseCase::class.java) }
+
+  companion object {
+    private val LOG = Logger.getLogger(InventoryUseCase::class.java)
+  }
 }
 
 @ApplicationScoped
@@ -27,9 +32,11 @@ class FulfillmentWorkers(private val inventory: InventoryUseCase) {
   fun receivePayment(@Variable("order") order: Order): Map<String, Any> {
     val total = order.total()
     if (total.compareTo(BigDecimal("42.00")) == 0) {
-      throw BpmnErrorOccurred("Payment rejected", "paymentFailed", mapOf(
-        "paymentReceived" to false, "paymentFailedReason" to "The amount 42.00 is rejected by the example payment service", "paymentAmount" to total
-      ))
+      throw BpmnErrorOccurred(
+        "Payment rejected", "paymentFailed", mapOf(
+          "paymentReceived" to false, "paymentFailedReason" to "The amount 42.00 is rejected by the example payment service", "paymentAmount" to total
+        )
+      )
     }
     return mapOf("paymentReceived" to true, "paymentId" to order.orderId.toString())
   }
@@ -45,5 +52,8 @@ class FulfillmentWorkers(private val inventory: InventoryUseCase) {
     LOG.infof("SHIPPING: Shipping order %s to %s", order.orderId, order.shippingAddress)
     return mapOf("goodsShipped" to true)
   }
-  companion object { private val LOG = Logger.getLogger(FulfillmentWorkers::class.java) }
+
+  companion object {
+    private val LOG = Logger.getLogger(FulfillmentWorkers::class.java)
+  }
 }
