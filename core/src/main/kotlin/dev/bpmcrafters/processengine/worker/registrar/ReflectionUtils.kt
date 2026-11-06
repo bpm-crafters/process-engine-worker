@@ -1,3 +1,5 @@
+@file:JvmName("CoreReflectionUtilsKt")
+
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
@@ -7,16 +9,16 @@ import dev.bpmcrafters.processengine.worker.Variable
 import dev.bpmcrafters.processengine.worker.Variable.Companion.DEFAULT_UNNAMED_NAME
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
-import org.springframework.aop.support.AopUtils
-import org.springframework.core.annotation.AnnotationUtils
 import java.lang.reflect.Method
+import java.lang.reflect.GenericArrayType
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+import java.lang.reflect.TypeVariable
 import java.lang.reflect.WildcardType
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
 
 /**
  * Local cache from converter class to instance.
@@ -53,12 +55,8 @@ fun Parameter.isVariable() = this.isAnnotationPresent(Variable::class.java)
  * Extracts variable name from the variable annotation of the parameter.
  */
 fun Parameter.extractVariableName(): String {
-  val variableAnnotation = AnnotationUtils.findAnnotation(this, Variable::class.java)!!
-  return if (variableAnnotation.name == DEFAULT_UNNAMED_NAME) {
-    this.name
-  } else {
-    variableAnnotation.name
-  }
+  val variableAnnotation = getAnnotation(Variable::class.java)!!
+  return resolveAliases(variableAnnotation.name, variableAnnotation.value, DEFAULT_UNNAMED_NAME, name)
 }
 
 /**
@@ -67,10 +65,10 @@ fun Parameter.extractVariableName(): String {
  * @return converter for variable.
  */
 fun Parameter.extractVariableConverter(defaultVariableConverter: VariableConverter): VariableConverter {
-  val variableAnnotation = AnnotationUtils.findAnnotation(this, Variable::class.java)!!
+  val variableAnnotation = getAnnotation(Variable::class.java)!!
   return if (Variable.DefaultVariableConverter::class != variableAnnotation.converter) {
     converters.getOrPut(variableAnnotation.converter) {
-      variableAnnotation.converter.primaryConstructor!!.call()
+      variableAnnotation.converter.java.getDeclaredConstructor().newInstance()
     }
   } else {
     defaultVariableConverter
@@ -131,35 +129,76 @@ fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
 /**
  * Retrieves list of worker methods.
  */
-fun Any.getAnnotatedWorkers(): List<Method> = AopUtils
-  .getTargetClass(this)
-  .methods
-  .filter { m -> m.isAnnotationPresent(ProcessEngineWorker::class.java) }
+fun Any.getAnnotatedWorkers(): List<Method> = javaClass.methods
+  .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata(javaClass) != null }
+
+/** Finds direct or interface worker metadata without depending on a framework annotation model. */
+fun Method.workerMetadata(): Method? = workerMetadata(declaringClass)
+
+/** Includes interfaces introduced by the actual worker class when its implementation is inherited. */
+fun Method.workerMetadata(targetClass: Class<*>): Method? {
+  if (isAnnotationPresent(ProcessEngineWorker::class.java)) return this
+  val inheritedTypes = targetClass.interfaces.toList() + listOfNotNull(targetClass.superclass)
+  val inherited = inheritedTypes.firstNotNullOfOrNull { type ->
+    runCatching { type.getMethod(name, *parameterTypes) }.getOrNull()?.workerMetadata()
+  }
+  if (inherited != null) return inherited
+  return targetClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
+}
+
+/** Matches resolved generic parameters, rather than attributing an erased bridge to unrelated overloads. */
+private fun Method.genericWorkerMetadata(type: Type, bindings: Map<TypeVariable<*>, Type>): Method? {
+  val owner = type.rawClass() ?: return null
+  val resolved = bindings + if (type is ParameterizedType) {
+    owner.typeParameters.zip(type.actualTypeArguments.map { bindings[it] ?: it }).toMap()
+  } else {
+    emptyMap()
+  }
+  return owner.declaredMethods.firstOrNull { candidate ->
+    !candidate.isBridge && candidate.name == name && candidate.parameterCount == parameterCount
+      && candidate.isAnnotationPresent(ProcessEngineWorker::class.java)
+      && candidate.genericParameterTypes.map { (resolved[it] ?: it).rawClass(resolved) } == parameterTypes.toList()
+  } ?: owner.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, resolved) }
+}
+
+private fun Class<*>.genericParents(): List<Type> = genericInterfaces.toList() + listOfNotNull(genericSuperclass)
+
+private fun Type.rawClass(bindings: Map<TypeVariable<*>, Type> = emptyMap()): Class<*>? = when (this) {
+  is Class<*> -> this
+  is ParameterizedType -> rawType as Class<*>
+  is GenericArrayType -> (bindings[genericComponentType] ?: genericComponentType).rawClass(bindings)?.let {
+    java.lang.reflect.Array.newInstance(it, 0).javaClass
+  }
+  else -> null
+}
+
+private fun resolveAliases(first: String, second: String, unset: String, fallback: String): String {
+  require(first == unset || second == unset || first == second) {
+    "Conflicting annotation aliases: '$first' and '$second'"
+  }
+  return first.takeUnless { it == unset } ?: second.takeUnless { it == unset } ?: fallback
+}
 
 /**
  * Detects worker topic either using the annotation or defaulting to method name.
  */
 fun Method.getTopic(): String {
-  val workerAnnotation = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!
-  return if (workerAnnotation.topic != DEFAULT_UNSET_TOPIC) {
-    workerAnnotation.topic
-  } else {
-    this.name
-  }
+  val workerAnnotation = workerAnnotation()
+  return resolveAliases(workerAnnotation.topic, workerAnnotation.value, DEFAULT_UNSET_TOPIC, name)
 }
 
 /**
  * Returns the auto-completion flag from annotation.
  */
 fun Method.getAutoComplete(): Boolean {
-  return AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.autoComplete
+  return workerAnnotation().autoComplete
 }
 
 /**
  * Returns the auto-completion flag from annotation.
  */
 fun Method.getCompletion(): Completion {
-  return AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.completion
+  return workerAnnotation().completion
 }
 
 /**
@@ -168,7 +207,7 @@ fun Method.getCompletion(): Completion {
  * @since 0.8.0
  */
 fun Method.getLockDuration(): Long? {
-  val lockDuration = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.lockDuration
+  val lockDuration = workerAnnotation().lockDuration
   return if (lockDuration == ProcessEngineWorker.DEFAULT_UNSET_LOCK_DURATION) {
     null
   } else {
@@ -182,41 +221,12 @@ fun Method.getLockDuration(): Long? {
  * @since 0.8.4
  */
 fun Method.getTenantId(): String? {
-  val tenantId = AnnotationUtils.findAnnotation(this, ProcessEngineWorker::class.java)!!.tenantId
+  val tenantId = workerAnnotation().tenantId
   return tenantId.ifBlank {
     null
   }
 }
 
-/**
- * Checks if the method of the worker is transactional.
- * @return true, if the method should be executed transactional and be atomic with completion of the worker.
- */
-fun Method.isTransactional() =
-  this.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)
-    ?.isTransactionalRequired() ?: false
-    || this.declaringClass.getAnnotation(org.springframework.transaction.annotation.Transactional::class.java)
-    ?.isTransactionalRequired() ?: false
-    || this.getAnnotation(jakarta.transaction.Transactional::class.java)?.isTransactionRequired() ?: false
-    || this.declaringClass.getAnnotation(jakarta.transaction.Transactional::class.java)
-    ?.isTransactionRequired() ?: false
-
-
-/**
- * Resolves Spring TX propagation types.
- */
-private fun org.springframework.transaction.annotation.Transactional.isTransactionalRequired() =
-  this.propagation == org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
-    || this.propagation == org.springframework.transaction.annotation.Propagation.REQUIRED
-    || this.propagation == org.springframework.transaction.annotation.Propagation.SUPPORTS
-    || this.propagation == org.springframework.transaction.annotation.Propagation.MANDATORY
-
-/**
- * Resolves Jakarta TX propagation types.
- */
-private fun jakarta.transaction.Transactional.isTransactionRequired() =
-  this.value == jakarta.transaction.Transactional.TxType.REQUIRED
-    || this.value == jakarta.transaction.Transactional.TxType.REQUIRES_NEW
-    || this.value == jakarta.transaction.Transactional.TxType.SUPPORTS
-    || this.value == jakarta.transaction.Transactional.TxType.MANDATORY
-
+private fun Method.workerAnnotation(): ProcessEngineWorker = requireNotNull(workerMetadata()) {
+  "No @ProcessEngineWorker metadata found for $this"
+}.getAnnotation(ProcessEngineWorker::class.java)

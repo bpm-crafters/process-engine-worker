@@ -27,6 +27,32 @@ class ParameterResolverTest {
   private val taskCompletionApi = mock<ServiceTaskCompletionApi>()
 
   @Test
+  fun `reject ambiguous parameter strategies clearly`() {
+    class Worker {
+      @ProcessEngineWorker
+      fun work(task: TaskInformation) {}
+    }
+    val ambiguous = ParameterResolver.builder().addStrategy(TaskInformationParameterResolutionStrategy()).build()
+    val exception = assertThrows<IllegalArgumentException> {
+      ambiguous.createInvocationArguments(Worker().getAnnotatedWorkers().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
+    }
+    assertThat(exception).hasMessageContaining("Expected exactly one strategy for parameter type TaskInformation")
+      .hasMessageContaining("TaskInformationParameterResolutionStrategy, TaskInformationParameterResolutionStrategy")
+  }
+
+  @Test
+  fun `describe missing mandatory variable when payload is empty`() {
+    class Worker {
+      @ProcessEngineWorker
+      fun work(@Variable("required") value: String) {}
+    }
+    val exception = assertThrows<IllegalArgumentException> {
+      resolver.createInvocationArguments(Worker().getAnnotatedWorkers().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
+    }
+    assertThat(exception).hasMessage("Expected payload to contain variable 'required', but it contained no process variables.")
+  }
+
+  @Test
   fun `works with methods without arguments`() {
     class Worker {
       @ProcessEngineWorker

@@ -1,6 +1,5 @@
 package dev.bpmcrafters.processengine.worker
 
-import org.springframework.core.annotation.AliasFor
 
 /**
  * Indicates a method to be a worker.
@@ -12,12 +11,10 @@ annotation class ProcessEngineWorker(
   /**
    * Topic name to subscribe this worker for.
    */
-  @get:AliasFor(attribute = "value")
   val topic: String = DEFAULT_UNSET_TOPIC,
   /**
    * Topic name to subscribe this worker for.
    */
-  @get:AliasFor(attribute = "topic")
   val value: String = DEFAULT_UNSET_TOPIC,
   /**
    * Flag, indicating if the task should be automatically completed after the execution of the worker.
