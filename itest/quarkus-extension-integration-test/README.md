@@ -111,7 +111,7 @@ this setting does not skip tests. Use the lifecycle commands above when changing
 application or extension code, since direct goals reuse the existing packaged application.
 Reports appear under `target/failsafe-reports`; copy that directory before the
 second launch to retain both profiles' results. See the
-[example validation guide](../../examples/quarkus-worker/README.md#jvm-and-native-validation)
+[example validation guide](../../examples/quarkus-order-fullfillment/README.md#jvm-and-native-validation)
 for local JVM and native validation instructions.
 
 ## Coverage and boundaries

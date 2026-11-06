@@ -20,7 +20,7 @@ from your engine adapter, then annotate a method on an `@ApplicationScoped` or
 `@Singleton` bean with `@ProcessEngineWorker`. The extension does not bundle an engine adapter.
 
 See the [Quarkus guide](docs/quarkus.md) for configuration, Jakarta transactions,
-deployment and optional JPA idempotency. The [runnable Quarkus demo](examples/quarkus-worker)
+deployment and optional JPA idempotency. The [runnable Quarkus demo](examples/quarkus-order-fullfillment)
 uses the published Camunda adapter and requires an external Camunda 8.8.2 engine.
 
 ## How to use with Spring Boot

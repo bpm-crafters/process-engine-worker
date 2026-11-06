@@ -135,5 +135,5 @@ CDI override resolution, restrictive entity-package discovery, and after-commit
 cleanup. Use the [packaged acceptance application](../itest/quarkus-extension-integration-test/README.md)
 for PostgreSQL and native validation. Also test your application with its own JDBC
 extension, engine adapter and actual worker payloads. See the
-[Quarkus guide](../docs/quarkus.md) and [runnable example](../examples/quarkus-worker/README.md)
+[Quarkus guide](../docs/quarkus.md) and [runnable example](../examples/quarkus-order-fullfillment/README.md)
 for worker setup.
