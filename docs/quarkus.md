@@ -123,7 +123,7 @@ storage, the compatible schema and native serialization registration.
 
 ## Example
 
-See the [runnable example](../examples/quarkus-worker/README.md) for a self-contained
-greeting demo and local JVM/native validation instructions. The
+See the [runnable example](../examples/quarkus-worker/README.md) for Kotlin order
+fulfillment against Camunda 8.8.2 and separate JVM/native validation instructions. The
 [packaged acceptance application](../itest/quarkus-extension-integration-test/README.md)
 documents PostgreSQL prerequisites, runtime profiles and test coverage boundaries.

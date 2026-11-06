@@ -1,0 +1,56 @@
+@application = http://localhost:8080
+@taskId = copy-task-id-from-user-tasks
+
+### Happy path: replace UUID before repeating
+POST {{application}}/ingress/order-received
+Content-Type: application/json
+
+{
+  "id": "d61a74aa-cb7e-48ed-a092-b539f9dc2eba",
+  "shipmentAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "invoiceAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "orderPositions": [{"name":"book", "amount":2, "price":10.00}]
+}
+
+### Rejected payment: total 42.00
+POST {{application}}/ingress/order-received
+Content-Type: application/json
+
+{
+  "id": "1eb17254-a120-49b7-ac4d-acbc639514d6",
+  "shipmentAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "invoiceAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "orderPositions": [{"name":"book", "amount":2, "price":21.00}]
+}
+
+### Inventory timer after 5s; replenishment after 60s
+POST {{application}}/ingress/order-received
+Content-Type: application/json
+
+{
+  "id": "e9c65030-f65b-4691-9822-a554629cdd4f",
+  "shipmentAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "invoiceAddress": {"streetLine":"Main 1", "zipCode":"12345", "city":"Berlin", "country":"DE"},
+  "orderPositions": [{"name":"out-of-stock", "amount":2, "price":10.00}]
+}
+
+### Find the correct orderId and activity type, then set taskId above
+GET {{application}}/user-tasks
+
+### Failed payment detail and confirmation
+GET {{application}}/failed-payment/{{taskId}}
+
+###
+POST {{application}}/failed-payment/{{taskId}}
+
+### Inventory delay detail and confirmation
+GET {{application}}/delayed-inventory/{{taskId}}
+
+###
+POST {{application}}/delayed-inventory/{{taskId}}
+
+### Optional manual redeployment (startup already deploys this shared resource)
+POST {{application}}/deploy
+Content-Type: application/json
+
+{"path":"C8/Order Fulfillment.bpmn"}

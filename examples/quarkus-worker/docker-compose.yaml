@@ -1,0 +1,91 @@
+services:
+  camunda:
+    image: camunda/camunda:8.8.2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CAMUNDA_GRPC_PORT:-26500}:26500"
+      - "127.0.0.1:${CAMUNDA_REST_PORT:-8088}:8080"
+    environment:
+      CAMUNDA_LICENSE_KEY: ${CAMUNDA_LICENSE_KEY:-}
+      JAVA_TOOL_OPTIONS: -Xms512m -Xmx1024m
+    configs:
+      - source: camunda-config
+        target: /usr/local/camunda/config/application.yaml
+    volumes:
+      - camunda-data:/usr/local/camunda/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9600; printf \"GET /actuator/health/readiness HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ $$status == *\" 200 \"* ]]'"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 30
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.10
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+configs:
+  camunda-config:
+    content: |
+      camunda:
+        system:
+          cpu-thread-count: 3
+          io-thread-count: 3
+        database:
+          index:
+            numberOfReplicas: 0
+        security:
+          authentication:
+            method: basic
+            unprotectedApi: true
+          authorizations:
+            enabled: false
+          initialization:
+            users:
+              - username: demo
+                password: demo
+                name: Demo
+                email: demo@example.com
+            defaultRoles:
+              admin:
+                users: [demo]
+        data:
+          secondary-storage:
+            type: elasticsearch
+            elasticsearch:
+              url: http://elasticsearch:9200
+      zeebe:
+        broker:
+          cluster:
+            replicationFactor: 1
+          exporters:
+            camundaexporter:
+              className: io.camunda.exporter.CamundaExporter
+              args:
+                connect:
+                  url: http://elasticsearch:9200
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health
+        endpoint:
+          health:
+            probes:
+              enabled: true
+volumes:
+  camunda-data:
+  elasticsearch-data:

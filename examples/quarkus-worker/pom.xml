@@ -9,7 +9,7 @@
     <relativePath>../../quarkus-extension/pom.xml</relativePath>
   </parent>
   <artifactId>process-engine-worker-example-quarkus</artifactId>
-  <description>Self-contained Quarkus worker with a demo Process Engine API adapter</description>
+  <description>Kotlin Quarkus order fulfillment with Camunda 8</description>
   <properties>
     <deploy.skip>true</deploy.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
@@ -19,6 +19,17 @@
     <maven.source.skip>true</maven.source.skip>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>dev.bpm-crafters.process-engine-adapters</groupId>
+      <artifactId>process-engine-adapter-camunda-platform-c8-core</artifactId>
+      <version>${process-engine-adapters-c8.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId><artifactId>camunda-client-java</artifactId><version>8.8.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId><artifactId>zeebe-protocol</artifactId><version>8.8.2</version>
+    </dependency>
     <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
       <artifactId>process-engine-worker-quarkus</artifactId>
@@ -30,8 +41,15 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId><artifactId>quarkus-junit-mockito</artifactId><scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.rest-assured</groupId>
@@ -47,6 +65,13 @@
     </dependency>
   </dependencies>
   <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource>
+        <directory>../order-fulfillment/src/main/resources</directory>
+        <includes><include>C8/Order Fulfillment.bpmn</include></includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>
@@ -65,4 +90,21 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>real-engine</id>
+      <build><plugins><plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId>
+        <executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions>
+        <configuration>
+          <skipITs>false</skipITs>
+          <includes combine.self="override"><include>**/OrderFulfillmentIT.*</include></includes>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <quarkus.http.test-port>0</quarkus.http.test-port>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin></plugins></build>
+    </profile>
+  </profiles>
 </project>

@@ -4,7 +4,7 @@ This extension integrates the framework-neutral worker core with Quarkus 3.40 LT
 (3.40.1.1), CDI and Narayana JTA. Library bytecode targets Java 17.
 See the [Quarkus guide](../docs/quarkus.md) for dependencies, configuration and
 resource deployment, and the [runnable example](../examples/quarkus-worker/README.md)
-for a self-contained demo without an external engine.
+for Kotlin order fulfillment against a real Camunda 8.8.2 Docker Compose stack.
 
 ## Runtime contract
 
