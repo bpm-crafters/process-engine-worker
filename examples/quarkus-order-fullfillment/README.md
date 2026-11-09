@@ -87,12 +87,44 @@ startup. The default SDK client provides four execution threads for service work
 A separate, CDI-qualified notification client provides one independent execution
 thread for the nonblocking user-task handlers and handles user-task completion.
 Both clients use the same engine addresses and shared subscription repository;
-four waiting inventory handlers cannot starve notification delivery. The service-task
-lease exceeds the configured delay by at least 60 seconds. User-task leases last
+four waiting inventory handlers cannot starve notification delivery. User-task leases last
 60 seconds and refresh every 5 seconds, including retries after transient refresh
 failures. Shutdown stops refreshing and releases user tasks, drains extension
 deliveries, then closes both owned SDK clients exactly once. Qualified disposers
 provide fallback cleanup; a failure closing one client does not prevent closing the other.
+
+### Service-worker capacity and leases
+
+The service client sets `maxJobsActive=4` **per worker**, matching its four execution
+threads. The published adapter inherits this client default for each of the three
+topics (`retrievePayment`, `fetchGoods`, `shipGoods`), so all service workers together
+can admit at most 12 unhandled jobs into the shared pool. Extra orders wait at the
+engine rather than building an unbounded local inventory queue. Increasing activation
+capacity alone does not increase the four-thread pool's throughput.
+
+Configure the inventory wait with `example.inventory.replenishment-seconds`
+(`EXAMPLE_INVENTORY_REPLENISHMENT_SECONDS`), which defaults to 60. The bridge calculates
+the service-task lease in seconds as `max(120, 3 * inventoryDelay + 60)`:
+
+- Twelve admitted jobs across four execution threads require at most three execution
+  waves in this conservative budget. Each wave budgets a full inventory delay, even
+  though payment and shipment normally finish quickly.
+- The extra 60 seconds allows for completion and other overhead. The default lease
+  therefore lasts **240 seconds**, not 120 seconds.
+- The bridge rejects negative delays and arithmetic overflow, including overflow
+  when the adapter converts the lease to milliseconds.
+
+This budget is not an absolute latency SLA: slow infrastructure, pauses or handler
+changes can exhaust the margin. Camunda uses at-least-once job delivery; lease expiry
+allows redelivery, so production handlers still need idempotent side effects. Revisit
+both capacity and the lease budget when adding a service topic or changing handler
+timing. The separate notification client's one execution thread, 60-second user-task
+leases and refresh schedule remain independent of this service-task budget.
+
+See the Camunda 8.8 [Java job-worker documentation](https://docs.camunda.io/docs/8.8/apis-tools/java-client/job-worker/)
+for per-worker activation limits and
+[worker sizing guidance](https://docs.camunda.io/docs/8.8/components/best-practices/development/writing-good-workers/#size-maxjobsactive-against-execution-threads)
+for sizing capacity against execution threads, worst-case handler duration and leases.
 
 **Do not run the Spring example and this application against the same cluster at the
 same time:** they consume the same service-task topics. Use separate Compose projects.
@@ -165,6 +197,11 @@ Lifecycle tests also check registration-before-activation, disabled lazy lookups
 observer priorities, pool unsubscription, notification-client qualification, concurrent
 client ownership, and exactly-once closure of both clients through shutdown or disposer
 fallback, including close failures.
+Offline capacity tests construct the production SDK client with inert loopback
+addresses and capture the published adapter's real worker builders before `open()`
+can start delivery. They verify the effective four-job per-worker limit, the
+nine-order and aggregate three-topic lease budgets, and invalid-delay rejection
+without waiting for inventory or contacting an engine.
 
 The opt-in `real-engine` Maven profile runs `OrderFulfillmentIT` against the packaged **JVM** application and your already-running Compose project. It sends
 HTTP ingress
@@ -180,6 +217,17 @@ precede the earliest inventory completion across all four orders. This avoids tr
 missing, eventually consistent search results as concurrency proof and detects a shared
 executor that dispatches notifications only after an inventory worker becomes free.
 Keep the replenishment delay at 60 seconds for these timing checks.
+The fifth scenario,
+`nineConcurrentInventoryOrdersCompleteNotificationsAndFinishWithoutIncidents`,
+submits nine concurrent out-of-stock orders, completes their notifications and checks
+that all nine instances finish without incidents. It uses a shared 300-second polling
+budget to accommodate three inventory waves; the original four scenarios retain
+their 150-second polling deadlines and the four-order timestamp oracle above.
+The bulk scenario does not require all nine inventory activities to become active
+together: capacity limits may legitimately queue payment jobs first. It uses unique
+UUIDs and attempts notification cleanup on failure. Completed instances alone do
+**not** prove zero lease expiry or redelivery; the deterministic offline tests protect
+the configured capacity/lease relationship, not runtime scheduling guarantees.
 It never creates, stops or cleans up Docker containers itself.
 
 From the repository root, after starting your isolated stack:

@@ -12,6 +12,7 @@ import dev.bpmcrafters.processengineapi.impl.task.InMemSubscriptionRepository;
 import dev.bpmcrafters.processengineapi.process.StartProcessApi;
 import dev.bpmcrafters.processengineapi.task.*;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.quarkus.runtime.ShutdownEvent;
@@ -29,6 +30,10 @@ import java.util.List;
 /** Owns infrastructure, never engine protocol behavior. */
 @ApplicationScoped
 public class CamundaBridge {
+  private static final int SERVICE_EXECUTION_THREADS = 4;
+  private static final int SERVICE_WORKER_TYPES = 3;
+  private static final long COMPLETION_MARGIN_SECONDS = 60;
+
   private static final class OwnedClient {
     private final CamundaClient client;
     private boolean closed;
@@ -42,7 +47,8 @@ public class CamundaBridge {
   public CamundaClient client(ObjectMapper mapper,
       @ConfigProperty(name = "example.camunda.grpc-address") String grpc,
       @ConfigProperty(name = "example.camunda.rest-address") String rest) {
-    return createClient(mapper, grpc, rest, 4);
+    return own(clientBuilder(mapper, grpc, rest, SERVICE_EXECUTION_THREADS)
+      .defaultJobWorkerMaxJobsActive(SERVICE_EXECUTION_THREADS).build());
   }
 
   @Produces
@@ -51,13 +57,13 @@ public class CamundaBridge {
   public CamundaClient notificationClient(ObjectMapper mapper,
       @ConfigProperty(name = "example.camunda.grpc-address") String grpc,
       @ConfigProperty(name = "example.camunda.rest-address") String rest) {
-    return createClient(mapper, grpc, rest, 1);
+    return own(clientBuilder(mapper, grpc, rest, 1).build());
   }
 
-  private CamundaClient createClient(ObjectMapper mapper, String grpc, String rest, int threads) {
-    return own(CamundaClient.newClientBuilder().applyEnvironmentVariableOverrides(false)
+  private CamundaClientBuilder clientBuilder(ObjectMapper mapper, String grpc, String rest, int threads) {
+    return CamundaClient.newClientBuilder().applyEnvironmentVariableOverrides(false)
       .credentialsProvider(new NoopCredentialsProvider()).grpcAddress(URI.create(grpc)).restAddress(URI.create(rest))
-      .preferRestOverGrpc(false).withJsonMapper(new CamundaObjectMapper(mapper.copy())).numJobWorkerExecutionThreads(threads).build());
+      .preferRestOverGrpc(false).withJsonMapper(new CamundaObjectMapper(mapper.copy())).numJobWorkerExecutionThreads(threads);
   }
 
   @Produces
@@ -68,7 +74,17 @@ public class CamundaBridge {
   @Singleton
   public SubscribingServiceTaskDelivery serviceDelivery(CamundaClient client, InMemSubscriptionRepository repository,
       @ConfigProperty(name = "example.inventory.replenishment-seconds", defaultValue = "60") long delay) {
-    return new SubscribingServiceTaskDelivery(client, repository, "quarkus-order-fulfillment", 10, Math.max(120, delay + 60));
+    return new SubscribingServiceTaskDelivery(client, repository, "quarkus-order-fulfillment", 10, serviceLeaseSeconds(delay));
+  }
+
+  private static long serviceLeaseSeconds(long delay) {
+    if (delay < 0) throw new IllegalArgumentException("Inventory replenishment seconds must be nonnegative");
+    // Each of the three topics can admit four jobs into the shared four-thread pool: three waves.
+    final long executionSeconds = Math.multiplyExact(delay, SERVICE_WORKER_TYPES);
+    final long leaseSeconds = Math.max(120, Math.addExact(executionSeconds, COMPLETION_MARGIN_SECONDS));
+    // The published adapter converts seconds to milliseconds with unchecked multiplication.
+    Math.multiplyExact(leaseSeconds, 1000L);
+    return leaseSeconds;
   }
 
   @Produces

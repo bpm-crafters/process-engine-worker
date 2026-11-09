@@ -21,10 +21,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Singleton
 import jakarta.transaction.Transactional
 import org.jboss.jandex.AnnotationInstance
 import org.jboss.jandex.AnnotationTarget
+import org.jboss.jandex.ClassInfo
 import org.jboss.jandex.DotName
 import org.jboss.jandex.IndexView
 import java.lang.invoke.MethodType
@@ -64,6 +66,8 @@ class WorkerProcessor {
   fun deliveryBindings(combined: CombinedIndexBuildItem, exclusions: BuildExclusionsBuildItem): AnnotationsTransformerBuildItem {
     val methods = HashSet<String>()
     for (candidate in candidates(combined.index) - exclusions.excludedDeclaringClasses) {
+      val indexed = combined.index.getClassByName(DotName.createSimple(candidate))
+      if (indexed != null && isVetoed(indexed, combined.index)) continue
       val beanClass = load(candidate)
       if (beanClass.isInterface) continue
       beanClass.methods.filter { !it.isBridge && !it.isSynthetic }
@@ -163,11 +167,19 @@ class WorkerProcessor {
     for (annotation in index.getAnnotations(WORKER)) {
       val owner = annotation.target().asMethod().declaringClass()
       if (exclusions.isExcluded(owner) || owner.isInterface || Modifier.isAbstract(owner.flags().toInt())) continue
+      if (isVetoed(owner, index)) continue
       val ownerClass = load(owner.name().toString())
       require(workerClasses.any { ownerClass.isAssignableFrom(it) }) {
         "Annotated worker has no supported CDI-managed bean: ${owner.name()}"
       }
     }
+  }
+
+  private fun isVetoed(type: ClassInfo, index: IndexView): Boolean {
+    if (type.hasDeclaredAnnotation(VETOED)) return true
+    // Arc checks only the exact package; neither superclass nor parent-package vetoes are inherited.
+    val packageInfo = index.getClassByName(DotName.createSimple(type.name().packagePrefix() + ".package-info"))
+    return packageInfo?.hasDeclaredAnnotation(VETOED) == true
   }
 
   private fun registerReflection(
@@ -217,5 +229,6 @@ class WorkerProcessor {
 
   companion object {
     private val WORKER = DotName.createSimple(ProcessEngineWorker::class.java.name)
+    private val VETOED = DotName.createSimple(Vetoed::class.java.name)
   }
 }

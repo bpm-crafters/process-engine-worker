@@ -10,7 +10,7 @@ class ReflectionUtilsTest {
 
   @Test
   fun `discovery excludes Kotlin synthetic default argument helpers`() {
-    assertThat(DefaultArgumentWorker().getAnnotatedWorkers().map { it.name }).containsExactly("work")
+    assertThat(DefaultArgumentWorker().findAnnotatedWorkerMethods().map { it.name }).containsExactly("work")
   }
 
   class DefaultArgumentWorker {

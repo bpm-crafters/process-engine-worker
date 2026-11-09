@@ -17,7 +17,7 @@ class ResultResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
 
     assertThat(resultResolver.payloadReturnType(method)).isTrue()
     assertThat(resultResolver.resolve(method, worker.work())).containsAllEntriesOf(mapOf("string" to "value", "string2" to 67))
@@ -33,7 +33,7 @@ class ResultResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
 
     assertThat(resultResolver.payloadReturnType(method)).isTrue()
     assertThat(resultResolver.resolve(method, worker.work())).containsAllEntriesOf(mapOf("string" to "value", "string2" to "other"))
@@ -51,7 +51,7 @@ class ResultResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
 
     assertThat(resultResolver.payloadReturnType(method)).isTrue()
     assertThat(resultResolver.resolve(method, worker.work())).containsAllEntriesOf(mapOf("string" to "value", "string2" to "other"))

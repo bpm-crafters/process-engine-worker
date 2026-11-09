@@ -34,7 +34,7 @@ class ParameterResolverTest {
     }
     val ambiguous = ParameterResolver.builder().addStrategy(TaskInformationParameterResolutionStrategy()).build()
     val exception = assertThrows<IllegalArgumentException> {
-      ambiguous.createInvocationArguments(Worker().getAnnotatedWorkers().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
+      ambiguous.createInvocationArguments(Worker().findAnnotatedWorkerMethods().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
     }
     assertThat(exception).hasMessageContaining("Expected exactly one strategy for parameter type TaskInformation")
       .hasMessageContaining("TaskInformationParameterResolutionStrategy, TaskInformationParameterResolutionStrategy")
@@ -47,7 +47,7 @@ class ParameterResolverTest {
       fun work(@Variable("required") value: String) {}
     }
     val exception = assertThrows<IllegalArgumentException> {
-      resolver.createInvocationArguments(Worker().getAnnotatedWorkers().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
+      resolver.createInvocationArguments(Worker().findAnnotatedWorkerMethods().single(), taskInformation, emptyMap(), variableConverter, taskCompletionApi)
     }
     assertThat(exception).hasMessage("Expected payload to contain variable 'required', but it contained no process variables.")
   }
@@ -61,7 +61,7 @@ class ParameterResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isEmpty()
     method.invoke(worker, *args)
@@ -77,7 +77,7 @@ class ParameterResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).hasSize(1)
     assertThat(args[0]).isEqualTo(taskInformation)
@@ -95,7 +95,7 @@ class ParameterResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).hasSize(1)
     assertThat(args[0]).isEqualTo(variableConverter)
@@ -120,7 +120,7 @@ class ParameterResolverTest {
     }
 
     val worker = Worker()
-    val workers = worker.getAnnotatedWorkers()
+    val workers = worker.findAnnotatedWorkerMethods()
 
     val work = workers.first { it.name == "work_A" }
     val args = resolver.createInvocationArguments(work, taskInformation, payload, variableConverter, taskCompletionApi)
@@ -163,7 +163,7 @@ class ParameterResolverTest {
     payload["long"] = 17L
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(2)
@@ -184,7 +184,7 @@ class ParameterResolverTest {
     payload["long"] = 17L
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(1)
@@ -204,7 +204,7 @@ class ParameterResolverTest {
     payload["long"] = 17L
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(1)
@@ -225,7 +225,7 @@ class ParameterResolverTest {
     payload["string"] = "TWO"
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(2)
@@ -247,7 +247,7 @@ class ParameterResolverTest {
     payload["long"] = 17L
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val args = resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
     assertThat(args).isNotNull
     assertThat(args).hasSize(1)
@@ -271,7 +271,7 @@ class ParameterResolverTest {
     payload["long"] = 17L
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val exception =
       assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
     assertThat(exception).hasMessage("Expected payload to contain variable 'not-existing', but it contained 'string', 'long'.")
@@ -288,7 +288,7 @@ class ParameterResolverTest {
     }
 
     val worker = Worker()
-    val method = worker.getAnnotatedWorkers().first()
+    val method = worker.findAnnotatedWorkerMethods().first()
     val exception =
       assertThrows<IllegalArgumentException> { resolver.createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi) }
     assertThat(exception).hasMessage("Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. Could not find a strategy to resolve argument 1 of Worker#work of type String.")

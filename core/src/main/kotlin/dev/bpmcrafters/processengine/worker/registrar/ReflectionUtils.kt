@@ -127,9 +127,11 @@ fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
 
 
 /**
- * Retrieves list of worker methods.
+ * Retrieves worker methods from the receiver's runtime class.
+ * Uses a distinct Kotlin name from Spring's proxy-aware discovery while retaining the core JVM entry point.
  */
-fun Any.getAnnotatedWorkers(): List<Method> = javaClass.methods
+@JvmName("getAnnotatedWorkers")
+fun Any.findAnnotatedWorkerMethods(): List<Method> = javaClass.methods
   .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata(javaClass) != null }
 
 /** Finds direct or interface worker metadata without depending on a framework annotation model. */

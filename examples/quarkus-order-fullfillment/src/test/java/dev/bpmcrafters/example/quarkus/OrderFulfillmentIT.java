@@ -145,6 +145,49 @@ class OrderFulfillmentIT {
     });
   }
 
+  @Test
+  void nineConcurrentInventoryOrdersCompleteNotificationsAndFinishWithoutIncidents() throws Exception {
+    final List<UUID> ids = java.util.stream.IntStream.range(0, 9).mapToObj(index -> UUID.randomUUID()).toList();
+    final long deadline = System.nanoTime() + Duration.ofSeconds(300).toNanos();
+    try {
+      CompletableFuture.allOf(ids.stream().map(id -> CompletableFuture.runAsync(() -> ingress(id, "10.00", "out-of-stock")))
+        .toArray(CompletableFuture[]::new)).get(20, TimeUnit.SECONDS);
+      final Map<UUID, String> keys = new LinkedHashMap<>();
+      for (final UUID id : ids) keys.put(id, eventually("bulk engine order " + id, deadline, () -> scanOrderVariables(id)));
+      final var notified = new java.util.HashSet<UUID>();
+      // Do not wait for nine ACTIVE inventory activities: bounded activation may legitimately queue payment first.
+      eventually("all nine orders notified and completed without incidents", deadline, () -> {
+        completeBulkNotifications(ids, notified);
+        boolean allCompleted = notified.size() == ids.size();
+        for (final String key : keys.values()) {
+          final List<JsonNode> instances = search("process-instances", Map.of("processInstanceKey", key));
+          for (final JsonNode instance : instances) {
+            assertEquals(PROCESS_ID, instance.path("processDefinitionId").asText());
+            assertFalse(instance.path("hasIncident").asBoolean(), "Engine incident in " + key + ": " + instance);
+          }
+          allCompleted &= instances.size() == 1 && "COMPLETED".equals(instances.get(0).path("state").asText());
+        }
+        return allCompleted ? Boolean.TRUE : null;
+      });
+      assertAll("no incidents in all nine orders", keys.values().stream().map(key -> (Executable) () ->
+        assertTrue(search("incidents", Map.of("processInstanceKey", key)).isEmpty(), "Engine recorded incident in " + key)));
+      // Completion is a stress guard, not proof of no redelivery; the offline capacity test protects the lease budget.
+    } finally {
+      ids.forEach(this::cleanupNotifications);
+    }
+  }
+
+  private void completeBulkNotifications(List<UUID> ids, java.util.Set<UUID> notified) throws Exception {
+    final List<JsonNode> tasks = nodes(mapper.readTree(application().get("/user-tasks").then().statusCode(200).extract().asString()));
+    for (final JsonNode task : tasks) {
+      if (!DELAYED_INVENTORY.equals(task.path("type").asText())) continue;
+      final UUID id = UUID.fromString(task.path("orderId").asText());
+      if (!ids.contains(id) || notified.contains(id)) continue;
+      application().post("/delayed-inventory/" + task.path("taskId").asText()).then().statusCode(204);
+      notified.add(id);
+    }
+  }
+
   private void cleanupNotifications(UUID id) {
     try {
       for (final JsonNode task : notifications(id)) {
@@ -272,11 +315,15 @@ class OrderFulfillmentIT {
 
   private <T> T eventually(String description, Condition<T> condition) throws Exception {
     final long deadline = System.nanoTime() + Duration.ofSeconds(150).toNanos();
-    do {
+    return eventually(description, deadline, condition);
+  }
+
+  private <T> T eventually(String description, long deadline, Condition<T> condition) throws Exception {
+    while (System.nanoTime() < deadline) {
       final T result = condition.get();
       if (result != null) return result;
       LockSupport.parkNanos(Duration.ofMillis(250).toNanos());
-    } while (System.nanoTime() < deadline);
+    }
     throw new AssertionError("Timed out waiting for " + description + " (engine " + engine + "). Last response: " + lastResponse);
   }
 }

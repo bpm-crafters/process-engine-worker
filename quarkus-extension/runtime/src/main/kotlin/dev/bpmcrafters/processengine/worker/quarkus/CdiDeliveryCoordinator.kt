@@ -3,6 +3,7 @@ package dev.bpmcrafters.processengine.worker.quarkus
 import dev.bpmcrafters.processengine.worker.registrar.ExceptionResolver
 import dev.bpmcrafters.processengine.worker.registrar.WorkerDelivery
 import dev.bpmcrafters.processengine.worker.registrar.WorkerDeliveryCoordinator
+import io.quarkus.transaction.annotations.Rollback
 import jakarta.interceptor.InvocationContext
 import jakarta.transaction.*
 import jakarta.transaction.Transactional.TxType
@@ -33,7 +34,8 @@ class CdiDeliveryCoordinator(
     if (type == TxType.NEVER && transactions.transaction != null) {
       throw InvalidTransactionException("NEVER worker cannot execute in an ambient transaction")
     }
-    if (type == TxType.REQUIRES_NEW) {
+    // REQUIRED must enter through CDI too: transaction configuration is only valid at its entry point.
+    if (type == TxType.REQUIRES_NEW || (type == TxType.REQUIRED && transactions.transaction == null)) {
       if (!lookupInNewTransaction(delivery)) invoke(Token(delivery, owned = false, cdiOwned = true))
       return
     }
@@ -168,6 +170,7 @@ class CdiDeliveryCoordinator(
     ) token.boundaryFailure else outward
     if (definition.dontRollbackOn().any { exceptionType(it).isInstance(cause) }) return false
     if (definition.rollbackOn().any { exceptionType(it).isInstance(cause) }) return true
+    cause?.javaClass?.getAnnotation(Rollback::class.java)?.let { return it.value }
     return cause is RuntimeException || cause is Error
   }
 

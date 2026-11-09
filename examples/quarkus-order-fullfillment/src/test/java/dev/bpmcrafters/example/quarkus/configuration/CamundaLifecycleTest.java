@@ -83,6 +83,20 @@ class CamundaLifecycleTest {
   }
 
   @Test
+  void productionClientsKeepServiceAndNotificationExecutionPoolsSeparate() {
+    final var bridge = new CamundaBridge();
+    try {
+      final var service = bridge.client(new ObjectMapper(), "http://127.0.0.1:1", "http://127.0.0.1:2");
+      final var notification = bridge.notificationClient(new ObjectMapper(), "http://127.0.0.1:1", "http://127.0.0.1:2");
+      assertThat(service).isNotSameAs(notification);
+      assertThat(service.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(4);
+      assertThat(notification.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(1);
+    } finally {
+      bridge.closeOwned();
+    }
+  }
+
+  @Test
   void eitherQualifiedDisposerClosesBothClientsWithoutShutdownEvent() {
     for (final boolean notificationsFirst : List.of(false, true)) {
       final var service = mock(CamundaClient.class);

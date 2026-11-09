@@ -9,6 +9,15 @@ import org.springframework.transaction.annotation.Transactional
 
 class ReflectionFacadeSourceTest {
   @Test
+  fun `same-package original extension resolves Spring target instead of core runtime class`() {
+    val factory = ProxyFactory(ImplementationWorker())
+    factory.isProxyTargetClass = false
+    val bean: Any = factory.proxy
+
+    assertThat(bean.getAnnotatedWorkers()).containsExactly(ImplementationWorker::class.java.getMethod("work"))
+  }
+
+  @Test
   fun `legacy discovery handles Spring proxies and synthetic Kotlin helpers without extension ambiguity`() {
     val factory = ProxyFactory(DefaultWorker())
     factory.isProxyTargetClass = true
@@ -24,5 +33,14 @@ class ReflectionFacadeSourceTest {
   open class DefaultWorker {
     @ProcessEngineWorker @Transactional
     open fun work(@Variable("value") value: String = "default"): Map<String, Any> = mapOf("value" to value)
+  }
+
+  interface WorkerContract {
+    fun work()
+  }
+
+  open class ImplementationWorker : WorkerContract {
+    @ProcessEngineWorker("implementation-topic")
+    override fun work() {}
   }
 }

@@ -17,7 +17,7 @@ class ProcessEngineStarterReflectionTest {
       }
     }
     val bean = Bean()
-    assertThat(bean.getAnnotatedWorkers()[0].hasPayloadReturnType()).isTrue()
+    assertThat(bean.findAnnotatedWorkerMethods()[0].hasPayloadReturnType()).isTrue()
   }
 
   @Test
@@ -30,8 +30,8 @@ class ProcessEngineStarterReflectionTest {
       }
     }
     val bean = Bean()
-    assertThat(bean.getAnnotatedWorkers()[0].getTopic()).isEqualTo("foo")
-    val annotatedVariableParameters = bean.getAnnotatedWorkers()[0].parameters.filter { it.isVariable() }
+    assertThat(bean.findAnnotatedWorkerMethods()[0].getTopic()).isEqualTo("foo")
+    val annotatedVariableParameters = bean.findAnnotatedWorkerMethods()[0].parameters.filter { it.isVariable() }
     assertThat(annotatedVariableParameters).hasSize(1)
     assertThat(annotatedVariableParameters[0].extractVariableName()).isEqualTo("bar")
   }
@@ -46,8 +46,8 @@ class ProcessEngineStarterReflectionTest {
       }
     }
     val bean = Bean()
-    assertThat(bean.getAnnotatedWorkers()[0].getTopic()).isEqualTo("foo")
-    val annotatedVariableParameters = bean.getAnnotatedWorkers()[0].parameters.filter { it.isVariable() }
+    assertThat(bean.findAnnotatedWorkerMethods()[0].getTopic()).isEqualTo("foo")
+    val annotatedVariableParameters = bean.findAnnotatedWorkerMethods()[0].parameters.filter { it.isVariable() }
     assertThat(annotatedVariableParameters).hasSize(1)
     assertThat(annotatedVariableParameters[0].extractVariableName()).isEqualTo("zee")
   }

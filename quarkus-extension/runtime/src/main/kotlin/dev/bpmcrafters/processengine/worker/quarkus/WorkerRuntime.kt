@@ -27,7 +27,16 @@ class WorkerRuntime {
   private val handles = mutableListOf<InstanceHandle<*>>()
   private var subscriptions: SubscriptionTracker? = null
   private var deliveries: DeliveryLifecycle? = null
-  private var stopping = false
+  private var stopping: StopState? = null
+  private val destroying = ThreadLocal<Boolean>()
+
+  private class StopState(val owned: List<InstanceHandle<*>>, val lifecycle: DeliveryLifecycle?) {
+    val drained = CompletableFuture<Void>()
+    val released = lifecycle?.resourcesReleased() ?: CompletableFuture.completedFuture<Void>(null)
+    val cleanup = CompletableFuture<Void>()
+    @Volatile
+    var initializing: Thread? = Thread.currentThread()
+  }
 
   fun configure(descriptors: List<WorkerDefinition>) {
     this.descriptors = java.util.List.copyOf(descriptors)
@@ -93,29 +102,55 @@ class WorkerRuntime {
   fun shutdown(@Observes event: ShutdownEvent) = stop()
 
   private fun stop() {
-    val owned = synchronized(this) {
-      if (stopping) return
-      stopping = true
-      handles.toList().also { handles.clear() }
+    val (state, initialize) = synchronized(this) {
+      val previous = stopping
+      if (previous != null) previous to false else {
+        val created = StopState(handles.toList(), deliveries)
+        handles.clear()
+        stopping = created
+        created to true
+      }
     }
-    val lifecycle = deliveries
-    val drained = subscriptions?.closeAsync() ?: lifecycle?.closeAsync() ?: CompletableFuture.completedFuture<Void>(null)
-    val released = lifecycle?.resourcesReleased() ?: CompletableFuture.completedFuture<Void>(null)
-    val cleanup = drained.handle { _, failure -> failure }.thenCombine(released) { failure, _ -> destroy(owned, failure) }
-    cleanup.whenComplete { _, failure ->
-      if (failure != null) System.getLogger(WorkerRuntime::class.java.name)
-        .log(System.Logger.Level.ERROR, "Failed to release worker resources", failure)
+    if (initialize) initializeStop(state)
+    // Synchronous unsubscribe and destruction callbacks must not wait for their own stack to finish.
+    if (state.lifecycle?.inDelivery() == true || state.initializing === Thread.currentThread() || destroying.get() == true) return
+    state.drained.join()
+    // Never wait for caller-owned transactions; retain references until their eventual outcome instead.
+    if (state.released.isDone) state.cleanup.join()
+  }
+
+  private fun initializeStop(state: StopState) {
+    state.drained.handle { _, failure -> failure }.thenCombine(state.released) { failure, _ ->
+      destroying.set(true)
+      try {
+        destroy(state.owned, failure)
+      } finally {
+        destroying.remove()
+      }
+    }.whenComplete { _, failure ->
+      if (failure == null) state.cleanup.complete(null) else {
+        state.cleanup.completeExceptionally(failure)
+        System.getLogger(WorkerRuntime::class.java.name)
+          .log(System.Logger.Level.ERROR, "Failed to release worker resources", failure)
+      }
     }
-    if (lifecycle == null || !lifecycle.inDelivery()) {
-      drained.join()
-      // Never wait for caller-owned transactions; retain references until their eventual outcome instead.
-      if (released.isDone) cleanup.join()
+    try {
+      val drained = subscriptions?.closeAsync() ?: state.lifecycle?.closeAsync() ?: CompletableFuture.completedFuture<Void>(null)
+      drained.whenComplete { _, failure ->
+        if (failure == null) state.drained.complete(null) else state.drained.completeExceptionally(failure)
+      }
+    } catch (failure: Throwable) {
+      // Even a synchronous close failure must close admission and settle the published result after real deliveries drain.
+      val drained = state.lifecycle?.closeAsync() ?: CompletableFuture.completedFuture<Void>(null)
+      drained.whenComplete { _, _ -> state.drained.completeExceptionally(failure) }
+    } finally {
+      state.initializing = null
     }
   }
 
   private fun own(handle: InstanceHandle<*>) {
     synchronized(this) {
-      if (!stopping) {
+      if (stopping == null) {
         handles.add(handle)
         return
       }

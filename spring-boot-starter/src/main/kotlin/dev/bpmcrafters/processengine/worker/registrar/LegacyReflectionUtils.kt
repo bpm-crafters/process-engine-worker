@@ -9,7 +9,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
 // Keep the original static JVM owner and descriptors for precompiled starter clients and Java imports.
-// Distinct Kotlin names avoid competing with the package's existing source-level extensions.
+// Most helpers have distinct Kotlin names; discovery retains the original proxy-aware extension.
 @JvmName("isPayload")
 fun legacyIsPayload(parameter: Parameter): Boolean = parameter.isPayload()
 
@@ -47,12 +47,15 @@ fun legacyHasPayloadReturnType(method: Method): Boolean = method.hasPayloadRetur
 @JvmName("hasVoidReturnType")
 fun legacyHasVoidReturnType(method: Method): Boolean = method.hasVoidReturnType()
 
-@JvmName("getAnnotatedWorkers")
-fun legacyGetAnnotatedWorkers(worker: Any): List<Method> {
-  val targetClass = AopUtils.getTargetClass(worker)
+/** Keeps original Kotlin calls and callable references proxy-aware. */
+fun Any.getAnnotatedWorkers(): List<Method> {
+  val targetClass = AopUtils.getTargetClass(this)
   return targetClass.methods.map { BridgeMethodResolver.findBridgedMethod(it) }.distinct()
     .filter { !it.isSynthetic && it.workerMetadata(targetClass) != null }
 }
+
+/** Source alias for callers using the explicitly named legacy helper. */
+fun legacyGetAnnotatedWorkers(worker: Any): List<Method> = worker.getAnnotatedWorkers()
 
 @JvmName("getTopic")
 fun legacyGetTopic(method: Method): String = method.getTopic()
