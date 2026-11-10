@@ -166,31 +166,17 @@ The Quarkus extension defaults to `NoOpIdempotencyRegistry`. Supply a CDI
 with an injected `jakarta.transaction.TransactionSynchronizationRegistry`:
 
 ```kotlin
-@jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Produces
+import jakarta.inject.Singleton
+import jakarta.transaction.TransactionSynchronizationRegistry
+
+@ApplicationScoped
 class RegistryConfiguration {
-  @jakarta.enterprise.inject.Produces
-  @jakarta.inject.Singleton
+  @Produces
+  @Singleton
   fun registry(
-    transactions: jakarta.transaction.TransactionSynchronizationRegistry
+    transactions: TransactionSynchronizationRegistry
   ): IdempotencyRegistry = JtaInMemoryIdempotencyRegistry(transactions)
 }
 ```
-
-Import `IdempotencyRegistry` from `dev.bpmcrafters.processengine.worker.idempotency`
-and `JtaInMemoryIdempotencyRegistry` from the package above. This local registry
-stages writes and removals in JTA transactions; commit publishes them and rollback
-discards them. It is not shared between application instances.
-
-For persistent storage, add
-`dev.bpm-crafters.process-engine-worker:process-engine-worker-quarkus-idempotency-registry-jpa`
-with version `${process-engine-worker.version}`. CDI selection follows
-**application registry > JPA registry > no-op registry**. The JPA registry uses
-the default persistence unit; the application supplies its JDBC driver and schema migrations.
-
-See the [Quarkus JPA registry guide](../quarkus-idempotency-registry-jpa/README.md)
-for the Spring-compatible `task_log_entry_` schema, Java object serialization format
-and native serialization registration. Every result graph must be serializable.
-Register custom, nested, polymorphic and historical payload classes for native
-serialization, for example with `@RegisterForReflection(serialization = true)`.
-Common Java/Kotlin containers are registered by the extension; arbitrary application
-payloads are not. None of these registries suppress concurrent duplicate execution.

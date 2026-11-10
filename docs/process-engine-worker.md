@@ -92,15 +92,32 @@ The `@ProcessEngineWorker` annotation supports the following properties:
 
 ## Quarkus registration
 
-Use `process-engine-worker-quarkus` to discover CDI workers and retain their interceptors.
-Annotate a plain `@ApplicationScoped` or `@Singleton` bean with the same core
-`@ProcessEngineWorker` and `@Variable` method/parameter annotations. Supply the
-Process Engine API clients as CDI beans; the extension supplies the Quarkus Jackson
-converter and manages subscriptions and request contexts.
+First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
-See the [Quarkus guide](quarkus.md) for dependencies, configuration, Jakarta transaction
-semantics, resource deployment and a runnable example. The later Transactional support
-and Configuration sections describe the Spring Boot integration, not Quarkus configuration.
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Now annotate a method with a special annotation `@ProcessEngineWorker` to define a worker inside a `@ApplicationScoped` or `@Singleton` CDI bean:
+
+```kotlin
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
+class GreetingWorker {
+  @ProcessEngineWorker(topic = "greet")
+  fun greet(@Variable(name = "name") name: String): Map<String, Any?> =
+    mapOf("greeting" to "Hello $name")
+}
+```
+
+The quarkus implementation supports the same properties as the spring-boot version.
 
 ## Method parameter resolution
 
@@ -153,4 +170,6 @@ dev:
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
+
+Use for quarkus kebab-case configurations like, `tenant-id`, `complete-tasks-before-commit`, `register-process-workers`, ...
 

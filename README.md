@@ -11,18 +11,6 @@
 A small, annotation-based worker library for external tasks using Process Engine API.
 Use framework-neutral core, the Spring Boot starter, or the Quarkus extension.
 
-## Quarkus
-
-Add `dev.bpm-crafters.process-engine-worker:process-engine-worker-quarkus`
-with version `${process-engine-worker.version}` to a Quarkus 3.40 LTS (3.40.1.1)
-application. Supply CDI `TaskSubscriptionApi` and `ServiceTaskCompletionApi` beans
-from your engine adapter, then annotate a method on an `@ApplicationScoped` or
-`@Singleton` bean with `@ProcessEngineWorker`. The extension does not bundle an engine adapter.
-
-See the [Quarkus guide](docs/quarkus.md) for configuration, Jakarta transactions,
-deployment and optional JPA idempotency. The [runnable Quarkus demo](examples/quarkus-order-fullfillment)
-uses the published Camunda adapter and requires an external Camunda 8.8.2 engine.
-
 ## How to use with Spring Boot
 
 Add the following dependency to your project's class path:
@@ -111,6 +99,35 @@ using the returned map as completion variables. If `autoComplete` is `true`, but
 will be completed without empty payload. This functionality is provided by the `ResultResolver` based on registered strategies.
 
 If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccured`.
+
+## How to use with Quarkus
+
+Add the quarkus extension to your project:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Implement a worker:
+
+```kotlin
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
+class GreetingWorker {
+  @ProcessEngineWorker(topic = "greet")
+  fun greet(@Variable(name = "name") name: String): Map<String, Any?> =
+    mapOf("greeting" to "Hello $name")
+}
+```
+
+For more details checkout the documentation in [docs](docs) and the [quarkus example](examples/quarkus-order-fullfillment/README.md).
 
 ## Customizations
 
