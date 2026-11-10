@@ -180,3 +180,29 @@ class RegistryConfiguration {
   ): IdempotencyRegistry = JtaInMemoryIdempotencyRegistry(transactions)
 }
 ```
+
+### Quarkus JPA registry
+
+Add the JPA extension to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus-idempotency-registry-jpa</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+- The extension registers its entity and converter in the default persistence unit.
+  Your application must provide a JDBC driver, configure the default datasource,
+  and manage schema migrations for the existing `task_log_entry_`
+  [database schema](#3-database-schema-liquibase).
+- Registry selection prefers an application-provided CDI `IdempotencyRegistry`
+  bean, then the JPA registry when this extension is present, then the no-op default.
+- The registry uses Java serialization: the whole result graph, including the
+  result map and all nested values, must be Java-serializable.
+- For native builds, explicitly register custom payload types, including nested
+  and concrete polymorphic types, for serialization, for example with
+  `@io.quarkus.runtime.annotations.RegisterForReflection(serialization = true)`.
+  The extension registers common containers and standard value types, but not
+  application payload types.

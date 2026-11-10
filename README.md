@@ -112,6 +112,11 @@ Add the quarkus extension to your project:
 </dependency>
 ```
 
+The extension does not bundle an engine adapter. Your application or adapter must
+provide exactly one default-qualified CDI bean of each type: `TaskSubscriptionApi`
+and `ServiceTaskCompletionApi` (both in `dev.bpmcrafters.processengineapi.task`).
+Active workers cannot start if either bean is missing or ambiguous.
+
 Implement a worker:
 
 ```kotlin
