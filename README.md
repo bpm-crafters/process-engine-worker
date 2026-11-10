@@ -102,6 +102,8 @@ If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccur
 
 ## How to use with Quarkus
 
+The extension supports Quarkus 3.37.3 or later with Java 17 or later.
+
 Add the quarkus extension to your project:
 
 ```xml

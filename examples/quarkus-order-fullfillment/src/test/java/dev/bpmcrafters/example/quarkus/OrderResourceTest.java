@@ -4,6 +4,8 @@ import dev.bpmcrafters.example.quarkus.adapter.OrderMapper;
 import dev.bpmcrafters.example.quarkus.adapter.OrderWire;
 import dev.bpmcrafters.example.quarkus.application.port.in.ManageNotifications;
 import dev.bpmcrafters.example.quarkus.domain.Notification;
+import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerMetrics;
+import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,11 +24,23 @@ import static org.hamcrest.Matchers.*;
 class OrderResourceTest {
   @Inject TestApis apis;
   @Inject ManageNotifications notifications;
+  @Inject ProcessEngineWorkerMetrics metrics;
 
   @BeforeEach
   void resetRecordings() {
     apis.reset();
     notifications.list().forEach(task -> notifications.terminate(task.taskId()));
+  }
+
+  @Test
+  void providesNoOpMetricsWithoutMicrometer() {
+    final var loader = Thread.currentThread().getContextClassLoader();
+    for (final String className : List.of("io.micrometer.core.instrument.MeterRegistry",
+        "io.quarkus.micrometer.runtime.MicrometerRecorder")) {
+      assertThatExceptionOfType(ClassNotFoundException.class)
+        .isThrownBy(() -> Class.forName(className, false, loader));
+    }
+    assertThat(metrics).isSameAs(ProcessEngineWorkerMetricsNoOp.INSTANCE);
   }
 
   @Test

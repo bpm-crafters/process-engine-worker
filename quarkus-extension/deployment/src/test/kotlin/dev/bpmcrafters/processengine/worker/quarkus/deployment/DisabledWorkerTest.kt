@@ -3,11 +3,8 @@ package dev.bpmcrafters.processengine.worker.quarkus.deployment
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry
-import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerMetrics
 import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
-import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
 import io.quarkus.builder.Version
-import io.quarkus.maven.dependency.ArtifactKey
 import io.quarkus.maven.dependency.Dependency
 import io.quarkus.test.QuarkusExtensionTest
 import jakarta.inject.Inject
@@ -27,27 +24,17 @@ class DisabledWorkerTest {
       // HTTP's RuntimeInfoProvider can be visible through the parent loader without Micrometer.
       // Bootstrap the complete HTTP extension rather than excluding transitive jars.
       .setForcedDependencies(listOf(Dependency.of("io.quarkus", "quarkus-vertx-http", Version.getVersion())))
-      .setExcludedDependencies(
-        setOf(
-          ArtifactKey.of("io.quarkus", "quarkus-micrometer"),
-          ArtifactKey.of("io.quarkus", "quarkus-micrometer-deployment"), ArtifactKey.of("io.micrometer", "micrometer-core"),
-          ArtifactKey.of("io.micrometer", "micrometer-commons"), ArtifactKey.of("io.micrometer", "micrometer-observation")
-        )
-      )
       .overrideRuntimeConfigKey("dev.bpm-crafters.process-api.worker.enabled", "false")
   }
 
-  @Inject
-  lateinit var metrics: ProcessEngineWorkerMetrics
   @Inject
   lateinit var registry: IdempotencyRegistry
   @Inject
   lateinit var converter: VariableConverter
 
   @Test
-  fun startsWithoutEngineClientsAndProvidesNoOpDefaultsWithoutMicrometerCapability() {
-    // Physical Micrometer absence is tested by the isolated example's GreetingResourceTest.
-    assertThat(metrics).isSameAs(ProcessEngineWorkerMetricsNoOp)
+  fun startsWithoutEngineClientsAndProvidesNoOpIdempotencyRegistry() {
+    // No-op metrics without Micrometer are covered by the isolated example's OrderResourceTest.
     assertThat(registry).isInstanceOf(NoOpIdempotencyRegistry::class.java)
   }
 

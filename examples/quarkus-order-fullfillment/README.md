@@ -1,7 +1,7 @@
 # Quarkus order fulfillment Example
 
 A simple example application demonstrating process-engine-worker setup within a quarkus application.
-The example uses Camunda 8.8, Java 17 and Quarkus 3.40.
+The example uses Camunda 8.8, Java 17 and Quarkus 3.37.3 or later.
 
 ## Getting Started
 
