@@ -17,7 +17,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build and run tests
+    name: Build and run core/Spring tests
     steps:
       # Checkout the code
       - name: Checkout code
@@ -40,10 +40,50 @@ jobs:
 
       # Build
       - name: Build with Maven
-        run: ./mvnw clean verify -U -B -ntp -T4
+        run: >-
+          ./mvnw clean verify -U -B -ntp -T4
+          -pl '!quarkus-extension,!quarkus-extension/runtime,!quarkus-extension/deployment,!quarkus-idempotency-registry-jpa,!quarkus-idempotency-registry-jpa/runtime,!quarkus-idempotency-registry-jpa/deployment,!examples/quarkus-order-fullfillment,!itest/quarkus-extension-integration-test'
 
 #      - name: Upload coverage to Codecov
 #        if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
 #        uses: codecov/codecov-action@v1.0.2
 #        with:
 #          token: ${{secrets.CODECOV_TOKEN}}
+
+  quarkus:
+    runs-on: ubuntu-latest
+    name: Build and run Quarkus tests (${{ matrix.quarkus-version }})
+    strategy:
+      matrix:
+        quarkus-version: ["3.37.3", "3.40.1.1"]
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v7.0.1
+
+      - name: Expose branch name
+        run: echo ${{ github.ref }}
+
+      # Setup JDK and Maven
+      - name: Set up JDK
+        uses: actions/setup-java@v6.1.0
+        with:
+          java-version-file: .java-version
+          distribution: 'zulu'
+          cache: maven
+
+      # Prepare
+      - name: Prepare Maven Wrapper
+        run: chmod +x ./mvnw
+
+      # Install shared prerequisites because Quarkus verification omits -am.
+      - name: Install shared prerequisites without tests
+        run: >-
+          ./mvnw clean install -U -B -ntp -T4 -pl '.,core'
+          -DskipTests -Dquarkus.version=${{ matrix.quarkus-version }}
+
+      - name: Build and run Quarkus tests
+        run: >-
+          ./mvnw clean verify -U -B -ntp -T4
+          -pl 'quarkus-extension,quarkus-extension/runtime,quarkus-extension/deployment,quarkus-idempotency-registry-jpa,quarkus-idempotency-registry-jpa/runtime,quarkus-idempotency-registry-jpa/deployment,examples/quarkus-order-fullfillment,itest/quarkus-extension-integration-test'
+          -Dquarkus.version=${{ matrix.quarkus-version }}
