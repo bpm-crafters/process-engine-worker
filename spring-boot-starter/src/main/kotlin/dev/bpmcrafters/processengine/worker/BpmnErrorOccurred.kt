@@ -6,7 +6,7 @@ package dev.bpmcrafters.processengine.worker
  * directly from your worker or subclass it with your business exception.
  * @since 0.0.1
  */
-open class BpmnErrorOccurred @JvmOverloads constructor(
+open class BpmnErrorOccurred(
   /**
    * Message details.
    */
@@ -18,10 +18,19 @@ open class BpmnErrorOccurred @JvmOverloads constructor(
   /**
    * Payload passed to the process engine.
    */
-  val payload: Map<String, Any> = mapOf(),
+  val payload: Map<String, Any> = mapOf()
+) : Exception(message) {
+
   /**
-   * Original exception that led to the BPMN error.
+   * Creates a BPMN error caused by the given exception.
    * @since 0.8.6
    */
-  cause: Throwable? = null
-) : Exception(message, cause)
+  constructor(
+    message: String,
+    errorCode: String,
+    payload: Map<String, Any> = mapOf(),
+    cause: Throwable
+  ) : this(message, errorCode, payload) {
+    initCause(cause)
+  }
+}
