@@ -94,10 +94,34 @@ open class ParameterResolver private constructor(
     payload: Map<String, Any?>,
     variableConverter: VariableConverter,
     taskCompletionApi: ServiceTaskCompletionApi
+  ): Array<Any?> = resolveArguments(method, method, taskInformation, payload, variableConverter, taskCompletionApi)
+
+  /** Resolves using concrete types while retaining interface variable annotations. */
+  open fun createInvocationArguments(
+    method: Method,
+    metadataMethod: Method,
+    taskInformation: TaskInformation,
+    payload: Map<String, Any?>,
+    variableConverter: VariableConverter,
+    taskCompletionApi: ServiceTaskCompletionApi
+  ): Array<Any?> = if (method == metadataMethod) {
+    createInvocationArguments(method, taskInformation, payload, variableConverter, taskCompletionApi)
+  } else {
+    resolveArguments(method, metadataMethod, taskInformation, payload, variableConverter, taskCompletionApi)
+  }
+
+  private fun resolveArguments(
+    method: Method,
+    metadataMethod: Method,
+    taskInformation: TaskInformation,
+    payload: Map<String, Any?>,
+    variableConverter: VariableConverter,
+    taskCompletionApi: ServiceTaskCompletionApi
   ): Array<Any?> {
     val arguments = method.parameters.mapIndexed { i: Int, parameter: Parameter ->
-
-      val matchingStrategies = this.strategies.filter { it.test(parameter) }
+      val annotationParameter = if (parameter.isVariable()) parameter else metadataMethod.parameters[i]
+      val matchingParameter = if (annotationParameter.isVariable()) annotationParameter else parameter
+      val matchingStrategies = this.strategies.filter { it.test(matchingParameter) }
       require(matchingStrategies.isNotEmpty()) {
         "Found a method with some unsupported parameters annotated with `@ProcessEngineWorker`. " +
           "Could not find a strategy to resolve argument $i of ${method.declaringClass.simpleName}#${method.name} " +
@@ -118,7 +142,8 @@ open class ParameterResolver private constructor(
           taskInformation,
           payload,
           variableConverter,
-          taskCompletionApi
+          taskCompletionApi,
+          annotationParameter
         )
       )
     }

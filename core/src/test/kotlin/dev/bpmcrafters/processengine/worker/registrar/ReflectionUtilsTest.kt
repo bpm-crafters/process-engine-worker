@@ -1,11 +1,22 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class ReflectionUtilsTest {
+
+  @Test
+  fun `discovery excludes Kotlin synthetic default argument helpers`() {
+    assertThat(DefaultArgumentWorker().getAnnotatedWorkers().map { it.name }).containsExactly("work")
+  }
+
+  class DefaultArgumentWorker {
+    @ProcessEngineWorker
+    fun work(@Variable("number") number: Int = 42): Map<String, Any> = mapOf("number" to number)
+  }
 
   interface TestingClazz {
 

@@ -3,8 +3,49 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter adds framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
+
+## Framework-neutral registration
+
+Add the core artifact instead of the Spring Boot starter:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-core</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Provide Process Engine API subscription and completion clients and a variable converter. This Java example
+uses only core and Process Engine API types:
+
+```java
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker;
+import dev.bpmcrafters.processengine.worker.Variable;
+import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerRegistrar;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi;
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi;
+import java.util.Map;
+
+public class PlainWorker {
+  @ProcessEngineWorker("greet")
+  public Map<String, Object> greet(@Variable("name") String name) {
+    return Map.of("greeting", "Hello " + name);
+  }
+
+  public static void register(TaskSubscriptionApi subscriptions,
+                              ServiceTaskCompletionApi completion,
+                              VariableConverter converter) {
+    var registrar = new ProcessEngineWorkerRegistrar(subscriptions, completion, converter);
+    registrar.register(new PlainWorker());
+  }
+}
+```
+
+## Spring Boot registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
@@ -100,9 +141,6 @@ dev:
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
-
-
-
 
 
 

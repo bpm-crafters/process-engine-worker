@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker
 
 import dev.bpmcrafters.processengine.worker.registrar.VariableConverter
-import org.springframework.core.annotation.AliasFor
 import kotlin.reflect.KClass
 
 /**
@@ -14,12 +13,10 @@ annotation class Variable(
   /**
    * Name of the variable.
    */
-  @get:AliasFor(attribute = "value")
   val name: String = DEFAULT_UNNAMED_NAME,
   /**
    * Name of the variable.
    */
-  @get:AliasFor(attribute = "name")
   val value: String = DEFAULT_UNNAMED_NAME,
   /**
    * Indicates that a variable is mandatory. Defaults to `true`.
