@@ -21,6 +21,7 @@
   </properties>
 
   <modules>
+    <module>quarkus-order-fullfillment</module>
     <module>order-fulfillment</module>
     <module>camunda7-remote-starter-native</module>
     <module>camunda7-embedded-starter-transaction</module>

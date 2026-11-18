@@ -1,0 +1,34 @@
+dev:
+  bpm-crafters:
+    process-api:
+      worker:
+        enabled: true
+        register-process-workers: true
+        deployment:
+          enabled: true
+          bpmn-resource-pattern: "classpath*:C8/*.bpmn"
+
+example:
+  camunda:
+    startup-enabled: true
+    grpc-address: "http://localhost:26500"
+    rest-address: "http://localhost:8088"
+  inventory:
+    replenishment-seconds: 60
+
+# Offline tests never resolve the client or delivery producers.
+"%test":
+  dev:
+    bpm-crafters:
+      process-api:
+        worker:
+          enabled: false
+          deployment:
+            enabled: false
+  example:
+    camunda:
+      startup-enabled: false
+  # Avoid collisions with other HTTP test applications in parallel reactor builds.
+  quarkus:
+    http:
+      test-port: 0

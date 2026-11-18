@@ -3,8 +3,49 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter and Quarkus extension add framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
+
+## Framework-neutral registration
+
+Add the core artifact instead of the Spring Boot starter:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-core</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Provide Process Engine API subscription and completion clients and a variable converter. This Java example
+uses only core and Process Engine API types:
+
+```java
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker;
+import dev.bpmcrafters.processengine.worker.Variable;
+import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerRegistrar;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi;
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi;
+import java.util.Map;
+
+public class PlainWorker {
+  @ProcessEngineWorker("greet")
+  public Map<String, Object> greet(@Variable("name") String name) {
+    return Map.of("greeting", "Hello " + name);
+  }
+
+  public static void register(TaskSubscriptionApi subscriptions,
+                              ServiceTaskCompletionApi completion,
+                              VariableConverter converter) {
+    var registrar = new ProcessEngineWorkerRegistrar(subscriptions, completion, converter);
+    registrar.register(new PlainWorker());
+  }
+}
+```
+
+## Spring Boot registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
@@ -48,6 +89,40 @@ The `@ProcessEngineWorker` annotation supports the following properties:
 | `completion`   | `enum`    | `DEFAULT`   | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                 |
 | `lockDuration` | `long`    | `-1`        | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                               |
 | `tenantId`     | `String`  | `""`        | Optional tenant id to be used for current worker during the registration. Any non-blank value will be considered. If the value is empty, the value from the property will be used.                             |
+
+## Quarkus registration
+
+First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+The extension does not bundle an engine adapter. Your application or adapter must
+provide exactly one default-qualified CDI bean of each type: `TaskSubscriptionApi`
+and `ServiceTaskCompletionApi` (both in `dev.bpmcrafters.processengineapi.task`).
+Active workers cannot start if either bean is missing or ambiguous.
+
+Now annotate a method with a special annotation `@ProcessEngineWorker` to define a worker inside a `@ApplicationScoped` or `@Singleton` CDI bean:
+
+```kotlin
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
+class GreetingWorker {
+  @ProcessEngineWorker(topic = "greet")
+  fun greet(@Variable(name = "name") name: String): Map<String, Any?> =
+    mapOf("greeting" to "Hello $name")
+}
+```
+
+The quarkus implementation supports the same properties as the spring-boot version.
 
 ## Method parameter resolution
 
@@ -101,8 +176,5 @@ dev:
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
 ```
 
-
-
-
-
+Use for quarkus kebab-case configurations like, `tenant-id`, `complete-tasks-before-commit`, `register-process-workers`, ...
 

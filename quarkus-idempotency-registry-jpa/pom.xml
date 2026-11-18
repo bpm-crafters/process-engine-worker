@@ -1,0 +1,17 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+    <artifactId>process-engine-worker-quarkus-parent</artifactId>
+    <version>0.8.6-SNAPSHOT</version>
+    <relativePath>../quarkus-extension/pom.xml</relativePath>
+  </parent>
+  <artifactId>process-engine-worker-quarkus-idempotency-registry-jpa-parent</artifactId>
+  <packaging>pom</packaging>
+  <modules>
+    <module>runtime</module>
+    <module>deployment</module>
+  </modules>
+</project>

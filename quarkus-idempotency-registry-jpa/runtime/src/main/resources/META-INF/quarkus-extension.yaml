@@ -1,0 +1,11 @@
+name: Process Engine Worker - JPA Idempotency Registry
+description: Persist worker retry results with Hibernate ORM and Java serialization
+metadata:
+  keywords:
+    - process-engine
+    - worker
+    - idempotency
+    - hibernate-orm
+  categories:
+    - business-automation
+  status: experimental

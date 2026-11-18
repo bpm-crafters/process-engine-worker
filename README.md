@@ -8,10 +8,10 @@
 
 ## Purpose of the library
 
-A small opinionated annotated-based SpringBoot worker implementation for creation of 
-external task workers using Process-Engine-API.
+A small, annotation-based worker library for external tasks using Process Engine API.
+Use framework-neutral core, the Spring Boot starter, or the Quarkus extension.
 
-## How to use 
+## How to use with Spring Boot
 
 Add the following dependency to your project's class path:
 
@@ -100,6 +100,42 @@ will be completed without empty payload. This functionality is provided by the `
 
 If you want to throw a BPMN error, please throw an instance of a `BPMNErrorOccured`.
 
+## How to use with Quarkus
+
+The extension supports Quarkus 3.37.3 or later with Java 17 or later.
+
+Add the quarkus extension to your project:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+The extension does not bundle an engine adapter. Your application or adapter must
+provide exactly one default-qualified CDI bean of each type: `TaskSubscriptionApi`
+and `ServiceTaskCompletionApi` (both in `dev.bpmcrafters.processengineapi.task`).
+Active workers cannot start if either bean is missing or ambiguous.
+
+Implement a worker:
+
+```kotlin
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
+class GreetingWorker {
+  @ProcessEngineWorker(topic = "greet")
+  fun greet(@Variable(name = "name") name: String): Map<String, Any?> =
+    mapOf("greeting" to "Hello $name")
+}
+```
+
+For more details checkout the documentation in [docs](docs) and the [quarkus example](examples/quarkus-order-fullfillment/README.md).
+
 ## Customizations
 
 You might want to register your own parameter resolution strategies. For this purpose, please construct 
@@ -183,4 +219,3 @@ HTTP client tests using your IntelliJ, located in the example directory.
 Don't forget to first deploy the process! 
 Either manually via operate / modeler, or with the HTTP client script: 
 c8-deploy-process.http
-

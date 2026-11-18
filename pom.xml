@@ -30,6 +30,9 @@
   </properties>
 
   <modules>
+    <module>core</module>
+    <module>quarkus-extension</module>
+    <module>quarkus-idempotency-registry-jpa</module>
     <module>spring-boot-idempotency-registry-jpa</module>
     <module>spring-boot-starter</module>
   </modules>
@@ -120,6 +123,21 @@
   <build>
     <defaultGoal>clean jacoco:prepare-agent package</defaultGoal>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <id>java-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources><source>src/test/java</source></sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
