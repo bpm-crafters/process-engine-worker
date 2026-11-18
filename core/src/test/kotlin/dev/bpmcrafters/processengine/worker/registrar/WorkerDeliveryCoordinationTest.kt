@@ -96,6 +96,23 @@ class WorkerDeliveryCoordinationTest {
   }
 
   @Test
+  fun businessErrorWithTechnicalCauseRemainsABpmnError() {
+    val cause = IllegalStateException("technical root cause")
+    val error = BpmnErrorOccurred("business failure", "business-code", mapOf("reason" to "rejected"), cause)
+    val method = Worker::class.java.getMethod("work", String::class.java)
+    runtime().register(method, method, { delivery -> delivery.reportFailure(error) }) { emptyMap<String, Any?>() }
+
+    engine.command.action.accept(task, emptyMap())
+
+    assertThat(engine.errors).hasSize(1)
+    assertThat(engine.errors.single().errorCode).isEqualTo("business-code")
+    assertThat(engine.errors.single().get()).containsEntry("reason", "rejected")
+    assertThat(engine.failed).isEmpty()
+    assertThat(engine.completed).isEmpty()
+    assertThat(error.cause).isSameAs(cause)
+  }
+
+  @Test
   fun completionStageWrappersPreserveCoreBusinessErrorClassification() {
     val method = Worker::class.java.getMethod("work", String::class.java)
     runtime().register(method, method, {
