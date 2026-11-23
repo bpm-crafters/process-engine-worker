@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
 import java.lang.reflect.Method
 import java.time.Duration
+import java.util.IdentityHashMap
 import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
@@ -266,15 +267,28 @@ class ProcessEngineStarterRegistrar(
   }
 
   internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
-    val retryCount = if (cause is FailJobException) {
-      cause.retryCount
-    } else {
-      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
-    }
-    val retryBackoff = if (cause is FailJobException) {
-      cause.retryBackoff
-    } else {
-      null
+    var retryCount: Int? = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
+    var retryBackoff: Duration? = null
+    if (cause is FailJobException) {
+      retryCount = cause.retryCount
+      retryBackoff = cause.retryBackoff
+    } else if (processEngineWorkerProperties.backoffExceptions.isNotEmpty()) {
+      var t: Throwable? = cause
+      val seen = IdentityHashMap<Throwable, Boolean>()
+      while (t != null) {
+        retryBackoff = processEngineWorkerProperties.backoffExceptions[t.javaClass]
+        if (retryBackoff != null) {
+          // We need at least one retry to not have the process engine run into an incident.
+          retryCount = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES) ?: 1
+          break
+        }
+        t = t.cause
+        if (seen[t] ?: false) {
+          // Sometimes cause chains can be cyclic. This is to prevent infinite loops.
+          break
+        }
+        seen[t] = true
+      }
     }
     return FailureRetry(
       retryCount = retryCount,
