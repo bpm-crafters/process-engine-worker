@@ -39,6 +39,11 @@
       <version>2.9.0</version>
     </dependency>
     <dependency>
+      <groupId>dev.bpm-crafters.process-engine-api</groupId>
+      <artifactId>process-engine-api-lifecycle-spring-boot</artifactId>
+      <version>2026.11.1</version>
+    </dependency>
+    <dependency>
       <groupId>dev.bpm-crafters.process-engine-worker</groupId>
       <artifactId>process-engine-worker-spring-boot-starter</artifactId>
     </dependency>

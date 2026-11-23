@@ -23,8 +23,8 @@ dev:
   bpm-crafters:
     process-api:
       worker:
-        deployment:
-          enabled: true
+#        deployment:
+#          enabled: true
         backoff-exceptions:
           "[java.net.ConnectException]": PT10S
       adapter:
