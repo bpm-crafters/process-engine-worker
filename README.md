@@ -29,6 +29,9 @@ For programmatic method discovery in Kotlin, the starter's `getAnnotatedWorkers(
 target class of a Spring proxy. The core module's `getAnnotatedWorkerMethods()` extension inspects the
 object's runtime class.
 
+If you read worker or variable names through Spring's merged-annotation API, see the
+[annotation compatibility notes](docs/process-engine-worker.md#spring-merged-annotation-compatibility).
+
 The simplest way to implement the worker is to provide a component, with a worker method receiving typed
 objects and returning a map of variables, which are automatically published as process variables.
 

@@ -107,7 +107,7 @@ class ReflectionFacadeLinkageTest {
                     SpringReflectionUtilsKt.isTransactional(method), workerMetadata(method).equals(method));
               }
               public static class Worker {
-                @Transactional @ProcessEngineWorker(topic="legacy", lockDuration=7, tenantId="tenant")
+                @Transactional @ProcessEngineWorker(value="legacy", lockDuration=7, tenantId="tenant")
                 public Map<String,Object> work(@Variable(value="value",mandatory=false) String value,
                     Map<String,Object> payload, Optional<String> optional, TaskInformation task,
                     VariableConverter converter, ServiceTaskCompletionApi completion) { return Map.of(); }
