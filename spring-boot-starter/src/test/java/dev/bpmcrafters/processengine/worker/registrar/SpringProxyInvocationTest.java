@@ -8,6 +8,7 @@ import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry;
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp;
 import dev.bpmcrafters.processengineapi.task.*;
 import org.aopalliance.intercept.MethodInterceptor;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -72,6 +73,15 @@ class SpringProxyInvocationTest {
         assertPayloadThroughProxy(new GenericWorker(), classProxy, Map.of("number", "42"), Map.of("number", 42));
     }
 
+    @Test
+    void invokesConcreteMethodWhenJdkProxyDoesNotExposeGenericBridge() {
+        final var factory = new ProxyFactory();
+        factory.setTarget(new ConcreteWorker());
+        factory.setInterfaces(ConcreteContract.class);
+
+        assertPayloadThroughProxy(factory, Map.of("number", "42"), Map.of("number", 42));
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void convertsGenericArrayParameterWithoutRegisteringUnrelatedArrayOverload(final boolean classProxy) {
@@ -81,14 +91,19 @@ class SpringProxyInvocationTest {
 
     private void assertPayloadThroughProxy(final Object worker, final boolean classProxy,
                                           final Map<String, Object> payload, final Map<String, Object> expected) {
+        final var factory = new ProxyFactory(worker);
+        factory.setProxyTargetClass(classProxy);
+        assertPayloadThroughProxy(factory, payload, expected);
+    }
+
+    private void assertPayloadThroughProxy(final ProxyFactory factory,
+                                          final Map<String, Object> payload, final Map<String, Object> expected) {
         final var subscriptions = mock(TaskSubscriptionApi.class);
         final var completion = mock(ServiceTaskCompletionApi.class);
         when(subscriptions.subscribeForTask(any())).thenReturn(CompletableFuture.completedFuture(null));
         when(completion.completeTask(any())).thenReturn(CompletableFuture.completedFuture(null));
         when(completion.failTask(any())).thenReturn(CompletableFuture.completedFuture(null));
         final var interceptions = new AtomicInteger();
-        final var factory = new ProxyFactory(worker);
-        factory.setProxyTargetClass(classProxy);
         factory.addAdvice((MethodInterceptor) invocation -> {
             interceptions.incrementAndGet();
             return invocation.proceed();
@@ -154,6 +169,14 @@ class SpringProxyInvocationTest {
         @ProcessEngineWorker("generic") R work(@Variable("number") T number);
     }
     public interface SpecializedContract<T> extends GenericContract<T, Map<String, Object>> {}
+
+    public interface ConcreteContract {
+        Map<String, Object> work(Integer number);
+    }
+
+    public static class ConcreteWorker implements SpecializedContract<Integer>, ConcreteContract {
+        @Override public Map<String, Object> work(final Integer number) { return Map.of("number", number); }
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

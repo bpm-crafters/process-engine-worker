@@ -14,6 +14,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
+import org.springframework.util.ClassUtils
 import java.time.Duration
 
 /**
@@ -70,13 +71,17 @@ class ProcessEngineStarterRegistrar(
       { action -> requireNotNull(transactionalTemplate.execute { action.get() }) },
       processEngineWorkerMetrics, idempotencyRegistry
     )
+    val proxyClass = bean.javaClass
     methods.forEach { (method, metadata) ->
-      val proxyMethod = if (AopUtils.isJdkDynamicProxy(bean)) {
-        targetClass.methods.firstOrNull { it.isBridge && BridgeMethodResolver.findBridgedMethod(it) == method } ?: method
+      val proxyMethod = if (AopUtils.isJdkDynamicProxy(bean) && !ClassUtils.hasMethod(proxyClass, method.name, *method.parameterTypes)) {
+        targetClass.methods.firstOrNull { candidate ->
+          candidate.isBridge && BridgeMethodResolver.findBridgedMethod(candidate) == method &&
+            ClassUtils.hasMethod(proxyClass, candidate.name, *candidate.parameterTypes)
+        } ?: method
       } else {
         method
       }
-      val invocable = AopUtils.selectInvocableMethod(proxyMethod, bean.javaClass)
+      val invocable = AopUtils.selectInvocableMethod(proxyMethod, proxyClass)
       // Match the method Spring intercepts, including interface metadata hidden by an inherited implementation.
       runtime.register(method, metadata, invocable.isTransactional(targetClass)) { arguments ->
         invocable.invoke(bean, *arguments)
