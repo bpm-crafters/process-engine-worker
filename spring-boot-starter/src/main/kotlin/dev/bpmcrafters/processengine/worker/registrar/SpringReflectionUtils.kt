@@ -20,5 +20,6 @@ fun Method.isTransactional(targetClass: Class<*>): Boolean =
     TransactionDefinition.PROPAGATION_REQUIRES_NEW,
     TransactionDefinition.PROPAGATION_SUPPORTS,
     TransactionDefinition.PROPAGATION_MANDATORY -> true
+
     else -> false
   }

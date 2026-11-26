@@ -13,7 +13,7 @@ import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.reflect.Method
 import java.time.Duration
-import java.util.IdentityHashMap
+import java.util.*
 import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
@@ -262,6 +262,9 @@ class ProcessEngineWorkerRegistrar(
     }
   }
 
+  /*
+   * Calculate retry
+   */
   internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
     if (cause is FailJobException) {
       return FailureRetry(cause.retryCount, cause.retryBackoff)
@@ -284,6 +287,9 @@ class ProcessEngineWorkerRegistrar(
     return FailureRetry(retries?.minus(1), null)
   }
 
+  /*
+   * Complete before commit
+   */
   internal fun completeBeforeCommit(complete: Completion): Boolean =
     if (complete == DEFAULT) {
       options.completeTasksBeforeCommit
