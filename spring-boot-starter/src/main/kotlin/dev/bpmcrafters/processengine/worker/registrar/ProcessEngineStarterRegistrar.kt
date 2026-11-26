@@ -47,9 +47,10 @@ class ProcessEngineStarterRegistrar(
 
     val runtime = ProcessEngineWorkerRegistrar(
       WorkerRuntimeOptions(
-        processEngineWorkerProperties.completeTasksBeforeCommit,
-        processEngineWorkerProperties.removeTaskResultOnCompletion,
-        processEngineWorkerProperties.tenantId
+        completeTasksBeforeCommit = processEngineWorkerProperties.completeTasksBeforeCommit,
+        removeTaskResultOnCompletion = processEngineWorkerProperties.removeTaskResultOnCompletion,
+        tenantId = processEngineWorkerProperties.tenantId,
+        backoffExceptions = processEngineWorkerProperties.backoffExceptions
       ),
       taskSubscriptionApi, taskCompletionApi, variableConverter, parameterResolver, resultResolver,
       { action -> requireNotNull(transactionalTemplate.execute { action.get() }) },

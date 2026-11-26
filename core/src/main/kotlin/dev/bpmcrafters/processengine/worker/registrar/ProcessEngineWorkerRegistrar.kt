@@ -13,6 +13,7 @@ import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.reflect.Method
 import java.time.Duration
+import java.util.IdentityHashMap
 import java.util.concurrent.ExecutionException
 
 private val logger = KotlinLogging.logger {}
@@ -253,20 +254,25 @@ class ProcessEngineWorkerRegistrar(
   }
 
   internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
-    val retryCount = if (cause is FailJobException) {
-      cause.retryCount
-    } else {
-      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
+    if (cause is FailJobException) {
+      return FailureRetry(cause.retryCount, cause.retryBackoff)
     }
-    val retryBackoff = if (cause is FailJobException) {
-      cause.retryBackoff
-    } else {
-      null
+
+    val retries = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)
+    if (options.backoffExceptions.isNotEmpty()) {
+      val seen = IdentityHashMap<Throwable, Boolean>()
+      var current: Throwable? = cause
+      while (current != null && seen.put(current, true) == null) {
+        val backoff = options.backoffExceptions[current.javaClass]
+        if (backoff != null) {
+          // Keep a retry available so the task can be fetched after the backoff.
+          return FailureRetry(retries ?: 1, backoff)
+        }
+        current = current.cause
+      }
     }
-    return FailureRetry(
-      retryCount = retryCount,
-      retryBackoff = retryBackoff
-    )
+
+    return FailureRetry(retries?.minus(1), null)
   }
 
   internal fun completeBeforeCommit(complete: Completion): Boolean =
