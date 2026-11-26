@@ -24,7 +24,8 @@
     <dependency>
       <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>3.3.0</version>
+      <version>${jackson3.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>

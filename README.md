@@ -22,6 +22,9 @@ Add the following dependency to your project's class path:
 </dependency>
 ```
 
+For variable conversion, the Spring Boot starter uses the application's Jackson 3 `ObjectMapper` bean when present.
+Otherwise it uses the Jackson 2 `ObjectMapper` bean. A custom `VariableConverter` bean overrides both defaults.
+
 The simplest way to implement the worker is to provide a component, with a worker method receiving typed
 objects and returning a map of variables, which are automatically published as process variables.
 
