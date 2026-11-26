@@ -19,6 +19,7 @@
 
   <properties>
     <spring-boot.version>3.5.16</spring-boot.version>
+    <jackson3.version>3.3.0</jackson3.version>
     <process-engine-api.version>1.8</process-engine-api.version>
     <process-engine-adapters-c7.version>2026.11.1</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2026.09.1</process-engine-adapters-c8.version>
@@ -30,6 +31,7 @@
   </properties>
 
   <modules>
+    <module>core</module>
     <module>spring-boot-idempotency-registry-jpa</module>
     <module>spring-boot-starter</module>
   </modules>
@@ -120,6 +122,21 @@
   <build>
     <defaultGoal>clean jacoco:prepare-agent package</defaultGoal>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <id>java-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources><source>src/test/java</source></sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

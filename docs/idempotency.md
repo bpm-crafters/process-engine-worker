@@ -14,11 +14,12 @@ When a worker is triggered, the process engine worker:
 
 ## Implementations
 
-There are three available implementations of the `IdempotencyRegistry`:
+The registry contract lives in `process-engine-worker-core`. Available implementations include:
 
 | Implementation                | Description                                       | Recommended Use                                   |
 |-------------------------------|---------------------------------------------------|---------------------------------------------------|
 | `NoOpIdempotencyRegistry`     | Does nothing. No results are stored or retrieved. | Default, use if idempotency is handled elsewhere. |
+| `LocalInMemoryIdempotencyRegistry` | Core-only immediate local storage, without transaction synchronization. | Plain Java tests or non-transactional, non-clustered applications. |
 | `InMemoryIdempotencyRegistry` | Stores results in a local `ConcurrentHashMap`.    | Testing or non-clustered environments.            |
 | `JpaIdempotencyRegistry`      | Stores results in a database using JPA.           | Production, clustered environments.               |
 

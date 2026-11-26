@@ -1,56 +1,54 @@
 package dev.bpmcrafters.processengine.worker.idempotency
 
-import dev.bpmcrafters.processengineapi.CommonRestrictions.PROCESS_INSTANCE_ID
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * In-memory local implementation of the registry.
  *
  * Usage is discouraged because it can only take into account a single process instance.
  * I.e., don't use it in a clustered environment.
- */
+ * @since 0.8.0
+ **/
 class InMemoryIdempotencyRegistry : IdempotencyRegistry {
 
-  private val results = ConcurrentHashMap<String, Map<String, Any?>>()
+  private val delegate = LocalInMemoryIdempotencyRegistry()
 
-  private val taskIdsByProcessInstanceId = ConcurrentHashMap<String, Queue<String>>()
-
+  /**
+   * Stores the task result after commit when a Spring transaction is active.
+   **/
   override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) {
     if (TransactionSynchronizationManager.isActualTransactionActive()) {
       TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
 
         override fun afterCommit() {
-          doRegister(taskInformation, result)
+          delegate.register(taskInformation, result)
         }
 
       })
     } else {
-      doRegister(taskInformation, result)
+      delegate.register(taskInformation, result)
     }
   }
 
-  private fun doRegister(taskInformation: TaskInformation, result: Map<String, Any?>) {
-    results[taskInformation.taskId] = result
-    taskIdsByProcessInstanceId
-      .computeIfAbsent(taskInformation.meta[PROCESS_INSTANCE_ID] as String)
-      { ConcurrentLinkedQueue() }
-      .add(taskInformation.taskId)
-  }
+  /**
+   * Returns the in-memory result for the task, if present.
+   **/
+  override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = delegate.getTaskResult(taskInformation)
 
-  override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = results[taskInformation.taskId]
-
+  /**
+   * Removes the in-memory result for one task.
+   **/
   override fun removeTaskResult(taskId: String) {
-    results.remove(taskId)
+    delegate.removeTaskResult(taskId)
   }
 
+  /**
+   * Removes all in-memory results for the given process instance.
+   **/
   override fun removeAllTaskResults(processInstanceId: String) {
-    val taskIds = taskIdsByProcessInstanceId.remove(processInstanceId)
-    taskIds?.forEach(results::remove)
+    delegate.removeAllTaskResults(processInstanceId)
   }
 
 }

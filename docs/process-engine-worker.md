@@ -3,8 +3,49 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API in Spring Boot ecosystem. By doing so, it abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter adds framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
+
+## Framework-neutral registration
+
+Add the core artifact instead of the Spring Boot starter:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-core</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+Provide Process Engine API subscription and completion clients and a variable converter. This Java example
+uses only core and Process Engine API types:
+
+```java
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker;
+import dev.bpmcrafters.processengine.worker.Variable;
+import dev.bpmcrafters.processengine.worker.registrar.ProcessEngineWorkerRegistrar;
+import dev.bpmcrafters.processengine.worker.registrar.VariableConverter;
+import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi;
+import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi;
+import java.util.Map;
+
+public class PlainWorker {
+  @ProcessEngineWorker("greet")
+  public Map<String, Object> greet(@Variable("name") String name) {
+    return Map.of("greeting", "Hello " + name);
+  }
+
+  public static void register(TaskSubscriptionApi subscriptions,
+                              ServiceTaskCompletionApi completion,
+                              VariableConverter converter) {
+    var registrar = new ProcessEngineWorkerRegistrar(subscriptions, completion, converter);
+    registrar.register(new PlainWorker());
+  }
+}
+```
+
+## Spring Boot registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
 
@@ -48,6 +89,23 @@ The `@ProcessEngineWorker` annotation supports the following properties:
 | `completion`   | `enum`    | `DEFAULT`   | Configures when the worker completes a task if `autoComplete` is active. Possible values are `DEFAULT`, `BEFORE_COMMIT`, and `AFTER_COMMIT`. Has no effect if the worker is not transactional.                 |
 | `lockDuration` | `long`    | `-1`        | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                               |
 | `tenantId`     | `String`  | `""`        | Optional tenant id to be used for current worker during the registration. Any non-blank value will be considered. If the value is empty, the value from the property will be used.                             |
+
+### Spring merged-annotation compatibility
+
+The worker resolves `@ProcessEngineWorker`'s `topic` and `value` as aliases, and resolves
+`@Variable`'s `name` and `value` the same way. Existing worker declarations continue to work.
+
+Spring's merged-annotation readers now expose each attribute separately. For example, Java shorthand
+`@ProcessEngineWorker("orders")` and `@Variable("order")` set `value`. Reading `topic` or `name`
+through `AnnotatedElementUtils.findMergedAnnotation` returns `__unset` or `__unnamed`, respectively.
+Spring uses `@AliasFor` metadata to mirror those values, and the worker annotations now live in the
+framework-neutral core.
+
+To read the effective names, use the worker reflection helpers. In Kotlin, import `getTopic` and
+`extractVariableName` from `dev.bpmcrafters.processengine.worker.registrar` and call
+`method.getTopic()` and `parameter.extractVariableName()`. In Java, the Spring starter exposes
+`ReflectionUtilsKt.getTopic(method)` and `ReflectionUtilsKt.extractVariableName(parameter)` in the
+same package.
 
 ## Method parameter resolution
 
@@ -105,6 +163,6 @@ dev:
         registerProcessWorkers: true # Enable or disable automatic worker registration
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
-      backoff-exceptions:
-        "[java.net.ConnectException]": PT10S # Enables retries for specific exceptions. This can be used to prevent incidents, e.g. when a service is not reachable.
+        backoff-exceptions:
+          "[java.net.ConnectException]": PT10S # Enables retries for specific exceptions. This can be used to prevent incidents, e.g. when a service is not reachable.
 ```
