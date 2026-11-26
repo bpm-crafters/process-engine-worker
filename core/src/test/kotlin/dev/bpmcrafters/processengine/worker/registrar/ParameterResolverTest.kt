@@ -23,7 +23,7 @@ class ParameterResolverTest {
   private val resolver = ParameterResolver.builder().build()
   private val taskInformation = TaskInformation(taskId = UUID.randomUUID().toString(), meta = mapOf())
   private val payload: MutableMap<String, Any> = mutableMapOf()
-  private val variableConverter = JacksonVariableConverter(ObjectMapper())
+  private val variableConverter = Jackson2VariableConverter(ObjectMapper())
   private val taskCompletionApi = mock<ServiceTaskCompletionApi>()
 
   @Test
@@ -90,7 +90,7 @@ class ParameterResolverTest {
 
     class Worker {
       @ProcessEngineWorker
-      fun work(vc: JacksonVariableConverter) {
+      fun work(vc: Jackson2VariableConverter) {
       }
     }
 

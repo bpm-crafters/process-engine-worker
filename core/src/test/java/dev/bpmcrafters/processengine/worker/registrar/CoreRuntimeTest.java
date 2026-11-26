@@ -45,7 +45,7 @@ class CoreRuntimeTest {
     @Test
     void consumesJavaAliasesAndVariablesWithoutSpring() {
         final var runtime = new ProcessEngineWorkerRegistrar(subscriptions, completion,
-                new JacksonVariableConverter(new ObjectMapper()));
+                new Jackson2VariableConverter(new ObjectMapper()));
         runtime.register(new JavaWorker());
         final var command = command();
         assertThat(command.getTaskDescriptionKey()).isEqualTo("java-topic");
@@ -77,7 +77,7 @@ class CoreRuntimeTest {
     @Test
     void instantiatesJavaVariableConverter() throws Exception {
         final var parameter = ConvertedWorker.class.getMethod("run", String.class).getParameters()[0];
-        assertThat(CoreReflectionUtilsKt.extractVariableConverter(parameter, new JacksonVariableConverter(new ObjectMapper())))
+        assertThat(CoreReflectionUtilsKt.extractVariableConverter(parameter, new Jackson2VariableConverter(new ObjectMapper())))
                 .isInstanceOf(JavaConverter.class);
         runtime(false, false).register(new ConvertedWorker());
         command().getAction().accept(task, Map.of("input", "hello"));
@@ -279,7 +279,7 @@ class CoreRuntimeTest {
     @Test
     void simpleConstructorRejectsTransactionalExecutionWithoutExecutor() throws Exception {
         final var runtime = new ProcessEngineWorkerRegistrar(subscriptions, completion,
-                new JacksonVariableConverter(new ObjectMapper()));
+                new Jackson2VariableConverter(new ObjectMapper()));
         runtime.register(Modes.class.getMethod("automatic"), true, arguments -> {
             fail("No transaction executor was configured");
             return Map.of();
@@ -309,7 +309,7 @@ class CoreRuntimeTest {
 
     private ProcessEngineWorkerRegistrar runtime(final WorkerTransactionExecutor executor) {
         return new ProcessEngineWorkerRegistrar(new WorkerRuntimeOptions(), subscriptions, completion,
-                new JacksonVariableConverter(new ObjectMapper()), ParameterResolver.builder().build(),
+                new Jackson2VariableConverter(new ObjectMapper()), ParameterResolver.builder().build(),
                 ResultResolver.builder().build(), executor, metrics, registry);
     }
 
@@ -335,7 +335,7 @@ class CoreRuntimeTest {
 
     private ProcessEngineWorkerRegistrar runtime(final boolean beforeDefault, final boolean cleanup) {
         return new ProcessEngineWorkerRegistrar(new WorkerRuntimeOptions(beforeDefault, cleanup, "default-tenant"),
-                subscriptions, completion, new JacksonVariableConverter(new ObjectMapper()),
+                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(), action -> {
                     events.add("begin");
                     final var result = action.get();

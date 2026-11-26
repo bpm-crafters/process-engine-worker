@@ -42,7 +42,7 @@ class SpringProxyInvocationTest {
         });
         final var proxy = factory.getProxy();
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new JacksonVariableConverter(new ObjectMapper()),
+                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
 
@@ -109,7 +109,7 @@ class SpringProxyInvocationTest {
             return invocation.proceed();
         });
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new JacksonVariableConverter(new ObjectMapper()),
+                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
         registrar.postProcessAfterInitialization(factory.getProxy(), "worker");
@@ -136,7 +136,7 @@ class SpringProxyInvocationTest {
         final var factory = new ProxyFactory(new MultipleWorker());
         factory.setProxyTargetClass(classProxy);
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new JacksonVariableConverter(new ObjectMapper()),
+                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
         registrar.postProcessAfterInitialization(factory.getProxy(), "multiple-worker");

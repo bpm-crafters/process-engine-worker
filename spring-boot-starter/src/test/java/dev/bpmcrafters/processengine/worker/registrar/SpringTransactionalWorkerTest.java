@@ -284,7 +284,7 @@ class SpringTransactionalWorkerTest {
         final var properties = new ProcessEngineWorkerProperties();
         properties.setRemoveTaskResultOnCompletion(false);
         final var registrar = new ProcessEngineStarterRegistrar(properties, subscriptions, completion,
-                new JacksonVariableConverter(new ObjectMapper()), ParameterResolver.builder().build(),
+                new Jackson2VariableConverter(new ObjectMapper()), ParameterResolver.builder().build(),
                 ResultResolver.builder().build(), new TransactionTemplate(manager),
                 ProcessEngineWorkerMetricsNoOp.INSTANCE, registry);
         registrar.postProcessAfterInitialization(factory.getProxy(), "transactional-worker");

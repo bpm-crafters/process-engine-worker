@@ -28,7 +28,7 @@ class ProcessEngineWorkerAutoConfiguration {
   @ConditionalOnMissingBean
   fun defaultJacksonVariableConverter(
     objectMapper: ObjectMapper,
-  ): VariableConverter = JacksonVariableConverter(
+  ): VariableConverter = Jackson2VariableConverter(
     objectMapper = objectMapper
   )
 

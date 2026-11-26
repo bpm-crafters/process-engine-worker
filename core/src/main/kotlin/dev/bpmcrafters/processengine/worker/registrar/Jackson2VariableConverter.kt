@@ -3,10 +3,10 @@ package dev.bpmcrafters.processengine.worker.registrar
 import com.fasterxml.jackson.databind.ObjectMapper
 
 /**
- * Helper converting variables from a JSON map to type using Jackson.
- * @since 0.0.3
+ * Helper converting variables from a JSON map to type using Jackson 2.
+ * @since 0.9.0
  **/
-open class JacksonVariableConverter(
+open class Jackson2VariableConverter(
   private val objectMapper: ObjectMapper
 ) : VariableConverter {
 
