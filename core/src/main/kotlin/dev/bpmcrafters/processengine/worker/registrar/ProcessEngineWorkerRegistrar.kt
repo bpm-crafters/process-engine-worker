@@ -56,7 +56,7 @@ class ProcessEngineWorkerRegistrar(
    * Registers public annotated methods on an ordinary object, without framework interception.
    **/
   fun register(worker: Any) {
-    worker.getAnnotatedWorkers().forEach { method ->
+    worker.getAnnotatedWorkerMethods().forEach { method ->
       register(method, requireNotNull(method.workerMetadata(worker.javaClass)), false) { arguments -> method.invoke(worker, *arguments) }
     }
   }

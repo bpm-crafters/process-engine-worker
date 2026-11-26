@@ -9,7 +9,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
 // Keep the original static JVM owner and descriptors for precompiled starter clients and Java imports.
-// Distinct Kotlin names avoid competing with the package's existing source-level extensions.
+// Forwarding functions use distinct Kotlin names where the core already provides an extension.
 /**
  * Checks whether the parameter accepts the process payload map.
  **/
@@ -86,9 +86,8 @@ fun legacyHasVoidReturnType(method: Method): Boolean = method.hasVoidReturnType(
 /**
  * Discovers annotated worker methods on the target class of a Spring bean.
  **/
-@JvmName("getAnnotatedWorkers")
-fun legacyGetAnnotatedWorkers(worker: Any): List<Method> {
-  val targetClass = AopUtils.getTargetClass(worker)
+fun Any.getAnnotatedWorkers(): List<Method> {
+  val targetClass = AopUtils.getTargetClass(this)
   return targetClass.methods.map { BridgeMethodResolver.findBridgedMethod(it) }.distinct()
     .filter { !it.isSynthetic && it.workerMetadata(targetClass) != null }
 }

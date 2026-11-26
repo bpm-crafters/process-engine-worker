@@ -127,9 +127,10 @@ fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
 
 
 /**
- * Retrieves list of worker methods.
+ * Finds public worker methods on this object's runtime class.
  **/
-fun Any.getAnnotatedWorkers(): List<Method> = javaClass.methods
+@JvmName("getAnnotatedWorkers")
+fun Any.getAnnotatedWorkerMethods(): List<Method> = javaClass.methods
   .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata(javaClass) != null }
 
 /**

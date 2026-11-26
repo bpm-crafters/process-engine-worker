@@ -25,6 +25,10 @@ Add the following dependency to your project's class path:
 For variable conversion, the Spring Boot starter uses the application's Jackson 3 `ObjectMapper` bean when present.
 Otherwise it uses the Jackson 2 `ObjectMapper` bean. A custom `VariableConverter` bean overrides both defaults.
 
+For programmatic method discovery in Kotlin, the starter's `getAnnotatedWorkers()` extension inspects the
+target class of a Spring proxy. The core module's `getAnnotatedWorkerMethods()` extension inspects the
+object's runtime class.
+
 The simplest way to implement the worker is to provide a component, with a worker method receiving typed
 objects and returning a map of variables, which are automatically published as process variables.
 
