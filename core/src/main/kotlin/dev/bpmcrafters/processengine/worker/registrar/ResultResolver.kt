@@ -6,19 +6,30 @@ import java.util.function.Predicate
 /**
  * Result resolver is responsible for mapping the invocation result of the process engine into payload for task completion.
  * @since 0.0.4
- */
+ **/
 open class ResultResolver(
   private val strategies: List<ResultResolutionStrategy>
 ) {
 
+  /**
+   * Factories for worker result resolution.
+   * @since 0.0.4
+   **/
   companion object {
     /**
-     * Creates a new builder responsible for creation of the parameter resolver.
-     */
+     * Creates a builder for the result resolver.
+     **/
     @JvmStatic
     fun builder() = ResultResolverBuilder()
 
+    /**
+     * Builds a result resolver with a default map strategy and optional custom strategies.
+     * @since 0.0.4
+     **/
     class ResultResolverBuilder(
+      /**
+       * Strategies used to build the result resolver, in matching order.
+       **/
       val strategies: MutableList<ResultResolutionStrategy> = mutableListOf()
     ) {
 
@@ -45,13 +56,13 @@ open class ResultResolver(
        * Adds a new strategy.
        * @param strategy strategy to add.
        * @return builder instance.
-       */
+       **/
       fun addStrategy(strategy: ResultResolutionStrategy): ResultResolverBuilder = strategies.add(strategy).let { this }
 
       /**
        * Builds a new result resolver.
        * @return resolver.
-       */
+       **/
       fun build(): ResultResolver = ResultResolver(strategies)
     }
   }
@@ -61,7 +72,8 @@ open class ResultResolver(
    * A strategy is responsible for mapping one return type to a Map<String, Object.>
    *   @param resultMatcher matcher for the strategy to resolve the result.
    *   @param resultConverter converter function.
-   */
+   * @since 0.0.4
+   **/
   data class ResultResolutionStrategy(
     val resultMatcher: Predicate<Method>, // pass the entire method to the macher
     val resultConverter: (value: Any?) -> Map<String, Any?>
@@ -72,7 +84,7 @@ open class ResultResolver(
    * payload result of type Map<String Any>.
    * @param method method to test.
    * @return true, if at least one strategy is matching the method.
-   */
+   **/
   open fun payloadReturnType(method: Method): Boolean = strategies
     .any { it.resultMatcher.test(method) }
 
@@ -81,7 +93,7 @@ open class ResultResolver(
    * @param method invoked process engine method.
    * @param result result.
    * @return process payload map.
-   */
+   **/
   open fun resolve(method: Method, result: Any?): Map<String, Any?> = strategies
     .first { it.resultMatcher.test(method) }
     .resultConverter

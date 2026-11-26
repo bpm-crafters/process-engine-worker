@@ -9,12 +9,13 @@ import java.util.function.Predicate
 /**
  * Parameter resolution strategy.
  * @since 0.0.1
- */
+ **/
 interface ParameterResolutionStrategy : Predicate<Parameter>, Function<ParameterResolutionStrategy.Wrapper, Any?> {
 
   /**
    * Wraps parameters of parameter and services for determination of the matching resolution strategy.
-   */
+   * @since 0.6.0
+   **/
   data class Wrapper(
     val parameter: Parameter,
     val taskInformation: TaskInformation,
@@ -22,10 +23,15 @@ interface ParameterResolutionStrategy : Predicate<Parameter>, Function<Parameter
     val variableConverter: VariableConverter,
     val taskCompletionApi: ServiceTaskCompletionApi
   ) {
-    /** Annotation source, which may be an interface parameter with an erased type. */
+    /**
+     * Annotation source, which may be an interface parameter with an erased type.
+     **/
     var annotationParameter: Parameter = parameter
       private set
 
+    /**
+     * Creates a resolution context with separate invocation and annotation parameters.
+     **/
     constructor(
       parameter: Parameter,
       taskInformation: TaskInformation,

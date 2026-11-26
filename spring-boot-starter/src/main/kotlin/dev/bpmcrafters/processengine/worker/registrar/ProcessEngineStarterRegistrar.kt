@@ -16,7 +16,10 @@ import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Duration
 
-/** Spring discovery and transaction adapter for the framework-neutral worker runtime. */
+/**
+ * Spring discovery and transaction adapter for the framework-neutral worker runtime.
+ * @since 0.0.1
+ **/
 @AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
 @ConditionalOnProperty(prefix = DEFAULT_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class ProcessEngineStarterRegistrar(
@@ -31,12 +34,23 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy private val idempotencyRegistry: IdempotencyRegistry
 ) : BeanPostProcessor {
 
+  /**
+   * Invokes a worker with task information and process variables and returns its result.
+   * @since 0.0.1
+   **/
   @Deprecated("Use WorkerInvoker for programmatic worker registration")
   fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
+  /**
+   * Retry count and delay to send with a task failure.
+   * @since 0.7.1
+   **/
   @Deprecated("Retry calculation is handled by the core runtime")
   data class FailureRetry(val retryCount: Int?, val retryBackoff: Duration?)
 
+  /**
+   * Registers annotated worker methods on the initialized Spring bean, preserving proxy interception.
+   **/
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val targetClass = AopUtils.getTargetClass(bean)
     val methods = targetClass.methods.map { BridgeMethodResolver.findBridgedMethod(it) }.distinct().mapNotNull { method ->

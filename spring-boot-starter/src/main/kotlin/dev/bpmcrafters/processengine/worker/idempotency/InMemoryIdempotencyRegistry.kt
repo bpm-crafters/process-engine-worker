@@ -9,11 +9,15 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * Usage is discouraged because it can only take into account a single process instance.
  * I.e., don't use it in a clustered environment.
- */
+ * @since 0.8.0
+ **/
 class InMemoryIdempotencyRegistry : IdempotencyRegistry {
 
   private val delegate = LocalInMemoryIdempotencyRegistry()
 
+  /**
+   * Stores the task result after commit when a Spring transaction is active.
+   **/
   override fun register(taskInformation: TaskInformation, result: Map<String, Any?>) {
     if (TransactionSynchronizationManager.isActualTransactionActive()) {
       TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
@@ -28,12 +32,21 @@ class InMemoryIdempotencyRegistry : IdempotencyRegistry {
     }
   }
 
+  /**
+   * Returns the in-memory result for the task, if present.
+   **/
   override fun getTaskResult(taskInformation: TaskInformation): Map<String, Any?>? = delegate.getTaskResult(taskInformation)
 
+  /**
+   * Removes the in-memory result for one task.
+   **/
   override fun removeTaskResult(taskId: String) {
     delegate.removeTaskResult(taskId)
   }
 
+  /**
+   * Removes all in-memory results for the given process instance.
+   **/
   override fun removeAllTaskResults(processInstanceId: String) {
     delegate.removeAllTaskResults(processInstanceId)
   }

@@ -19,9 +19,10 @@ import java.util.concurrent.ExecutionException
 private val logger = KotlinLogging.logger {}
 
 /**
- * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
- * @since 0.0.3
- */
+ * Registrar responsible for collecting process engine workers
+ * and creating corresponding external task subscriptions.
+ * @since 0.9.0
+ **/
 class ProcessEngineWorkerRegistrar(
   private val options: WorkerRuntimeOptions,
   private val taskSubscriptionApi: TaskSubscriptionApi,
@@ -34,7 +35,9 @@ class ProcessEngineWorkerRegistrar(
   private val idempotencyRegistry: IdempotencyRegistry
 ) {
 
-  /** Creates a runtime for ordinary, non-transactional objects with default resolvers and no caching. */
+  /**
+   * Creates a runtime for ordinary, non-transactional objects with default resolvers and no caching.
+   **/
   constructor(
     taskSubscriptionApi: TaskSubscriptionApi,
     taskCompletionApi: ServiceTaskCompletionApi,
@@ -49,19 +52,25 @@ class ProcessEngineWorkerRegistrar(
 
   private val exceptionResolver = ExceptionResolver()
 
-  /** Registers public annotated methods on an ordinary object, without framework interception. */
+  /**
+   * Registers public annotated methods on an ordinary object, without framework interception.
+   **/
   fun register(worker: Any) {
     worker.getAnnotatedWorkers().forEach { method ->
       register(method, requireNotNull(method.workerMetadata(worker.javaClass)), false) { arguments -> method.invoke(worker, *arguments) }
     }
   }
 
-  /** Registers metadata and an invoker independently, allowing adapters to preserve managed proxies. */
+  /**
+   * Registers metadata and an invoker independently, allowing adapters to preserve managed proxies.
+   **/
   fun register(method: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
     register(method, requireNotNull(method.workerMetadata()), isTransactional, invoker)
   }
 
-  /** Keeps concrete parameter/result types separate from inherited annotation metadata. */
+  /**
+   * Keeps concrete parameter/result types separate from inherited annotation metadata.
+   **/
   fun register(method: Method, metadataMethod: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
     val topic = metadataMethod.getTopic()
     val payloadReturnType = resultResolver.payloadReturnType(method)
@@ -120,7 +129,7 @@ class ProcessEngineWorkerRegistrar(
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
    * @param method process engine worker method.
    * @param actionWithResult worker always returning the result.
-   */
+   **/
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
@@ -284,12 +293,14 @@ class ProcessEngineWorkerRegistrar(
 
   /**
    * Task handler as a function.
-   */
+   * @since 0.9.0
+   **/
   private fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
   /**
    * Failure retry information.
-   */
+   * @since 0.9.0
+   **/
   internal data class FailureRetry(
     val retryCount: Int?,
     val retryBackoff: Duration?

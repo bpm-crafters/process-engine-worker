@@ -10,11 +10,14 @@ import org.springframework.context.annotation.Bean
 /**
  * Autoconfiguration for JPA-based Idempotency Registry.
  * @since 0.8.0
- */
+ **/
 @AutoConfiguration(before = [ProcessEngineWorkerAutoConfiguration::class])
 @ConditionalOnMissingBean(IdempotencyRegistry::class)
 class JpaIdempotencyAutoConfiguration {
 
+  /**
+   * Creates the JPA-backed registry when no custom idempotency registry is configured.
+   **/
   @Bean
   fun jpaIdempotencyRegistry(taskLogEntryRepository: TaskLogEntryRepository): IdempotencyRegistry =
     JpaIdempotencyRegistry(taskLogEntryRepository)
