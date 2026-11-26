@@ -21,6 +21,21 @@ interface ParameterResolutionStrategy : Predicate<Parameter>, Function<Parameter
     val payload: Map<String, Any?>,
     val variableConverter: VariableConverter,
     val taskCompletionApi: ServiceTaskCompletionApi
-  )
+  ) {
+    /** Annotation source, which may be an interface parameter with an erased type. */
+    var annotationParameter: Parameter = parameter
+      private set
+
+    constructor(
+      parameter: Parameter,
+      taskInformation: TaskInformation,
+      payload: Map<String, Any?>,
+      variableConverter: VariableConverter,
+      taskCompletionApi: ServiceTaskCompletionApi,
+      annotationParameter: Parameter
+    ) : this(parameter, taskInformation, payload, variableConverter, taskCompletionApi) {
+      this.annotationParameter = annotationParameter
+    }
+  }
 
 }

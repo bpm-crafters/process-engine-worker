@@ -47,8 +47,8 @@ class VariableParameterResolutionStrategy : ParameterResolutionStrategy {
   override fun test(t: Parameter): Boolean = t.isVariable()
 
   override fun apply(t: ParameterResolutionStrategy.Wrapper): Any? {
-    return t.parameter.extractVariableName().let { variablesName ->
-      if (t.parameter.extractVariableMandatoryFlag()
+    return t.annotationParameter.extractVariableName().let { variablesName ->
+      if (t.annotationParameter.extractVariableMandatoryFlag()
         && !t.parameter.isOptional()
       ) { // optional allows null
         require(t.payload.keys.contains(variablesName)) {
@@ -56,7 +56,7 @@ class VariableParameterResolutionStrategy : ParameterResolutionStrategy {
         }
       }
       val value = t.payload[variablesName]?.let {
-        t.parameter.extractVariableConverter(t.variableConverter).mapToType(
+        t.annotationParameter.extractVariableConverter(t.variableConverter).mapToType(
           value = t.payload[variablesName], type = t.parameter.type
         )
       }

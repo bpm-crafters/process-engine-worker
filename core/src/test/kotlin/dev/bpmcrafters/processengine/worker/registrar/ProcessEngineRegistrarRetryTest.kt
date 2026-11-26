@@ -1,7 +1,6 @@
 package dev.bpmcrafters.processengine.worker.registrar
 
 import dev.bpmcrafters.processengine.worker.FailJobException
-import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,12 +13,8 @@ import kotlin.time.toJavaDuration
 
 internal class ProcessEngineRegistrarRetryTest {
 
-  val testSubject = ProcessEngineStarterRegistrar(
-    ProcessEngineWorkerProperties(
-      backoffExceptions = mutableMapOf(
-        IOException::class.java to 5.minutes.toJavaDuration()
-      )
-    ),
+  val testSubject = ProcessEngineWorkerRegistrar(
+    WorkerRuntimeOptions(backoffExceptions = mapOf(IOException::class.java to 5.minutes.toJavaDuration())),
     mock(),
     mock(),
     mock(),
