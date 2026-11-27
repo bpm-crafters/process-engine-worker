@@ -4,17 +4,24 @@ import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAut
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties.Companion.DEFAULT_PREFIX
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycle
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycleContext
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycleParticipant
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationPhase
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.TaskInformation
 import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
 import org.springframework.aop.support.AopUtils
-import org.springframework.core.BridgeMethodResolver
+import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.config.BeanPostProcessor
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
+import org.springframework.core.BridgeMethodResolver
 import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.util.ClassUtils
+import java.lang.reflect.Method
 import java.time.Duration
 
 /**
@@ -25,7 +32,7 @@ import java.time.Duration
 @ConditionalOnProperty(prefix = DEFAULT_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class ProcessEngineStarterRegistrar(
   private val processEngineWorkerProperties: ProcessEngineWorkerProperties,
-  @param:Lazy private val taskSubscriptionApi: TaskSubscriptionApi,
+  @param:Lazy private val lifecycle: ProcessApplicationLifecycle,
   @param:Lazy private val taskCompletionApi: ServiceTaskCompletionApi,
   @param:Lazy private val variableConverter: VariableConverter,
   @param:Lazy private val parameterResolver: ParameterResolver,
@@ -33,7 +40,30 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy private val transactionalTemplate: TransactionTemplate,
   @param:Lazy private val processEngineWorkerMetrics: ProcessEngineWorkerMetrics,
   @param:Lazy private val idempotencyRegistry: IdempotencyRegistry
-) : BeanPostProcessor {
+) : BeanPostProcessor, SmartInitializingSingleton, ProcessApplicationLifecycleParticipant {
+
+  private val pendingRegistrations = mutableListOf<(TaskSubscriptionApi) -> Unit>()
+  private var activeSubscriptionApi: TaskSubscriptionApi? = null
+
+  override fun afterSingletonsInstantiated() {
+    lifecycle.register(this)
+  }
+
+  override fun getPhase(): Int = ProcessApplicationPhase.SUBSCRIPTION_REGISTRATION
+
+  override fun onPhase(context: ProcessApplicationLifecycleContext) {
+    val subscriptions = (context as TaskSubscriptionRegistrationContext).getTaskSubscriptionApi()
+    while (true) {
+      val registrations = synchronized(pendingRegistrations) {
+        if (pendingRegistrations.isEmpty()) {
+          activeSubscriptionApi = subscriptions
+          return
+        }
+        pendingRegistrations.toList().also { pendingRegistrations.clear() }
+      }
+      registrations.forEach { it(subscriptions) }
+    }
+  }
 
   /**
    * Invokes a worker with task information and process variables and returns its result.
@@ -50,7 +80,7 @@ class ProcessEngineStarterRegistrar(
   data class FailureRetry(val retryCount: Int?, val retryBackoff: Duration?)
 
   /**
-   * Registers annotated worker methods on the initialized Spring bean, preserving proxy interception.
+   * Discovers annotated worker methods on the initialized Spring bean, preserving proxy interception.
    **/
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val targetClass = AopUtils.getTargetClass(bean)
@@ -60,6 +90,26 @@ class ProcessEngineStarterRegistrar(
     // Do not resolve lazy collaborators while processing infrastructure beans.
     if (methods.isEmpty()) return bean
 
+    val register: (TaskSubscriptionApi) -> Unit = { subscriptions ->
+      registerMethods(bean, targetClass, methods, subscriptions)
+    }
+    // Beans initialized after startup use the same API for dynamic subscriptions.
+    val subscriptions = synchronized(pendingRegistrations) {
+      activeSubscriptionApi ?: run {
+        pendingRegistrations += register
+        return bean
+      }
+    }
+    register(subscriptions)
+    return bean
+  }
+
+  private fun registerMethods(
+    bean: Any,
+    targetClass: Class<*>,
+    methods: List<Pair<Method, Method>>,
+    subscriptions: TaskSubscriptionApi
+  ) {
     val runtime = ProcessEngineWorkerRegistrar(
       WorkerRuntimeOptions(
         completeTasksBeforeCommit = processEngineWorkerProperties.completeTasksBeforeCommit,
@@ -67,7 +117,7 @@ class ProcessEngineStarterRegistrar(
         tenantId = processEngineWorkerProperties.tenantId,
         backoffExceptions = processEngineWorkerProperties.backoffExceptions
       ),
-      taskSubscriptionApi, taskCompletionApi, variableConverter, parameterResolver, resultResolver,
+      subscriptions, taskCompletionApi, variableConverter, parameterResolver, resultResolver,
       { action -> requireNotNull(transactionalTemplate.execute { action.get() }) },
       processEngineWorkerMetrics, idempotencyRegistry
     )
@@ -87,6 +137,5 @@ class ProcessEngineStarterRegistrar(
         invocable.invoke(bean, *arguments)
       }
     }
-    return bean
   }
 }
