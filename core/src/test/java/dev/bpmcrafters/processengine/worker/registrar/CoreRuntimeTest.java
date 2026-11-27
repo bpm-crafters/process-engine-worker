@@ -7,6 +7,8 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker;
 import dev.bpmcrafters.processengine.worker.Variable;
 import dev.bpmcrafters.processengine.worker.idempotency.LocalInMemoryIdempotencyRegistry;
 import dev.bpmcrafters.processengineapi.CommonRestrictions;
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationPhase;
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext;
 import dev.bpmcrafters.processengineapi.task.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +60,17 @@ class CoreRuntimeTest {
         assertThat(completed.getValue().get()).containsEntry("output", "hello");
         assertThatThrownBy(() -> Class.forName("org.springframework.context.ApplicationContext"))
                 .isInstanceOf(ClassNotFoundException.class);
+    }
+
+    @Test
+    void preparesAnExplicitWorkerForLifecycleRegistrationWithoutSpring() {
+        final var runtime = new ProcessEngineWorkerRegistrar(completion, new Jackson2VariableConverter(new ObjectMapper()));
+        final var participant = runtime.registrationParticipant(new JavaWorker());
+
+        assertThat(participant.getPhase()).isEqualTo(ProcessApplicationPhase.SUBSCRIPTION_REGISTRATION);
+        verifyNoInteractions(subscriptions);
+        participant.onPhase(new TaskSubscriptionRegistrationContext(subscriptions));
+        assertThat(command().getTaskDescriptionKey()).isEqualTo("java-topic");
     }
 
     @Test

@@ -17,16 +17,23 @@ private val logger = KotlinLogging.logger {}
  * Implements configuration of the deployment.
  * @since 0.5.0
  **/
-open class ProcessDeployment(
+open class ProcessDeployment internal constructor(
   private val resourcePatternResolver: ResourcePatternResolver,
-  private val deploymentApi: DeploymentApi,
+  private val deploymentApiProvider: () -> DeploymentApi?,
   private val deploymentProperties: ProcessEngineWorkerDeploymentProperties
 ) {
+
+  constructor(
+    resourcePatternResolver: ResourcePatternResolver,
+    deploymentApi: DeploymentApi,
+    deploymentProperties: ProcessEngineWorkerDeploymentProperties
+  ) : this(resourcePatternResolver, { deploymentApi }, deploymentProperties)
 
   /**
    * Deploys resources, configured via properties.
    **/
   open fun deployResources(): DeploymentInformation? {
+    val deploymentApi = deploymentApiProvider() ?: return null
     logger.info { "PROCESS-ENGINE-WORKER-052: Deploying resource(s)." }
     val namedResources = buildList<Resource> {
       try {

@@ -6,6 +6,8 @@ import dev.bpmcrafters.processengine.worker.Variable;
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties;
 import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry;
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp;
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycle;
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext;
 import dev.bpmcrafters.processengineapi.task.*;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.Test;
@@ -42,11 +44,12 @@ class SpringProxyInvocationTest {
         });
         final var proxy = factory.getProxy();
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
+                mock(ProcessApplicationLifecycle.class), completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
 
         assertThat(registrar.postProcessAfterInitialization(proxy, "worker")).isSameAs(proxy);
+        registrar.onPhase(new TaskSubscriptionRegistrationContext(subscriptions));
         final var command = ArgumentCaptor.forClass(SubscribeForTaskCmd.class);
         verify(subscriptions).subscribeForTask(command.capture());
         assertThat(command.getValue().getTaskDescriptionKey()).isEqualTo("proxy-topic");
@@ -109,10 +112,11 @@ class SpringProxyInvocationTest {
             return invocation.proceed();
         });
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
+                mock(ProcessApplicationLifecycle.class), completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
         registrar.postProcessAfterInitialization(factory.getProxy(), "worker");
+        registrar.onPhase(new TaskSubscriptionRegistrationContext(subscriptions));
         final var command = ArgumentCaptor.forClass(SubscribeForTaskCmd.class);
         verify(subscriptions, times(1)).subscribeForTask(command.capture());
         command.getValue().getAction().accept(new TaskInformation("task", Map.of()), payload);
@@ -136,10 +140,11 @@ class SpringProxyInvocationTest {
         final var factory = new ProxyFactory(new MultipleWorker());
         factory.setProxyTargetClass(classProxy);
         final var registrar = new ProcessEngineStarterRegistrar(new ProcessEngineWorkerProperties(),
-                subscriptions, completion, new Jackson2VariableConverter(new ObjectMapper()),
+                mock(ProcessApplicationLifecycle.class), completion, new Jackson2VariableConverter(new ObjectMapper()),
                 ParameterResolver.builder().build(), ResultResolver.builder().build(),
                 mock(TransactionTemplate.class), ProcessEngineWorkerMetricsNoOp.INSTANCE, new NoOpIdempotencyRegistry());
         registrar.postProcessAfterInitialization(factory.getProxy(), "multiple-worker");
+        registrar.onPhase(new TaskSubscriptionRegistrationContext(subscriptions));
         final var commands = ArgumentCaptor.forClass(SubscribeForTaskCmd.class);
         verify(subscriptions, times(2)).subscribeForTask(commands.capture());
         assertThat(commands.getAllValues()).extracting(SubscribeForTaskCmd::getTaskDescriptionKey)

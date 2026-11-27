@@ -4,6 +4,7 @@ import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerProperties
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengineapi.CommonRestrictions
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi
 import dev.bpmcrafters.processengineapi.task.SubscribeForTaskCmd
 import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi
@@ -27,7 +28,7 @@ internal class ProcessEngineStarterRegistrarTenantTest {
 
   private val testSubject = ProcessEngineStarterRegistrar(
     properties,
-    taskSubscriptionApi,
+    mock(),
     taskCompletionApi,
     variableConverter,
     parameterResolver,
@@ -48,6 +49,7 @@ internal class ProcessEngineStarterRegistrarTenantTest {
     whenever(taskSubscriptionApi.subscribeForTask(any())).thenReturn(CompletableFuture.completedFuture(mock()))
 
     testSubject.postProcessAfterInitialization(bean, "tenantWorker")
+    testSubject.onPhase(TaskSubscriptionRegistrationContext(taskSubscriptionApi))
 
     val captor = argumentCaptor<SubscribeForTaskCmd>()
     verify(taskSubscriptionApi).subscribeForTask(captor.capture())
@@ -68,6 +70,7 @@ internal class ProcessEngineStarterRegistrarTenantTest {
     whenever(taskSubscriptionApi.subscribeForTask(any())).thenReturn(CompletableFuture.completedFuture(mock()))
 
     testSubject.postProcessAfterInitialization(bean, "noTenantWorker")
+    testSubject.onPhase(TaskSubscriptionRegistrationContext(taskSubscriptionApi))
 
     val captor = argumentCaptor<SubscribeForTaskCmd>()
     verify(taskSubscriptionApi).subscribeForTask(captor.capture())
@@ -88,6 +91,7 @@ internal class ProcessEngineStarterRegistrarTenantTest {
     whenever(taskSubscriptionApi.subscribeForTask(any())).thenReturn(CompletableFuture.completedFuture(mock()))
 
     testSubject.postProcessAfterInitialization(bean, "overruleWorker")
+    testSubject.onPhase(TaskSubscriptionRegistrationContext(taskSubscriptionApi))
 
     val captor = argumentCaptor<SubscribeForTaskCmd>()
     verify(taskSubscriptionApi).subscribeForTask(captor.capture())
@@ -108,6 +112,7 @@ internal class ProcessEngineStarterRegistrarTenantTest {
     whenever(taskSubscriptionApi.subscribeForTask(any())).thenReturn(CompletableFuture.completedFuture(mock()))
 
     testSubject.postProcessAfterInitialization(bean, "noTenantAtAllWorker")
+    testSubject.onPhase(TaskSubscriptionRegistrationContext(taskSubscriptionApi))
 
     val captor = argumentCaptor<SubscribeForTaskCmd>()
     verify(taskSubscriptionApi).subscribeForTask(captor.capture())

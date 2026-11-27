@@ -15,7 +15,10 @@ Add the Process Engine Worker dependency to your projects classpath and you are 
 </dependency>
 ```
 
-This will automatically deploy all bpmn and dmn files from the `src/main/resources/**` folders to the Process Engine on startup.
+Enable auto-deployment to deploy matching BPMN and DMN resources to the process engine during startup.
+The starter uses the adapter's `DeploymentApi` at the `SUBSCRIPTIONS_REGISTERED` lifecycle phase,
+after the initial worker subscriptions are in place and before the adapter's initial pull and normal task delivery.
+The lifecycle waits for deployment to complete before continuing.
 
 You can configure the deployment by adding the following properties to your `application.properties` or `application.yml`:
 
@@ -30,4 +33,4 @@ dev:
           dmnResourcePattern: "classpath*:/**/*.dmn"
 ```
 
-> **Warning:** Disabling the engine's own autodeployment also disables the autodeployment provided by the Process Engine Worker. In that setup, the Process Engine Worker deployment feature will not deploy resources on startup either. To use the Process Engine Worker's autodeployment feature, make sure to not explicitly disable the engine's process deployment features.
+Auto-deployment requires an adapter that drives the lifecycle and provides a `DeploymentApi` bean.
