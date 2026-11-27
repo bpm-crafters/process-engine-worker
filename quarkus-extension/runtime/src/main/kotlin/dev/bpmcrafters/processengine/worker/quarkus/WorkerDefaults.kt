@@ -14,7 +14,7 @@ class WorkerDefaults {
   @Produces
   @Singleton
   @DefaultBean
-  fun converter(mapper: ObjectMapper): VariableConverter = JacksonVariableConverter(mapper)
+  fun converter(mapper: ObjectMapper): VariableConverter = Jackson2VariableConverter(mapper)
 
   @Produces
   @Singleton

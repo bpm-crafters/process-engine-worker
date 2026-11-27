@@ -13,8 +13,8 @@ import org.springframework.core.io.support.ResourcePatternResolver
 
 /**
  * Auto-configuration for auto-deployment.
- * 0.5.0
- */
+ * @since 0.5.0
+ **/
 @AutoConfiguration
 @EnableConfigurationProperties(ProcessEngineWorkerDeploymentProperties::class)
 @ConditionalOnBean(DeploymentApi::class)
@@ -22,7 +22,7 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
 
   /**
    * Create a process deployment bean, independent of the auto-deployment feature.
-   */
+   **/
   @Bean
   @ConditionalOnMissingBean
   fun processDeployment(
@@ -37,7 +37,7 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
 
   /**
    * Configures a trigger for auto-deployment triggered by application start event.
-   */
+   **/
   @ConditionalOnProperty(
     prefix = ProcessEngineWorkerDeploymentProperties.DEFAULT_PREFIX,
     name = ["enabled"],

@@ -180,7 +180,7 @@ class WorkerDeliveryCoordinationTest {
 
   private fun runtime() = ProcessEngineWorkerRegistrar(
     WorkerRuntimeOptions(), engine, engine,
-    JacksonVariableConverter(ObjectMapper()), ParameterResolver.builder().build(), ResultResolver.builder().build(),
+    Jackson2VariableConverter(ObjectMapper()), ParameterResolver.builder().build(), ResultResolver.builder().build(),
     { throw AssertionError("The additive coordinator must not invoke the legacy transaction executor") },
     ProcessEngineWorkerMetricsNoOp, registry
   )

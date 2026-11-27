@@ -22,38 +22,38 @@ import kotlin.reflect.KClass
 
 /**
  * Local cache from converter class to instance.
- */
+ **/
 private val converters = ConcurrentHashMap<KClass<out VariableConverter>, VariableConverter>()
 
 /**
  * Checks if the method parameter is payload of type Map<String, Any> or compatible.
- */
+ **/
 fun Parameter.isPayload() = Map::class.java.isAssignableFrom(this.type)
   && (this.parameterizedType as ParameterizedType).isMapOfStringObject()
 
 /**
  * Checks if the parameter is task information.
- */
+ **/
 fun Parameter.isTaskInformation() = TaskInformation::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if the parameter is variable converter.
- */
+ **/
 fun Parameter.isVariableConverter() = VariableConverter::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if parameter is ExternalTaskCompletionApi
- */
+ **/
 fun Parameter.isTaskCompletionApiParameter() = ServiceTaskCompletionApi::class.java.isAssignableFrom(this.type)
 
 /**
  * Checks if the parameter is annotated with a Variable annotation.
- */
+ **/
 fun Parameter.isVariable() = this.isAnnotationPresent(Variable::class.java)
 
 /**
  * Extracts variable name from the variable annotation of the parameter.
- */
+ **/
 fun Parameter.extractVariableName(): String {
   val variableAnnotation = getAnnotation(Variable::class.java)!!
   return resolveAliases(variableAnnotation.name, variableAnnotation.value, DEFAULT_UNNAMED_NAME, name)
@@ -63,7 +63,7 @@ fun Parameter.extractVariableName(): String {
  * Extracts variable converter for the variable if the parameter is annotated.
  * @param defaultVariableConverter default converter, if none is specified.
  * @return converter for variable.
- */
+ **/
 fun Parameter.extractVariableConverter(defaultVariableConverter: VariableConverter): VariableConverter {
   val variableAnnotation = getAnnotation(Variable::class.java)!!
   return if (Variable.DefaultVariableConverter::class != variableAnnotation.converter) {
@@ -77,23 +77,23 @@ fun Parameter.extractVariableConverter(defaultVariableConverter: VariableConvert
 
 /**
  * Extracts variable mandatory flag.
- */
+ **/
 fun Parameter.extractVariableMandatoryFlag() = this.getAnnotation(Variable::class.java).mandatory
 
 /**
  * Checks if parameter is an Optional
- */
+ **/
 fun Parameter.isOptional() = Optional::class.java.isAssignableFrom(this.type)
 
 
 /**
  * Extract variable names from all parameters.
- */
+ **/
 fun List<Parameter>.extractVariableNames(): Set<String> = this.map { it.extractVariableName() }.toSet()
 
 /**
  * Checks if the method has a return type compatible with payload of type Map<String, Any>
- */
+ **/
 fun Method.hasPayloadReturnType() =
   Map::class.java.isAssignableFrom(this.returnType) // try if the type is compatible to Map<String, Object>
     && if (this.genericReturnType is ParameterizedType) {
@@ -122,22 +122,25 @@ private fun ParameterizedType.isMapOfStringObject() = this.actualTypeArguments.l
 
 /**
  * Checks if the return type is void.
- */
+ **/
 fun Method.hasVoidReturnType() = Void.TYPE == this.returnType
 
 
 /**
- * Retrieves worker methods from the receiver's runtime class.
- * Uses a distinct Kotlin name from Spring's proxy-aware discovery while retaining the core JVM entry point.
- */
+ * Finds public worker methods on this object's runtime class.
+ **/
 @JvmName("getAnnotatedWorkers")
-fun Any.findAnnotatedWorkerMethods(): List<Method> = javaClass.methods
+fun Any.getAnnotatedWorkerMethods(): List<Method> = javaClass.methods
   .filter { !it.isBridge && !it.isSynthetic && it.workerMetadata(javaClass) != null }
 
-/** Finds direct or interface worker metadata without depending on a framework annotation model. */
+/**
+ * Finds direct or interface worker metadata without depending on a framework annotation model.
+ **/
 fun Method.workerMetadata(): Method? = workerMetadata(declaringClass)
 
-/** Includes interfaces introduced by the actual worker class when its implementation is inherited. */
+/**
+ * Includes interfaces introduced by the actual worker class when its implementation is inherited.
+ **/
 fun Method.workerMetadata(targetClass: Class<*>): Method? {
   if (isAnnotationPresent(ProcessEngineWorker::class.java)) return this
   val inheritedTypes = targetClass.interfaces.toList() + listOfNotNull(targetClass.superclass)
@@ -148,7 +151,9 @@ fun Method.workerMetadata(targetClass: Class<*>): Method? {
   return targetClass.genericParents().firstNotNullOfOrNull { genericWorkerMetadata(it, emptyMap()) }
 }
 
-/** Matches resolved generic parameters, rather than attributing an erased bridge to unrelated overloads. */
+/**
+ * Matches resolved generic parameters, rather than attributing an erased bridge to unrelated overloads.
+ **/
 private fun Method.genericWorkerMetadata(type: Type, bindings: Map<TypeVariable<*>, Type>): Method? {
   val owner = type.rawClass() ?: return null
   val resolved = bindings + if (type is ParameterizedType) {
@@ -183,7 +188,7 @@ private fun resolveAliases(first: String, second: String, unset: String, fallbac
 
 /**
  * Detects worker topic either using the annotation or defaulting to method name.
- */
+ **/
 fun Method.getTopic(): String {
   val workerAnnotation = workerAnnotation()
   return resolveAliases(workerAnnotation.topic, workerAnnotation.value, DEFAULT_UNSET_TOPIC, name)
@@ -191,14 +196,14 @@ fun Method.getTopic(): String {
 
 /**
  * Returns the auto-completion flag from annotation.
- */
+ **/
 fun Method.getAutoComplete(): Boolean {
   return workerAnnotation().autoComplete
 }
 
 /**
- * Returns the auto-completion flag from annotation.
- */
+ * Returns the worker's configured completion mode.
+ **/
 fun Method.getCompletion(): Completion {
   return workerAnnotation().completion
 }
@@ -207,7 +212,7 @@ fun Method.getCompletion(): Completion {
  * Returns the lock duration from annotation, or null if not set.
  * @return lock duration in milliseconds, or null if the default should be used.
  * @since 0.8.0
- */
+ **/
 fun Method.getLockDuration(): Long? {
   val lockDuration = workerAnnotation().lockDuration
   return if (lockDuration == ProcessEngineWorker.DEFAULT_UNSET_LOCK_DURATION) {
@@ -221,7 +226,7 @@ fun Method.getLockDuration(): Long? {
  * Returns the tenant id, configured on the annotation or null if it is not set.
  * @return tenant id, or null if the default should be used.
  * @since 0.8.4
- */
+ **/
 fun Method.getTenantId(): String? {
   val tenantId = workerAnnotation().tenantId
   return tenantId.ifBlank {

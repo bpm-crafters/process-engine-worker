@@ -8,14 +8,14 @@ import java.util.concurrent.CompletionException
 /**
  * Utility to help unwrapping exceptions.
  * @since 0.0.3
- */
+ **/
 class ExceptionResolver {
 
   /**
    * Unpack the exception.
    * @param e thrown exception.
    * @return unwrapped cause.
-   */
+   **/
   fun getCause(e: Throwable): Throwable {
     return when (e) {
       is UndeclaredThrowableException -> if (e.undeclaredThrowable != null) {

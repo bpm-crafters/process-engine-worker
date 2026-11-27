@@ -13,15 +13,17 @@ import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.reflect.Method
 import java.time.Duration
+import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * Registrar responsible for collecting process engine workers and creating corresponding external task subscriptions.
- * @since 0.0.3
- */
+ * Registrar responsible for collecting process engine workers
+ * and creating corresponding external task subscriptions.
+ * @since 0.9.0
+ **/
 class ProcessEngineWorkerRegistrar(
   private val options: WorkerRuntimeOptions,
   private val taskSubscriptionApi: TaskSubscriptionApi,
@@ -34,7 +36,9 @@ class ProcessEngineWorkerRegistrar(
   private val idempotencyRegistry: IdempotencyRegistry
 ) {
 
-  /** Creates a runtime for ordinary, non-transactional objects with default resolvers and no caching. */
+  /**
+   * Creates a runtime for ordinary, non-transactional objects with default resolvers and no caching.
+   **/
   constructor(
     taskSubscriptionApi: TaskSubscriptionApi,
     taskCompletionApi: ServiceTaskCompletionApi,
@@ -49,14 +53,18 @@ class ProcessEngineWorkerRegistrar(
 
   private val exceptionResolver = ExceptionResolver()
 
-  /** Registers public annotated methods on an ordinary object, without framework interception. */
+  /**
+   * Registers public annotated methods on an ordinary object, without framework interception.
+   **/
   fun register(worker: Any) {
-    worker.findAnnotatedWorkerMethods().forEach { method ->
+    worker.getAnnotatedWorkerMethods().forEach { method ->
       register(method, requireNotNull(method.workerMetadata(worker.javaClass)), false) { arguments -> method.invoke(worker, *arguments) }
     }
   }
 
-  /** Registers metadata and an invoker independently, allowing adapters to preserve managed proxies. */
+  /**
+   * Registers metadata and an invoker independently, allowing adapters to preserve managed proxies.
+   **/
   fun register(method: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
     register(method, requireNotNull(method.workerMetadata()), isTransactional, invoker)
   }
@@ -119,7 +127,9 @@ class ProcessEngineWorkerRegistrar(
     .takeIf { it.isNotEmpty() }
     ?.extractVariableNames()
 
-  /** Keeps concrete parameter/result types separate from inherited annotation metadata. */
+  /**
+   * Keeps concrete parameter/result types separate from inherited annotation metadata.
+   **/
   fun register(method: Method, metadataMethod: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
     val topic = metadataMethod.getTopic()
     val payloadReturnType = resultResolver.payloadReturnType(method)
@@ -175,7 +185,7 @@ class ProcessEngineWorkerRegistrar(
    * @param payloadReturnType flag indicating of the return type of the method can be converted int payload.
    * @param method process engine worker method.
    * @param actionWithResult worker always returning the result.
-   */
+   **/
   private fun subscribe(
     topic: String,
     payloadDescription: Set<String>? = emptySet(),
@@ -311,23 +321,34 @@ class ProcessEngineWorkerRegistrar(
     }
   }
 
+  /*
+   * Calculate retry
+   */
   internal fun calculateRetry(taskInformation: TaskInformation, cause: Throwable): FailureRetry {
-    val retryCount = if (cause is FailJobException) {
-      cause.retryCount
-    } else {
-      taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)?.let { it - 1 }
+    if (cause is FailJobException) {
+      return FailureRetry(cause.retryCount, cause.retryBackoff)
     }
-    val retryBackoff = if (cause is FailJobException) {
-      cause.retryBackoff
-    } else {
-      null
+
+    val retries = taskInformation.getMetaValueAsInt(TaskInformation.RETRIES)
+    if (options.backoffExceptions.isNotEmpty()) {
+      val seen = IdentityHashMap<Throwable, Boolean>()
+      var current: Throwable? = cause
+      while (current != null && seen.put(current, true) == null) {
+        val backoff = options.backoffExceptions[current.javaClass]
+        if (backoff != null) {
+          // Keep a retry available so the task can be fetched after the backoff.
+          return FailureRetry(retries ?: 1, backoff)
+        }
+        current = current.cause
+      }
     }
-    return FailureRetry(
-      retryCount = retryCount,
-      retryBackoff = retryBackoff
-    )
+
+    return FailureRetry(retries?.minus(1), null)
   }
 
+  /*
+   * Complete before commit
+   */
   internal fun completeBeforeCommit(complete: Completion): Boolean =
     if (complete == DEFAULT) {
       options.completeTasksBeforeCommit
@@ -337,12 +358,14 @@ class ProcessEngineWorkerRegistrar(
 
   /**
    * Task handler as a function.
-   */
+   * @since 0.9.0
+   **/
   private fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
   /**
    * Failure retry information.
-   */
+   * @since 0.9.0
+   **/
   internal data class FailureRetry(
     val retryCount: Int?,
     val retryBackoff: Duration?

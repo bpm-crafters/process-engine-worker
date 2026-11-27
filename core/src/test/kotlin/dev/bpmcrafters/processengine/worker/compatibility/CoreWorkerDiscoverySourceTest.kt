@@ -1,7 +1,7 @@
 package dev.bpmcrafters.processengine.worker.compatibility
 
 import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
-import dev.bpmcrafters.processengine.worker.registrar.findAnnotatedWorkerMethods
+import dev.bpmcrafters.processengine.worker.registrar.getAnnotatedWorkerMethods
 import dev.bpmcrafters.processengine.worker.registrar.getTopic
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -11,7 +11,7 @@ class CoreWorkerDiscoverySourceTest {
   fun `neutral discovery inspects an ordinary bean through Any with only core on the classpath`() {
     val bean: Any = Worker()
 
-    val methods = bean.findAnnotatedWorkerMethods()
+    val methods = bean.getAnnotatedWorkerMethods()
 
     assertThat(methods).containsExactly(Worker::class.java.getMethod("work"))
     assertThat(methods.map { it.getTopic() }).containsExactly("core-topic")
@@ -20,8 +20,8 @@ class CoreWorkerDiscoverySourceTest {
   @Test
   fun `neutral discovery supports bound and unbound callable references through Any`() {
     val bean: Any = Worker()
-    val bound = bean::findAnnotatedWorkerMethods
-    val unbound = Any::findAnnotatedWorkerMethods
+    val bound = bean::getAnnotatedWorkerMethods
+    val unbound = Any::getAnnotatedWorkerMethods
     val expected = Worker::class.java.getMethod("work")
 
     assertThat(bound()).containsExactly(expected)
@@ -31,11 +31,11 @@ class CoreWorkerDiscoverySourceTest {
   @Test
   fun `neutral discovery supports concrete receivers and their callable references`() {
     val bean = Worker()
-    val bound = bean::findAnnotatedWorkerMethods
-    val unbound = Worker::findAnnotatedWorkerMethods
+    val bound = bean::getAnnotatedWorkerMethods
+    val unbound = Worker::getAnnotatedWorkerMethods
     val expected = Worker::class.java.getMethod("work")
 
-    assertThat(bean.findAnnotatedWorkerMethods()).containsExactly(expected)
+    assertThat(bean.getAnnotatedWorkerMethods()).containsExactly(expected)
     assertThat(bound()).containsExactly(expected)
     assertThat(unbound(bean)).containsExactly(expected)
   }

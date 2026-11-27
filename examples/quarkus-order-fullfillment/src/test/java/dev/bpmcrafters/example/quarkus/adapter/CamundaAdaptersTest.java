@@ -25,7 +25,7 @@ class CamundaAdaptersTest {
     assertThat(mapper.readTree(json).properties()).extracting(Map.Entry::getKey)
       .containsExactlyInAnyOrder("orderId", "orderPositions", "shippingAddress", "invoiceAddress");
     assertThat(OrderMapper.toDomain(mapper.readValue(json, OrderWire.class)).total()).isEqualTo(original.total());
-    final var converter = new dev.bpmcrafters.processengine.worker.registrar.JacksonVariableConverter(mapper);
+    final var converter = new dev.bpmcrafters.processengine.worker.registrar.Jackson2VariableConverter(mapper);
     final Object payload = mapper.readValue(json, Map.class);
     assertThat(OrderMapper.toDomain(converter.mapToType(payload, OrderWire.class)).orderId()).isEqualTo(original.orderId());
   }

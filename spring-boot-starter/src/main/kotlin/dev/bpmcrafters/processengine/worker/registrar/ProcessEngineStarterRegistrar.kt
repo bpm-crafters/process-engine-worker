@@ -14,9 +14,13 @@ import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Lazy
 import org.springframework.transaction.support.TransactionTemplate
+import org.springframework.util.ClassUtils
 import java.time.Duration
 
-/** Spring discovery and transaction adapter for the framework-neutral worker runtime. */
+/**
+ * Spring discovery and transaction adapter for the framework-neutral worker runtime.
+ * @since 0.0.1
+ **/
 @AutoConfiguration(after = [ProcessEngineWorkerAutoConfiguration::class])
 @ConditionalOnProperty(prefix = DEFAULT_PREFIX, name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class ProcessEngineStarterRegistrar(
@@ -31,12 +35,23 @@ class ProcessEngineStarterRegistrar(
   @param:Lazy private val idempotencyRegistry: IdempotencyRegistry
 ) : BeanPostProcessor {
 
+  /**
+   * Invokes a worker with task information and process variables and returns its result.
+   * @since 0.0.1
+   **/
   @Deprecated("Use WorkerInvoker for programmatic worker registration")
   fun interface TaskHandlerWithResult : (TaskInformation, Map<String, Any?>) -> Any?
 
+  /**
+   * Retry count and delay to send with a task failure.
+   * @since 0.7.1
+   **/
   @Deprecated("Retry calculation is handled by the core runtime")
   data class FailureRetry(val retryCount: Int?, val retryBackoff: Duration?)
 
+  /**
+   * Registers annotated worker methods on the initialized Spring bean, preserving proxy interception.
+   **/
   override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
     val targetClass = AopUtils.getTargetClass(bean)
     val methods = targetClass.methods.map { BridgeMethodResolver.findBridgedMethod(it) }.distinct().mapNotNull { method ->
@@ -47,21 +62,26 @@ class ProcessEngineStarterRegistrar(
 
     val runtime = ProcessEngineWorkerRegistrar(
       WorkerRuntimeOptions(
-        processEngineWorkerProperties.completeTasksBeforeCommit,
-        processEngineWorkerProperties.removeTaskResultOnCompletion,
-        processEngineWorkerProperties.tenantId
+        completeTasksBeforeCommit = processEngineWorkerProperties.completeTasksBeforeCommit,
+        removeTaskResultOnCompletion = processEngineWorkerProperties.removeTaskResultOnCompletion,
+        tenantId = processEngineWorkerProperties.tenantId,
+        backoffExceptions = processEngineWorkerProperties.backoffExceptions
       ),
       taskSubscriptionApi, taskCompletionApi, variableConverter, parameterResolver, resultResolver,
       { action -> requireNotNull(transactionalTemplate.execute { action.get() }) },
       processEngineWorkerMetrics, idempotencyRegistry
     )
+    val proxyClass = bean.javaClass
     methods.forEach { (method, metadata) ->
-      val proxyMethod = if (AopUtils.isJdkDynamicProxy(bean)) {
-        targetClass.methods.firstOrNull { it.isBridge && BridgeMethodResolver.findBridgedMethod(it) == method } ?: method
+      val proxyMethod = if (AopUtils.isJdkDynamicProxy(bean) && !ClassUtils.hasMethod(proxyClass, method.name, *method.parameterTypes)) {
+        targetClass.methods.firstOrNull { candidate ->
+          candidate.isBridge && BridgeMethodResolver.findBridgedMethod(candidate) == method &&
+            ClassUtils.hasMethod(proxyClass, candidate.name, *candidate.parameterTypes)
+        } ?: method
       } else {
         method
       }
-      val invocable = AopUtils.selectInvocableMethod(proxyMethod, bean.javaClass)
+      val invocable = AopUtils.selectInvocableMethod(proxyMethod, proxyClass)
       // Match the method Spring intercepts, including interface metadata hidden by an inherited implementation.
       runtime.register(method, metadata, invocable.isTransactional(targetClass)) { arguments ->
         invocable.invoke(bean, *arguments)

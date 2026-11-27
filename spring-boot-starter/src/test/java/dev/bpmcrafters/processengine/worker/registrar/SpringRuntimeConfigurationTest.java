@@ -27,7 +27,7 @@ class SpringRuntimeConfigurationTest {
     void wiresDefaultsAndRegistersWorkersWhenEnabledByDefault() {
         try (final var context = context()) {
             context.refresh();
-            assertThat(context.getBean(VariableConverter.class)).isInstanceOf(JacksonVariableConverter.class);
+            assertThat(context.getBean(VariableConverter.class)).isInstanceOf(Jackson2VariableConverter.class);
             assertThat(context.getBean(IdempotencyRegistry.class)).isInstanceOf(NoOpIdempotencyRegistry.class);
             verify(subscriptions).subscribeForTask(any());
         }

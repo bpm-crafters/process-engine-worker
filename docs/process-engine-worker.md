@@ -90,6 +90,23 @@ The `@ProcessEngineWorker` annotation supports the following properties:
 | `lockDuration` | `long`    | `-1`        | Optional lock duration in milliseconds for this worker. If set to `-1` (default), the global configuration of the process engine adapter will be used. (Available since `0.8.0`)                               |
 | `tenantId`     | `String`  | `""`        | Optional tenant id to be used for current worker during the registration. Any non-blank value will be considered. If the value is empty, the value from the property will be used.                             |
 
+### Spring merged-annotation compatibility
+
+The worker resolves `@ProcessEngineWorker`'s `topic` and `value` as aliases, and resolves
+`@Variable`'s `name` and `value` the same way. Existing worker declarations continue to work.
+
+Spring's merged-annotation readers now expose each attribute separately. For example, Java shorthand
+`@ProcessEngineWorker("orders")` and `@Variable("order")` set `value`. Reading `topic` or `name`
+through `AnnotatedElementUtils.findMergedAnnotation` returns `__unset` or `__unnamed`, respectively.
+Spring uses `@AliasFor` metadata to mirror those values, and the worker annotations now live in the
+framework-neutral core.
+
+To read the effective names, use the worker reflection helpers. In Kotlin, import `getTopic` and
+`extractVariableName` from `dev.bpmcrafters.processengine.worker.registrar` and call
+`method.getTopic()` and `parameter.extractVariableName()`. In Java, the Spring starter exposes
+`ReflectionUtilsKt.getTopic(method)` and `ReflectionUtilsKt.extractVariableName(parameter)` in the
+same package.
+
 ## Quarkus registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
@@ -162,6 +179,12 @@ If the annotation `@org.springframework.transaction.annotation.Transactional` wi
 is used, the library will execute the worker method and the completion of the external task via API in the same transaction. This will lead to
 a transaction rollback, if the external task can't be completed (e.g. due to a network error).
 
+## Custom Retries and Backoffs
+
+In your code you can throw a `dev.bpmcrafters.processengine.worker.FailJobException` to manually manage retries and backoffs
+or you can configure `dev.bpm-crafters.process-api.worker.backoff-exceptions` to automatically back off for a specific duration
+and not decrement the retry counter.
+
 ## Configuration
 
 You can configure the Process Engine Worker by adding the following properties to your `application.properties` or `application.yml`:
@@ -174,7 +197,8 @@ dev:
         registerProcessWorkers: true # Enable or disable automatic worker registration
         completeTasksBeforeCommit: false # Determines whether tasks are completed before transaction commit
         tenantId: my-tenant # Specify the tenant ID for all workers, can be overridden by the value in the `@ProcessEngineWorker` annotation
+        backoff-exceptions:
+          "[java.net.ConnectException]": PT10S # Enables retries for specific exceptions. This can be used to prevent incidents, e.g. when a service is not reachable.
 ```
 
 Use for quarkus kebab-case configurations like, `tenant-id`, `complete-tasks-before-commit`, `register-process-workers`, ...
-
