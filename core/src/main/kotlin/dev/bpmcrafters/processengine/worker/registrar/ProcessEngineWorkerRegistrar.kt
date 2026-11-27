@@ -9,6 +9,10 @@ import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp
 import dev.bpmcrafters.processengineapi.CommonRestrictions
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycleContext
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycleParticipant
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationPhase
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext
 import dev.bpmcrafters.processengineapi.task.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.reflect.Method
@@ -25,7 +29,7 @@ private val logger = KotlinLogging.logger {}
  **/
 class ProcessEngineWorkerRegistrar(
   private val options: WorkerRuntimeOptions,
-  private val taskSubscriptionApi: TaskSubscriptionApi,
+  private val taskSubscriptionApi: TaskSubscriptionApi?,
   private val taskCompletionApi: ServiceTaskCompletionApi,
   private val variableConverter: VariableConverter,
   private val parameterResolver: ParameterResolver,
@@ -39,7 +43,7 @@ class ProcessEngineWorkerRegistrar(
    * Creates a runtime for ordinary, non-transactional objects with default resolvers and no caching.
    **/
   constructor(
-    taskSubscriptionApi: TaskSubscriptionApi,
+    taskSubscriptionApi: TaskSubscriptionApi?,
     taskCompletionApi: ServiceTaskCompletionApi,
     variableConverter: VariableConverter
   ) : this(
@@ -53,11 +57,33 @@ class ProcessEngineWorkerRegistrar(
   private val exceptionResolver = ExceptionResolver()
 
   /**
+   * Creates a runtime for workers whose subscription API is supplied by the lifecycle.
+   */
+  constructor(taskCompletionApi: ServiceTaskCompletionApi, variableConverter: VariableConverter) :
+    this(null, taskCompletionApi, variableConverter)
+
+  /**
+   * Creates a participant that registers an explicitly supplied worker during application startup.
+   */
+  fun registrationParticipant(worker: Any): ProcessApplicationLifecycleParticipant =
+    object : ProcessApplicationLifecycleParticipant {
+      override fun getPhase(): Int = ProcessApplicationPhase.SUBSCRIPTION_REGISTRATION
+
+      override fun onPhase(context: ProcessApplicationLifecycleContext) {
+        register(worker, (context as TaskSubscriptionRegistrationContext).getTaskSubscriptionApi())
+      }
+    }
+
+  /**
    * Registers public annotated methods on an ordinary object, without framework interception.
    **/
-  fun register(worker: Any) {
+  fun register(worker: Any) = register(worker, subscriptionApi())
+
+  private fun register(worker: Any, subscriptions: TaskSubscriptionApi) {
     worker.getAnnotatedWorkerMethods().forEach { method ->
-      register(method, requireNotNull(method.workerMetadata(worker.javaClass)), false) { arguments -> method.invoke(worker, *arguments) }
+      register(subscriptions, method, requireNotNull(method.workerMetadata(worker.javaClass)), false) { arguments ->
+        method.invoke(worker, *arguments)
+      }
     }
   }
 
@@ -71,7 +97,19 @@ class ProcessEngineWorkerRegistrar(
   /**
    * Keeps concrete parameter/result types separate from inherited annotation metadata.
    **/
-  fun register(method: Method, metadataMethod: Method, isTransactional: Boolean, invoker: WorkerInvoker) {
+  fun register(method: Method, metadataMethod: Method, isTransactional: Boolean, invoker: WorkerInvoker) =
+    register(subscriptionApi(), method, metadataMethod, isTransactional, invoker)
+
+  private fun subscriptionApi(): TaskSubscriptionApi =
+    checkNotNull(taskSubscriptionApi) { "Direct registration requires a TaskSubscriptionApi" }
+
+  private fun register(
+    subscriptions: TaskSubscriptionApi,
+    method: Method,
+    metadataMethod: Method,
+    isTransactional: Boolean,
+    invoker: WorkerInvoker
+  ) {
     val topic = metadataMethod.getTopic()
     val payloadReturnType = resultResolver.payloadReturnType(method)
     val autoCompleteTask = metadataMethod.getAutoComplete()
@@ -89,7 +127,7 @@ class ProcessEngineWorkerRegistrar(
       null // null means no limitation
     }
 
-    val subscription = taskSubscriptionApi.subscribeForTask(
+    val subscription = subscriptions.subscribeForTask(
       subscribe(
         topic = topic,
         payloadDescription = variableNames,

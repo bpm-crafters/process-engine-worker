@@ -18,10 +18,12 @@
   <packaging>pom</packaging>
 
   <properties>
+    <maven.compiler.release>${java.version}</maven.compiler.release>
     <spring-boot.version>3.5.16</spring-boot.version>
     <jackson3.version>3.3.0</jackson3.version>
     <process-engine-api.version>1.8</process-engine-api.version>
-    <process-engine-adapters-c7.version>2026.11.1</process-engine-adapters-c7.version>
+    <process-engine-api-lifecycle-spring-boot.version>2026.11.2</process-engine-api-lifecycle-spring-boot.version>
+    <process-engine-adapters-c7.version>2026.11.2</process-engine-adapters-c7.version>
     <process-engine-adapters-c8.version>2026.09.1</process-engine-adapters-c8.version>
     <!-- TEST -->
     <mockito.version>6.4.0</mockito.version>
@@ -150,7 +152,7 @@
             <arg>-java-parameters</arg>
             <arg>-Xannotation-default-target=param-property</arg>
           </args>
-          <jvmTarget>21</jvmTarget>
+          <jvmTarget>${java.version}</jvmTarget>
           <compilerPlugins>
             <plugin>spring</plugin>
             <plugin>no-arg</plugin>
