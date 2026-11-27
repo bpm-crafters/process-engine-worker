@@ -5,7 +5,7 @@
   <parent>
     <groupId>dev.bpm-crafters.maven.parent</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>2026.11.1</version>
+    <version>2026.11.2</version>
     <relativePath/>
   </parent>
 
@@ -18,6 +18,7 @@
   <packaging>pom</packaging>
 
   <properties>
+    <maven.compiler.release>${java.version}</maven.compiler.release>
     <spring-boot.version>3.5.16</spring-boot.version>
     <jackson3.version>3.3.0</jackson3.version>
     <process-engine-api.version>1.8</process-engine-api.version>
@@ -151,7 +152,7 @@
             <arg>-java-parameters</arg>
             <arg>-Xannotation-default-target=param-property</arg>
           </args>
-          <jvmTarget>21</jvmTarget>
+          <jvmTarget>${java.version}</jvmTarget>
           <compilerPlugins>
             <plugin>spring</plugin>
             <plugin>no-arg</plugin>

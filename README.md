@@ -157,6 +157,8 @@ you can do it by setting the property `dev.bpm-crafters.process-api.worker.enabl
 
 ## Examples
 
+Build and run the examples with JDK 21. Run `./mvnw --version` from the repository root to check which JDK Maven uses.
+
 There is an `Order fulfillment` example, you can easily try out. It follows the approach of 
 clean architecture and uses Process Engine API and Process Engine Worker libraries. 
 To run it, you have several options:
