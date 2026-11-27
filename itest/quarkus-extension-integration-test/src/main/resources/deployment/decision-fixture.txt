@@ -1,0 +1,1 @@
+Acceptance-only decision-slot payload. This is not an executable DMN model.

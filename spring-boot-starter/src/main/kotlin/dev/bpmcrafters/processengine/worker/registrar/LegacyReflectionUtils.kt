@@ -93,6 +93,11 @@ fun Any.getAnnotatedWorkers(): List<Method> {
 }
 
 /**
+ * Discovers worker methods for callers using the explicitly named legacy helper.
+ **/
+fun legacyGetAnnotatedWorkers(worker: Any): List<Method> = worker.getAnnotatedWorkers()
+
+/**
  * Resolves the topic of an annotated worker method.
  **/
 @JvmName("getTopic")

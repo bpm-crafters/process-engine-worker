@@ -1,0 +1,9 @@
+name: Process Engine Worker
+description: CDI-managed, framework-neutral process engine workers
+metadata:
+  keywords:
+    - process-engine
+    - worker
+  categories:
+    - business-automation
+  status: experimental

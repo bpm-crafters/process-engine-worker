@@ -3,7 +3,7 @@ title: Process Engine Worker
 ---
 
 Process Engine Worker is an independent component built on top of Process Engine API in order to accelerate the development of agnostic workers
-for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter adds framework integration. It abstracts from specific worker clients and
+for any process engine supported by Process Engine API. Its core runs without Spring; the Spring Boot starter and Quarkus extension add framework integration. It abstracts from specific worker clients and
 API and allows to build universal workers.
 
 ## Framework-neutral registration
@@ -107,6 +107,40 @@ To read the effective names, use the worker reflection helpers. In Kotlin, impor
 `ReflectionUtilsKt.getTopic(method)` and `ReflectionUtilsKt.extractVariableName(parameter)` in the
 same package.
 
+## Quarkus registration
+
+First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>dev.bpm-crafters.process-engine-worker</groupId>
+  <artifactId>process-engine-worker-quarkus</artifactId>
+  <version>${process-engine-worker.version}</version>
+</dependency>
+```
+
+The extension does not bundle an engine adapter. Your application or adapter must
+provide exactly one default-qualified CDI bean of each type: `TaskSubscriptionApi`
+and `ServiceTaskCompletionApi` (both in `dev.bpmcrafters.processengineapi.task`).
+Active workers cannot start if either bean is missing or ambiguous.
+
+Now annotate a method with a special annotation `@ProcessEngineWorker` to define a worker inside a `@ApplicationScoped` or `@Singleton` CDI bean:
+
+```kotlin
+import dev.bpmcrafters.processengine.worker.ProcessEngineWorker
+import dev.bpmcrafters.processengine.worker.Variable
+import jakarta.enterprise.context.ApplicationScoped
+
+@ApplicationScoped
+class GreetingWorker {
+  @ProcessEngineWorker(topic = "greet")
+  fun greet(@Variable(name = "name") name: String): Map<String, Any?> =
+    mapOf("greeting" to "Hello $name")
+}
+```
+
+The quarkus implementation supports the same properties as the spring-boot version.
+
 ## Method parameter resolution
 
 Parameter resolution of the method annotated with `ProcessEngineWorker` is based on a set of strategies
@@ -166,3 +200,5 @@ dev:
         backoff-exceptions:
           "[java.net.ConnectException]": PT10S # Enables retries for specific exceptions. This can be used to prevent incidents, e.g. when a service is not reachable.
 ```
+
+Use for quarkus kebab-case configurations like, `tenant-id`, `complete-tasks-before-commit`, `register-process-workers`, ...
