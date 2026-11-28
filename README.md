@@ -157,28 +157,47 @@ you can do it by setting the property `dev.bpm-crafters.process-api.worker.enabl
 
 ## Examples
 
-There is an `Order fulfillment` example, you can easily try out. It follows the approach of 
-clean architecture and uses Process Engine API and Process Engine Worker libraries. 
-To run it, you have several options:
+Build and run the examples with JDK 21. Run `./mvnw --version` from the repository root to check which JDK Maven uses.
 
-### Running locally using Camunda 7 embedded
+The runnable order-fulfillment examples use the code in `examples/order-fulfillment-common` as a Maven
+dependency. Each application directory contains its own launcher, engine configuration and BPMN resources.
+The HTTP request scripts shared by both applications are in `examples/order-fulfillment-common`.
+Install the Camunda adapter snapshot versions declared in the root POM into your local Maven repository
+before building the examples.
 
-1. Start `FulfillmentProcessApplication` activating profile `c7embedded` Spring profile.
+### Spring Boot 3 with Camunda 7 embedded
 
-### Running locally using self-managed Camunda 8
+```sh
+./mvnw -DskipITests -pl examples/order-fulfillment-spb3 -am package
+java -jar examples/order-fulfillment-spb3/target/*-spb3-*.jar --spring.profiles.active=c7embedded
+```
 
-1. Start `docker-compose.yaml` (this starts the consolidated Camunda 8 orchestration
-   container — Zeebe + Operate + Tasklist — plus Elasticsearch): `docker compose up -d`
-   from the `examples/order-fulfillment` directory.
-2. Start `FulfillmentProcessApplication` activating Spring profile `c8sm`.
+### Spring Boot 4 with self-managed Camunda 8.9
+
+Camunda stores orchestration data in a file-based H2 database inside the Compose stack.
+
+```sh
+./mvnw -DskipITests -pl examples/order-fulfillment-spb4 -am package
+docker compose --project-directory examples/order-fulfillment-spb4 up -d --wait
+java -jar examples/order-fulfillment-spb4/target/*-spb4-*.jar --spring.profiles.active=c8sm
+```
 
 The Operate / Tasklist UI is available at http://localhost:8088 (login `demo` / `demo`).
 The application's own REST API / OpenAPI UI runs on http://localhost:8080 — this is why
 the orchestration container is published on `8088` rather than `8080`.
 
-### Running using Camunda SaaS
+With the Compose services running, the worker smoke test starts its own application instance,
+runs a Camunda process to completion, and checks the payment, inventory, and shipping worker outputs.
 
-1. Start `FulfillmentProcessApplication` activating Spring profile `c8cloud` and pass the following environment variables:
+```sh
+./mvnw -DskipITests -pl examples/order-fulfillment-spb4 -am test \
+  -DorderFulfillmentSmokeTest=true -Dtest=OrderFulfillmentWorkerTest \
+  -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+### Spring Boot 4 with Camunda SaaS
+
+Run the Spring Boot 4 jar with the `c8cloud` profile and set the following environment variables.
 
 ```properties
 ZEEBE_REGION=..

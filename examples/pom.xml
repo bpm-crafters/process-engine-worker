@@ -21,10 +21,12 @@
   </properties>
 
   <modules>
-    <module>order-fulfillment</module>
-    <module>camunda7-remote-starter-native</module>
-    <module>camunda7-remote-starter-retry-backoff</module>
-    <module>camunda7-embedded-starter-transaction</module>
+    <module>order-fulfillment-common</module>
+    <module>order-fulfillment-spb3</module>
+    <module>order-fulfillment-spb4</module>
+    <module>camunda7-remote-starter-native-spb3</module>
+    <module>camunda7-remote-starter-retry-backoff-spb3</module>
+    <module>camunda7-embedded-starter-transaction-spb3</module>
   </modules>
 
   <dependencyManagement>
@@ -32,6 +34,11 @@
       <dependency>
         <groupId>dev.bpm-crafters.process-engine-api</groupId>
         <artifactId>process-engine-api</artifactId>
+        <version>${process-engine-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.bpm-crafters.process-engine-api</groupId>
+        <artifactId>process-engine-api-impl</artifactId>
         <version>${process-engine-api.version}</version>
       </dependency>
       <dependency>

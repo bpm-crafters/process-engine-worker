@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: Order Fulfillment Camunda 7 Embedded
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c7embedded:
+          enabled: true
+          service-tasks:
+            delivery-strategy: embedded_scheduled
+            worker-id: worker
+            schedule-delivery-fixed-rate: PT5S
+          user-tasks:
+            delivery-strategy: embedded_scheduled
+            schedule-delivery-fixed-rate: PT5S
+
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      email: admin@local
+      first-name: Admin
+      last-name: Administratius
+    login:
+      enabled: true
+      user-id: admin
+    auto-deployment-enabled: true
+    deployment-resource-pattern: C7/*.bpmn
+    default-serialization-format: application/json
+    id-generator: simple

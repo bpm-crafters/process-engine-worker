@@ -6,6 +6,8 @@ import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerPro
 import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry;
 import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp;
 import dev.bpmcrafters.processengineapi.CommonRestrictions;
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycle;
+import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationContext;
 import dev.bpmcrafters.processengineapi.task.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.Test;
@@ -283,11 +285,12 @@ class SpringTransactionalWorkerTest {
         factory.addAdvice(new TransactionInterceptor(manager, new AnnotationTransactionAttributeSource()));
         final var properties = new ProcessEngineWorkerProperties();
         properties.setRemoveTaskResultOnCompletion(false);
-        final var registrar = new ProcessEngineStarterRegistrar(properties, subscriptions, completion,
+        final var registrar = new ProcessEngineStarterRegistrar(properties, mock(ProcessApplicationLifecycle.class), completion,
                 new Jackson2VariableConverter(new ObjectMapper()), ParameterResolver.builder().build(),
                 ResultResolver.builder().build(), new TransactionTemplate(manager),
                 ProcessEngineWorkerMetricsNoOp.INSTANCE, registry);
         registrar.postProcessAfterInitialization(factory.getProxy(), "transactional-worker");
+        registrar.onPhase(new TaskSubscriptionRegistrationContext(subscriptions));
     }
 
     private SubscribeForTaskCmd command(final String topic) {

@@ -3,12 +3,14 @@ package dev.bpmcrafters.processengine.worker.configuration
 import dev.bpmcrafters.processengine.worker.process.AutoDeploymentOnStartup
 import dev.bpmcrafters.processengine.worker.process.ProcessDeployment
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi
+import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycle
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Lazy
 import org.springframework.core.io.support.ResourcePatternResolver
 
 /**
@@ -17,7 +19,6 @@ import org.springframework.core.io.support.ResourcePatternResolver
  **/
 @AutoConfiguration
 @EnableConfigurationProperties(ProcessEngineWorkerDeploymentProperties::class)
-@ConditionalOnBean(DeploymentApi::class)
 class ProcessEngineWorkerDeploymentAutoConfiguration {
 
   /**
@@ -27,16 +28,16 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
   @ConditionalOnMissingBean
   fun processDeployment(
     resourcePatternResolver: ResourcePatternResolver,
-    deploymentApi: DeploymentApi,
+    deploymentApi: ObjectProvider<DeploymentApi>,
     processEngineWorkerDeploymentProperties: ProcessEngineWorkerDeploymentProperties
   ) = ProcessDeployment(
     resourcePatternResolver = resourcePatternResolver,
-    deploymentApi = deploymentApi,
+    deploymentApiProvider = { deploymentApi.ifAvailable },
     deploymentProperties = processEngineWorkerDeploymentProperties
   )
 
   /**
-   * Configures a trigger for auto-deployment triggered by application start event.
+   * Registers auto-deployment for the process application startup lifecycle.
    **/
   @ConditionalOnProperty(
     prefix = ProcessEngineWorkerDeploymentProperties.DEFAULT_PREFIX,
@@ -45,10 +46,10 @@ class ProcessEngineWorkerDeploymentAutoConfiguration {
     matchIfMissing = false
   )
   @Bean
+  @Lazy(false)
   fun autoDeploymentOnStartup(
-    processDeployment: ProcessDeployment
-  ) = AutoDeploymentOnStartup(
-    processDeployment = processDeployment
-  )
+    processDeployment: ProcessDeployment,
+    lifecycle: ProcessApplicationLifecycle
+  ) = AutoDeploymentOnStartup(processDeployment).also(lifecycle::register)
 
 }

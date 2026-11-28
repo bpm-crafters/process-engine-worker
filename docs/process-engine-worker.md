@@ -45,6 +45,16 @@ public class PlainWorker {
 }
 ```
 
+To register an explicit worker during application startup, add its participant to the Process Engine API lifecycle before the application starts:
+
+```java
+var registrar = new ProcessEngineWorkerRegistrar(completion, converter);
+lifecycle.register(registrar.registrationParticipant(new PlainWorker()));
+```
+
+The participant uses the subscription API provided by the lifecycle at `SUBSCRIPTION_REGISTRATION`.
+The application or its adapter drives the lifecycle.
+
 ## Spring Boot registration
 
 First of all add the Process Engine Worker dependency to your projects classpath. In Maven add the following to your `pom.xml`:
@@ -57,6 +67,20 @@ First of all add the Process Engine Worker dependency to your projects classpath
   <version>${process-engine-worker.version}</version>
 </dependency>
 ```
+
+The application supplies Spring Boot, Spring Web or another source of a configured Jackson mapper, and
+Spring's transaction module (`spring-tx`, also included by common data starters). Use the application's
+Spring Boot BOM to align these dependencies. The worker uses the application's Jackson 3 mapper when
+present and falls back to its Jackson 2 mapper. A custom `VariableConverter` can be supplied instead.
+
+The starter includes the Process Engine API Spring Boot lifecycle bridge. It discovers annotated methods on
+initialized Spring beans and registers them synchronously at `SUBSCRIPTION_REGISTRATION`. Lifecycle-aware
+adapters start their initial pull and normal task delivery after this phase. Lazy workers initialized later register
+as runtime subscriptions.
+
+With the Camunda 7 Remote adapter 2026.11.2, use the `remote_scheduled` service task delivery strategy.
+The `remote_subscribed` strategy in that release opens its client subscriptions during bean initialization,
+before annotated workers register.
 
 Now create a simple Spring component and annotate a method with a special annotation `@ProcessEngineWorker`:
 
