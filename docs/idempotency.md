@@ -44,6 +44,7 @@ class IdempotencyConfiguration {
 ### JPA-based Registry
 
 The JPA-based registry is suitable for production environments. It persists the results in the database, allowing multiple instances of the worker to share the same idempotency state.
+The application supplies Spring Data JPA, for example through `spring-boot-starter-data-jpa` managed by its Spring Boot BOM.
 
 #### 1. Add Dependency
 

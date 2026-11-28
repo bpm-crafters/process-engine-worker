@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: Order Fulfillment Local Self-Managed
+
+dev:
+  bpm-crafters:
+    process-api:
+      adapter:
+        c8:
+          enabled: true
+          service-tasks:
+            delivery-strategy: subscription
+            worker-id: worker
+          user-tasks:
+            delivery-strategy: subscription_refreshing
+            completion-strategy: job
+            schedule-delivery-fixed-rate-in-seconds: 5 # every 5 seconds
+            tasklist-url: UNUSED
+
+camunda:
+  client:
+    mode: self-managed
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8088
+    # Use gRPC for job activation to keep the newer client compatible with the local broker.
+    prefer-rest-over-grpc: false
+    auth:
+      username: demo
+      password: demo
+    worker:
+      defaults:
+        enabled: true
+
+logging:
+  level:
+    io.camunda.common.auth.DefaultNoopAuthentication: OFF
+    io.camunda.zeebe.client.impl.ZeebeCallCredentials: OFF
+    dev:
+      bpmcrafters:
+        processengineapi: TRACE

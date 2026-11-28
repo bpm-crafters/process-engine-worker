@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerAutoConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import tools.jackson.databind.PropertyNamingStrategies;
@@ -44,9 +43,9 @@ class SpringJacksonConverterConfigurationTest {
     }
 
     @Test
-    void fallsBackToBootsJackson2MapperWithoutJackson3OnTheClasspath() {
+    void usesTheConfiguredJackson2MapperWithoutJackson3OnTheClasspath() {
         context.withClassLoader(new FilteredClassLoader("tools.jackson"))
-                .withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
+                .withBean(ObjectMapper.class)
                 .run(application -> {
                     assertThat(application).hasSingleBean(ObjectMapper.class);
                     assertThat(application.getBean(VariableConverter.class)).isInstanceOf(Jackson2VariableConverter.class);

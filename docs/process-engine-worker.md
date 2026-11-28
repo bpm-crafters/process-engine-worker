@@ -68,6 +68,11 @@ First of all add the Process Engine Worker dependency to your projects classpath
 </dependency>
 ```
 
+The application supplies Spring Boot, Spring Web or another source of a configured Jackson mapper, and
+Spring's transaction module (`spring-tx`, also included by common data starters). Use the application's
+Spring Boot BOM to align these dependencies. The worker uses the application's Jackson 3 mapper when
+present and falls back to its Jackson 2 mapper. A custom `VariableConverter` can be supplied instead.
+
 The starter includes the Process Engine API Spring Boot lifecycle bridge. It discovers annotated methods on
 initialized Spring beans and registers them synchronously at `SUBSCRIPTION_REGISTRATION`. Lifecycle-aware
 adapters start their initial pull and normal task delivery after this phase. Lazy workers initialized later register

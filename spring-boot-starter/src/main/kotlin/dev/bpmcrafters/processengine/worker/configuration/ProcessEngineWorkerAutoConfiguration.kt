@@ -24,6 +24,8 @@ import tools.jackson.databind.ObjectMapper as Jackson3ObjectMapper
   "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration",
   "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration",
   "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
+  "org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration",
+  "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration",
 ])
 @EnableConfigurationProperties(ProcessEngineWorkerProperties::class)
 class ProcessEngineWorkerAutoConfiguration {
@@ -83,10 +85,14 @@ class ProcessEngineWorkerAutoConfiguration {
   /**
    * Micrometer-based metrics.
    **/
-  @Bean
+  @Configuration(proxyBeanMethods = false)
+  @ConditionalOnClass(MeterRegistry::class)
   @ConditionalOnBean(MeterRegistry::class)
-  fun processEngineWorkerMetricsMicrometer(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics {
-    return ProcessEngineWorkerMetricsMicrometer(meterRegistry = meterRegistry)
+  class MicrometerMetricsConfiguration {
+    @Bean
+    @ConditionalOnMissingBean(ProcessEngineWorkerMetrics::class)
+    fun processEngineWorkerMetricsMicrometer(meterRegistry: MeterRegistry): ProcessEngineWorkerMetrics =
+      ProcessEngineWorkerMetricsMicrometer(meterRegistry = meterRegistry)
   }
 
   /**

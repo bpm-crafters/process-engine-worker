@@ -7,6 +7,8 @@ import dev.bpmcrafters.processengine.worker.configuration.ProcessEngineWorkerDep
 import dev.bpmcrafters.processengine.worker.idempotency.IdempotencyRegistry;
 import dev.bpmcrafters.processengine.worker.idempotency.InMemoryIdempotencyRegistry;
 import dev.bpmcrafters.processengine.worker.idempotency.NoOpIdempotencyRegistry;
+import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsMicrometer;
+import dev.bpmcrafters.processengine.worker.registrar.metrics.ProcessEngineWorkerMetricsNoOp;
 import dev.bpmcrafters.processengineapi.deploy.DeploymentApi;
 import dev.bpmcrafters.processengineapi.deploy.DeploymentInformation;
 import dev.bpmcrafters.processengineapi.lifecycle.ProcessApplicationLifecycle;
@@ -17,9 +19,13 @@ import dev.bpmcrafters.processengineapi.lifecycle.TaskSubscriptionRegistrationCo
 import dev.bpmcrafters.processengineapi.springboot.lifecycle.ProcessApplicationLifecycleAutoConfiguration;
 import dev.bpmcrafters.processengineapi.task.ServiceTaskCompletionApi;
 import dev.bpmcrafters.processengineapi.task.TaskSubscriptionApi;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.boot.test.context.FilteredClassLoader;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +42,24 @@ import static org.mockito.Mockito.*;
 
 class SpringRuntimeConfigurationTest {
     private final TaskSubscriptionApi subscriptions = mock(TaskSubscriptionApi.class);
+
+    @Test
+    void usesNoOpMetricsWhenTheApplicationOmitsMicrometer() {
+        new ApplicationContextRunner()
+                .withClassLoader(new FilteredClassLoader("io.micrometer"))
+                .withConfiguration(AutoConfigurations.of(ProcessEngineWorkerAutoConfiguration.class))
+                .run(context -> assertThat(context.getBean(ProcessEngineWorkerMetrics.class))
+                        .isSameAs(ProcessEngineWorkerMetricsNoOp.INSTANCE));
+    }
+
+    @Test
+    void usesTheApplicationMeterRegistryWhenPresent() {
+        new ApplicationContextRunner()
+                .withBean(SimpleMeterRegistry.class, SimpleMeterRegistry::new)
+                .withConfiguration(AutoConfigurations.of(ProcessEngineWorkerAutoConfiguration.class))
+                .run(context -> assertThat(context.getBean(ProcessEngineWorkerMetrics.class))
+                        .isInstanceOf(ProcessEngineWorkerMetricsMicrometer.class));
+    }
 
     @Test
     void wiresDefaultsAndRegistersWorkersWhenEnabledByDefault() {
